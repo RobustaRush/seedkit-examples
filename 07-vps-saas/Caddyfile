@@ -1,0 +1,13 @@
+example.com {
+    handle /media/* {
+        uri strip_prefix /media
+        root * /srv/media
+        file_server
+    }
+
+    reverse_proxy web:8000 {
+        health_uri /readyz
+        health_interval 10s
+        health_timeout 3s
+    }
+}

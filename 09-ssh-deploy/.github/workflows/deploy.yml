@@ -1,0 +1,55 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v5
+        with:
+          push: true
+          target: prod
+          tags: ghcr.io/${{ github.repository }}:latest
+
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /srv/09-ssh-deploy
+            export GITHUB_REPOSITORY="${{ github.repository }}"
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # --env-file makes compose interpolate ${VAR} from .env.prod (host-side substitution).
+            # env_file: in the compose YAML only injects vars into containers, not into compose itself.
+            docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod pull
+            docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod run --rm web python manage.py migrate --noinput
+            docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d
+            for i in $(seq 1 30); do
+              status=$(docker inspect -f '{{.State.Health.Status}}' \
+                $(docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod ps -q web) 2>/dev/null || echo starting)
+              [ "$status" = "healthy" ] && break
+              sleep 2
+            done
+            [ "$status" = "healthy" ] || { echo "web never became healthy"; exit 1; }
+            curl -sf http://localhost:8000/readyz || { echo "/readyz probe failed"; exit 1; }

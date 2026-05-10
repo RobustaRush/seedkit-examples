@@ -1,0 +1,56 @@
+app = "08-fly-app"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8000"
+  DJANGO_SETTINGS_MODULE = "config.settings.production"
+  DJANGO_BEHIND_PROXY = "True"
+
+# Required secrets — set via `fly secrets set`:
+#   DJANGO_SECRET_KEY
+#   DJANGO_ALLOWED_HOSTS
+#   DJANGO_CSRF_TRUSTED_ORIGINS
+#   DATABASE_URL        (auto-set by `fly postgres attach`)
+#   REDIS_URL           (auto-set by `fly redis attach`)
+#   POSTMARK_SERVER_TOKEN
+#   ANYMAIL_WEBHOOK_SECRET
+#   AWS_ACCESS_KEY_ID
+#   AWS_SECRET_ACCESS_KEY
+#   AWS_STORAGE_BUCKET_NAME
+#   SENTRY_DSN
+
+[deploy]
+  # `python` not `uv run`: runtime stage has no uv binary.
+  release_command = "python manage.py migrate && python manage.py collectstatic --noinput"
+
+[processes]
+  web = "gunicorn config.wsgi --bind 0.0.0.0:8000"
+  worker = "celery -A config worker -l info"
+  bolt = "python manage.py runbolt"
+
+[[services]]
+  internal_port = 8000
+  protocol = "tcp"
+  processes = ["web"]
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+[checks]
+  [checks.readyz]
+    grace_period = "10s"
+    interval = "10s"
+    method = "get"
+    path = "/readyz"
+    port = 8000
+    timeout = "5s"
+    type = "http"

@@ -1,0 +1,5 @@
+No issues found.
+
+Sweep covered: settings (`config/settings/{base,local,production,test}.py`), URLs (`config/urls.py`), middleware (`config/middleware/logging.py`), Celery wiring (`config/celery.py`, `config/__init__.py`), user model + admin + migration, Dockerfiles, both compose files, Caddyfile, CI workflow, deploy crontab, env files, pyproject. The scaffold boots cleanly: required env vars guarded by `env.NOTSET` only when `DEBUG=False`, healthz/readyz exempt from SSL redirect, `.env` is in `.gitignore` and `.dockerignore`, `dbbackup` correctly gated `if not DEBUG` so `collectstatic` (which runs with `DJANGO_DEBUG=True`) doesn't need AWS vars at build time, MFA + axes + allauth backends ordered correctly, custom User migration present.
+
+Placeholders the operator must fill (not bugs): `Caddyfile` line 1 `example.com`, `docker-compose.prod.yml` line 3 `ghcr.io/your-org/07-vps-saas:latest`, and `.env.example` line 15 `# DJANGO_BEHIND_PROXY=True` must be uncommented in prod or `SECURE_SSL_REDIRECT` will loop behind Caddy — but these are clearly documented scaffold knobs, not defects.

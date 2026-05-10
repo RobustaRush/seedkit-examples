@@ -1,0 +1,15 @@
+{% load tailwind_cli %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}02-shop{% endblock %}</title>
+    {% tailwind_css %}
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div class="container mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

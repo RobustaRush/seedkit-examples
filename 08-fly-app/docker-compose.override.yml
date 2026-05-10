@@ -1,0 +1,24 @@
+services:
+  web:
+    build:
+      target: dev
+    volumes:
+      - .:/app
+      - /app/.venv
+    ports:
+      - "8001:8001"
+
+  worker:
+    build:
+      target: dev
+    volumes:
+      - .:/app
+      - /app/.venv
+
+  db:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"

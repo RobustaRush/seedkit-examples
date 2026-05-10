@@ -1,0 +1,28 @@
+# Per-run logs and harness artefacts — written by seedkit/run-tests.sh,
+# never published.
+logs/
+.claude/
+.start-*
+
+# Python / Django runtime artefacts. Each project under here is a fresh
+# scaffold; the .venv, DBs, caches, and collected statics are noise that
+# would dwarf the source.
+**/.venv/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.sqlite3
+**/*.sqlite3-*
+**/staticfiles/
+**/media/
+**/node_modules/
+**/.ruff_cache/
+**/.mypy_cache/
+**/.pytest_cache/
+**/htmlcov/
+**/.coverage
+**/celerybeat-schedule*
+**/.django_tailwind_cli/
+
+# Local env files. Each project ships .env.example; .env is per-developer.
+**/.env

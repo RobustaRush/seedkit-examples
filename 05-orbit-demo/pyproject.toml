@@ -1,0 +1,47 @@
+[project]
+name = "05-orbit-demo"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=6.0,<7.0",
+    "django-environ>=0.13.0",
+]
+
+[dependency-groups]
+dev = [
+    "django-orbit[mcp]>=0.8.1",
+    "ruff>=0.15.12",
+]
+
+[tool.ruff]
+line-length = 100
+extend-exclude = ["migrations", "*/migrations/*"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",
+    "F",
+    "I",
+    "UP",
+    "B",
+    "DJ",
+    "S",
+    "SIM",
+    "RUF",
+]
+ignore = [
+    "E501",
+    "S101",
+    "RUF012",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S"]
+"**/test_*.py" = ["S"]
+"**/tests.py" = ["S"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pages", "config"]
+
+[tool.ruff.format]
+quote-style = "double"

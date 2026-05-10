@@ -1,0 +1,23 @@
+services:
+  web:
+    build:
+      target: dev
+    volumes:
+      - .:/app
+      - /app/.venv
+
+  worker:
+    build:
+      target: dev
+    volumes:
+      - .:/app
+      - /app/.venv
+    command: python manage.py rqworker default
+
+  db:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"

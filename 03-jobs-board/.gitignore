@@ -1,0 +1,12 @@
+.venv/
+.env
+*.sqlite3
+staticfiles/
+media/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+*.mo
+locale/*/LC_MESSAGES/*.mo
+celerybeat-schedule*
+.DS_Store
