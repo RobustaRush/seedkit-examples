@@ -9,10 +9,10 @@ services:
   worker:
     build:
       target: dev
+    command: python manage.py rqworker default
     volumes:
       - .:/app
       - /app/.venv
-    command: python manage.py rqworker default
 
   db:
     ports:

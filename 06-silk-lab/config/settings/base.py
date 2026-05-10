@@ -69,7 +69,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
-USE_I18N = False
+USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
@@ -77,10 +77,18 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 TASKS = {"default": {"BACKEND": "django_tasks_db.DatabaseBackend"}}
 
-ANALYTICS_ID = env("ANALYTICS_ID", default="")
-ANALYTICS_HOST = env("ANALYTICS_HOST", default="")
-
-globals().update(env.email_url("EMAIL_URL", default="consolemail://" if DEBUG else env.NOTSET))
+globals().update(
+    env.email_url(
+        "EMAIL_URL",
+        default="consolemail://" if DEBUG else env.NOTSET,
+    )
+)
 DEFAULT_FROM_EMAIL = env(
     "DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET
 )
+SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
+ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
+MANAGERS = ADMINS
+
+ANALYTICS_ID = env("ANALYTICS_ID", default="")
+ANALYTICS_HOST = env("ANALYTICS_HOST", default="")

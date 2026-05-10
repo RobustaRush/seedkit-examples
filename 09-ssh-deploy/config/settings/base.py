@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import environ
 import structlog
 
@@ -10,7 +11,11 @@ environ.Env.read_env(BASE_DIR / ".env")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
-DATABASES = {"default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET)}
+DATABASES = {
+    "default": env.db(
+        "DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET
+    )
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -72,7 +77,6 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Redis
 REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
 
 CACHES = {
@@ -83,7 +87,6 @@ CACHES = {
     }
 }
 
-# Django Tasks (RQ backend)
 TASKS = {
     "default": {
         "BACKEND": "django_tasks_rq.RQBackend",
@@ -97,14 +100,11 @@ RQ_QUEUES = {
 
 RQ = {"JOB_CLASS": "django_tasks_rq.Job"}
 
-# Analytics (Umami)
 ANALYTICS_ID = env("ANALYTICS_ID", default="")
 ANALYTICS_HOST = env("ANALYTICS_HOST", default="")
 
-# Error reporting (Bugsink / Sentry protocol)
 SENTRY_DSN = env("SENTRY_DSN", default="")
 
-# Structlog
 PRE_CHAIN = [
     structlog.contextvars.merge_contextvars,
     structlog.stdlib.add_log_level,

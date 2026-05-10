@@ -2,6 +2,27 @@
 
 Reference Django projects scaffolded by the [seedkit](https://github.com/RobustaRush/seedkit) skill, paired with the prompts that produced them.
 
-Each subdirectory is a fresh project generated end-to-end by `claude -p` running a testcase from `seedkit/testcases/`. The first section of every project's `README.md` is the verbatim `/seedkit` prompt — answers to every Foundation / add-on / production question — so the exact configuration is reproducible.
+Each subdirectory below is a fresh project generated end-to-end by `claude -p` running the matching testcase from `seedkit/testcases/`. The first section of every project's `README.md` is the verbatim `/seedkit` prompt — answers to every Foundation / add-on / production question — so the exact configuration is reproducible.
 
-This README and per-project READMEs are written by `seedkit/run-tests.sh`; copy or rsync `seedkit/workspace/` into this repo to refresh.
+## Projects
+
+- [`01-minimal-blog/`](01-minimal-blog/) — a tiny blog to verify the skill works end-to-end.
+- [`02-shop/`](02-shop/) — small e-commerce site with admin and SMTP transactional email.
+- [`03-jobs-board/`](03-jobs-board/) — job board with background email notifications and a daily digest.
+- [`04-media-vault/`](04-media-vault/) — media-heavy app where uploads land in S3 and processing runs as Redis-queued background tasks.
+- [`05-orbit-demo/`](05-orbit-demo/) — scratch project to exercise django-orbit and verify outbound mail flows are captured.
+- [`06-silk-lab/`](06-silk-lab/) — profile a few request paths with django-silk and run a simple background email task on the DB backend.
+- [`08-fly-app/`](08-fly-app/)
+- [`09-ssh-deploy/`](09-ssh-deploy/)
+
+## Reproducing
+
+From the parent repo:
+
+```sh
+cd seedkit
+./run-tests.sh                  # all cases
+./run-tests.sh 02 07            # specific cases
+```
+
+Generated under `seedkit/workspace/`. Copy or rsync into this directory to refresh the published examples.

@@ -1,72 +1,63 @@
 # 08-fly-app
 
-Production app deployed to Fly.io with a slim multi-stage runtime image and S3-compatible object storage.
+Production Django app deployed to Fly.io with a multi-stage Docker image and S3-compatible object storage.
 
 ## Stack
 
-- Django 6 · PostgreSQL · Redis
-- Celery (background tasks)
-- S3-compatible storage (MinIO locally, AWS S3 in prod)
-- django-mail-auth (passwordless magic-link login)
-- django-axes (brute-force lockout)
-- django-bolt (fast-path JSON API)
-- Anymail / Postmark (transactional email)
-- GlitchTip via sentry-sdk (error reporting)
-- django-csp (Content Security Policy)
-- GA4 analytics
-- GDPR: PII scrubbing, export/delete commands
+- **Django** + **PostgreSQL** + **Redis**
+- **Celery** (background tasks, broker = Redis)
+- **django-mail-auth** (passwordless magic-link login)
+- **django-axes** (brute-force lockout, cache-backed in prod)
+- **django-bolt** (fast-path REST API via Rust/Actix)
+- **django-storages[s3]** (MinIO in dev, S3 in prod)
+- **anymail[postmark]** (transactional email)
+- **GA4** analytics
+- **GlitchTip** error reporting (sentry-sdk)
+- **django-csp** (Content Security Policy)
+- GDPR: `export_user_data` / `delete_user` management commands
+- **Ruff** lint + format, **pyright** type checking, **pytest**
 
-## Local development
+## Local dev
 
 ```sh
-cp .env.example .env
-# Set DJANGO_SECRET_KEY in .env
+cp .env.example .env   # edit DJANGO_SECRET_KEY
 docker compose up -d --build
-docker compose exec web uv run manage.py migrate
-docker compose exec web uv run manage.py createsuperuser
+docker compose exec web python manage.py migrate
+docker compose exec web python manage.py createsuperuser
 ```
 
 Open <http://localhost:8000/admin/>.
 
-Health checks:
-```sh
-curl http://localhost:8000/healthz   # → ok
-curl http://localhost:8000/readyz    # → ready
-```
+Two servers in dev:
+- `http://localhost:8000` — Django (admin, accounts, health checks)
+- `http://localhost:8001` — Bolt API (start separately; see below)
 
-### Bolt fast-path API
+### Start Bolt API
 
 ```sh
-# In a separate terminal:
 docker compose exec -e DJANGO_SETTINGS_MODULE=config.settings.bolt web \
-  uv run manage.py runbolt --dev
-# → http://127.0.0.1:8001/users/1
+  python manage.py runbolt --dev --port 8001
 ```
 
-### Adding a dependency
+Then: `curl http://localhost:8001/users/1`
+
+### Health checks
 
 ```sh
-uv add somepkg
-docker compose build web
-docker compose up -d
+curl http://localhost:8000/healthz    # → ok
+curl http://localhost:8000/readyz     # → ready
 ```
 
-## Tests
+## Testing
 
 ```sh
 uv run pytest
 uv run ruff check .
+uv run ruff format --check .
 uv run pyright
 ```
 
-## GDPR commands
-
-```sh
-uv run manage.py export_user_data <user_id>
-uv run manage.py delete_user <user_id>
-```
-
-## Deploy to Fly.io
+## Deploy (Fly.io)
 
 ```sh
 fly launch --no-deploy
@@ -76,11 +67,24 @@ fly secrets set \
     DJANGO_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(50))') \
     DJANGO_ALLOWED_HOSTS=<your-app>.fly.dev \
     DJANGO_CSRF_TRUSTED_ORIGINS=https://<your-app>.fly.dev \
-    POSTMARK_SERVER_TOKEN=<token> \
+    AWS_ACCESS_KEY_ID=... \
+    AWS_SECRET_ACCESS_KEY=... \
+    AWS_STORAGE_BUCKET_NAME=... \
     DEFAULT_FROM_EMAIL=no-reply@example.com \
-    SERVER_EMAIL=django@example.com \
-    AWS_ACCESS_KEY_ID=<key> \
-    AWS_SECRET_ACCESS_KEY=<secret> \
-    AWS_STORAGE_BUCKET_NAME=<bucket>
+    POSTMARK_SERVER_TOKEN=... \
+    ANYMAIL_WEBHOOK_SECRET=... \
+    SENTRY_DSN=...
 fly deploy
+```
+
+Fly runs three processes from the same image:
+- `web` — gunicorn (Django)
+- `worker` — Celery worker
+- `bolt` — `manage.py runbolt` with `DJANGO_SETTINGS_MODULE=config.settings.bolt`
+
+## GDPR commands
+
+```sh
+python manage.py export_user_data <user_id> > data.json
+python manage.py delete_user <user_id>
 ```

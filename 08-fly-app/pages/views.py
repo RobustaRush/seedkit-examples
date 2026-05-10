@@ -3,11 +3,13 @@ from django.db.utils import OperationalError
 from django.http import HttpResponse
 
 
-def liveness(_request: object) -> HttpResponse:
+def liveness(_request):
+    """Process is alive. No external checks — must never block."""
     return HttpResponse("ok", content_type="text/plain")
 
 
-def readiness(_request: object) -> HttpResponse:
+def readiness(_request):
+    """Process can serve traffic — DB reachable."""
     try:
         with connection.cursor() as cur:
             cur.execute("SELECT 1")

@@ -1,9 +1,7 @@
-from .base import *  # noqa: F401, F403
-from .base import ANYMAIL, MIDDLEWARE, STORAGES, AWS_S3_CUSTOM_DOMAIN, AWS_S3_ENDPOINT_URL, AWS_S3_URL_PROTOCOL, AWS_STORAGE_BUCKET_NAME, env
+from .base import *  # noqa: F401,F403
+from .base import MIDDLEWARE, STORAGES, AWS_S3_CUSTOM_DOMAIN, AWS_S3_ENDPOINT_URL, AWS_S3_REGION_NAME, AWS_S3_URL_PROTOCOL, AWS_STORAGE_BUCKET_NAME, SENTRY_DSN, env
 
-# --------------------------------------------------------------------------
-# HTTPS / proxy
-# --------------------------------------------------------------------------
+# HTTPS
 SECURE_SSL_REDIRECT = True
 SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
 
@@ -23,38 +21,6 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
-# --------------------------------------------------------------------------
-# Email — Postmark via Anymail
-# --------------------------------------------------------------------------
-EMAIL_BACKEND = "anymail.backends.postmark.EmailBackend"
-
-# --------------------------------------------------------------------------
-# Static files on S3
-# --------------------------------------------------------------------------
-STORAGES = {
-    **STORAGES,
-    "staticfiles": {
-        "BACKEND": "storages.backends.s3boto3.S3StaticStorage",
-        "OPTIONS": {"location": "static"},
-    },
-}
-
-if AWS_S3_CUSTOM_DOMAIN:
-    STATIC_URL = f"{AWS_S3_URL_PROTOCOL}//{AWS_S3_CUSTOM_DOMAIN}/static/"
-elif AWS_S3_ENDPOINT_URL:
-    STATIC_URL = f"{AWS_S3_ENDPOINT_URL.rstrip('/')}/{AWS_STORAGE_BUCKET_NAME}/static/"
-else:
-    _region = "" if AWS_S3_REGION_NAME == "us-east-1" else f".{AWS_S3_REGION_NAME}"  # type: ignore[name-defined]
-    STATIC_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3{_region}.amazonaws.com/static/"
-
-# --------------------------------------------------------------------------
-# django-axes — use Redis cache handler in production
-# --------------------------------------------------------------------------
-AXES_HANDLER = "axes.handlers.cache.AxesCacheHandler"
-
-# --------------------------------------------------------------------------
-# CSP — django-csp (includes GA4 sources)
-# --------------------------------------------------------------------------
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "csp.middleware.CSPMiddleware",
@@ -77,18 +43,48 @@ CONTENT_SECURITY_POLICY = {
             "https://www.google-analytics.com",
         ),
         "style-src": ("'self'", "'unsafe-inline'"),
-        "img-src": (
-            "'self'",
-            "data:",
-            "https://www.google-analytics.com",
-        ),
+        "img-src": ("'self'", "data:", "https://www.google-analytics.com"),
         "font-src": ("'self'",),
-        "connect-src": (
-            "'self'",
-            "https://www.google-analytics.com",
-        ),
+        "connect-src": ("'self'", "https://www.google-analytics.com"),
         "frame-ancestors": ("'none'",),
         "base-uri": ("'self'",),
         "form-action": ("'self'",),
     },
 }
+
+AXES_HANDLER = "axes.handlers.cache.AxesCacheHandler"
+
+STORAGES = {
+    **STORAGES,
+    "staticfiles": {
+        "BACKEND": "storages.backends.s3boto3.S3StaticStorage",
+        "OPTIONS": {"location": "static"},
+    },
+}
+
+if AWS_S3_CUSTOM_DOMAIN:
+    STATIC_URL = f"{AWS_S3_URL_PROTOCOL}//{AWS_S3_CUSTOM_DOMAIN}/static/"
+elif AWS_S3_ENDPOINT_URL:
+    STATIC_URL = f"{AWS_S3_ENDPOINT_URL.rstrip('/')}/{AWS_STORAGE_BUCKET_NAME}/static/"
+else:
+    _region = "" if AWS_S3_REGION_NAME == "us-east-1" else f".{AWS_S3_REGION_NAME}"
+    STATIC_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3{_region}.amazonaws.com/static/"
+
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    def _scrub(event, hint):
+        request = event.get("request") or {}
+        headers = request.get("headers") or {}
+        for h in ("Authorization", "Cookie"):
+            headers.pop(h, None)
+        return event
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        send_default_pii=False,
+        before_send=_scrub,
+        release=env("SENTRY_RELEASE", default=None),
+    )

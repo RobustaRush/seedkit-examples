@@ -1,13 +1,14 @@
 .venv/
 .env
+deploy/.env.prod
 *.sqlite3
 staticfiles/
 media/
 .ruff_cache/
 __pycache__/
-*.py[cod]
+*.pyc
+*.pyo
 .pytest_cache/
 htmlcov/
 .coverage
-*.egg-info/
-dist/
+logs/

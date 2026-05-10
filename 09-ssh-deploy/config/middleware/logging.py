@@ -3,7 +3,7 @@ import uuid
 
 import structlog
 
-log = structlog.get_logger("django.request")
+log = structlog.get_logger("request")
 
 _NO_USER_PATHS = ("/healthz", "/readyz")
 

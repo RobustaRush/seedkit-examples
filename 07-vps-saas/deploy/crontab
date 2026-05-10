@@ -1,4 +1,0 @@
-# Database and media backups — run as the `django` OS user on the VPS host.
-# Requires: docker compose running with .env.prod in /srv/07-vps-saas/
-17 3 * * * django docker compose -f /srv/07-vps-saas/docker-compose.prod.yml exec -T web python manage.py dbbackup --clean
-27 3 * * * django docker compose -f /srv/07-vps-saas/docker-compose.prod.yml exec -T web python manage.py mediabackup --clean

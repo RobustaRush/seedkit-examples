@@ -1,23 +1,22 @@
-from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-User = get_user_model()
-
 
 class Command(BaseCommand):
-    help = "Delete a user and all owned data (GDPR Art. 17)"
+    help = "Delete a user and all their owned data (GDPR article 17 — right to erasure)."
 
-    def add_arguments(self, parser):  # type: ignore[override]
+    def add_arguments(self, parser):
         parser.add_argument("user_id", type=int)
 
-    def handle(self, *args, **options):  # type: ignore[override]
+    def handle(self, *args, **options):
         try:
             user = User.objects.get(pk=options["user_id"])
         except User.DoesNotExist:
-            raise CommandError(f"User {options['user_id']} not found")
+            raise CommandError(f"User {options['user_id']} not found.")
 
+        username = user.username
         with transaction.atomic():
-            user_repr = str(user)
             user.delete()
-        self.stdout.write(f"Deleted user {user_repr} (id={options['user_id']})")
+
+        self.stdout.write(self.style.SUCCESS(f"Deleted user {username} (id={options['user_id']})."))

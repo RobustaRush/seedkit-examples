@@ -1,30 +1,27 @@
-# ─── builder stage ────────────────────────────────────────────────────────────
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 ENV UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy \
-    PATH="/app/.venv/bin:$PATH"
+    UV_LINK_MODE=copy
 
 WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-install-project
+RUN uv sync --frozen --no-dev --no-install-project
 
 COPY . .
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev
 
-# ─── dev stage ────────────────────────────────────────────────────────────────
+
 FROM builder AS dev
-
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen
-
+ENV PATH="/app/.venv/bin:$PATH"
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
-# ─── runtime stage (slim — no uv binary) ──────────────────────────────────────
-FROM python:3.12-slim-bookworm AS runtime
+
+FROM python:3.12-slim-bookworm AS prod
 
 ENV PATH="/app/.venv/bin:$PATH"
 

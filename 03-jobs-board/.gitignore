@@ -3,10 +3,9 @@
 *.sqlite3
 staticfiles/
 media/
-.ruff_cache/
 __pycache__/
-*.py[cod]
-*.mo
-locale/*/LC_MESSAGES/*.mo
+*.pyc
+*.pyo
+.ruff_cache/
 celerybeat-schedule*
-.DS_Store
+*.mo

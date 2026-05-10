@@ -50,9 +50,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**" = ["S"]
-"**/test_*.py" = ["S"]
-"**/tests.py" = ["S"]
+"**/tests/**"      = ["S"]
+"**/test_*.py"     = ["S"]
+"**/tests.py"      = ["S"]
 "**/settings/*.py" = ["F405", "F403"]
 
 [tool.ruff.lint.isort]

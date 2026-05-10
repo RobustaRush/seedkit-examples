@@ -2,4 +2,8 @@ from django.apps import AppConfig
 
 
 class PagesConfig(AppConfig):
-    name = 'pages'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "pages"
+
+    def ready(self) -> None:
+        from . import tasks  # noqa: F401

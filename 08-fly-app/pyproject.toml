@@ -14,6 +14,7 @@ dependencies = [
     "django-redis>=6.0.0",
     "django-storages[s3]>=1.14.6",
     "gunicorn>=26.0.0",
+    "msgspec>=0.21.1",
     "psycopg[binary]>=3.3.4",
     "sentry-sdk>=2.59.0",
     "whitenoise>=6.12.0",
@@ -49,21 +50,14 @@ ignore = ["E501", "S101", "RUF012"]
 "**/settings/*.py" = ["F405", "F403"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["pages", "api"]
+known-first-party = ["api", "pages", "config"]
 
 [tool.ruff.format]
 quote-style = "double"
 
 [tool.pyright]
 include = ["."]
-exclude = [
-    "**/migrations/**",
-    "**/__pycache__",
-    ".venv",
-    "staticfiles",
-    "media",
-    "config/settings",
-]
+exclude = ["**/migrations/**", "**/__pycache__", ".venv", "staticfiles", "media", "config/settings"]
 venvPath = "."
 venv = ".venv"
 pythonVersion = "3.12"

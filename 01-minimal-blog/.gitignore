@@ -3,7 +3,6 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-*.so
 *.egg
 *.egg-info/
 dist/
@@ -17,21 +16,21 @@ build/
 *.sqlite3
 staticfiles/
 media/
-local_settings.py
+db.sqlite3
 
-# Env
+# Environment
 .env
 
-# Cache / tooling
+# Cache
 .ruff_cache/
 .mypy_cache/
 .pytest_cache/
-.coverage
-htmlcov/
-.DS_Store
 
-# Editor
+# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+
+# macOS
+.DS_Store

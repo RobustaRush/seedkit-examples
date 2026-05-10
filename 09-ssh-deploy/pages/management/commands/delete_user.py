@@ -6,7 +6,7 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
-    help = "Delete all data for a user (GDPR right to erasure)"
+    help = "Delete all personal data for a user (GDPR Article 17)."
 
     def add_arguments(self, parser):
         parser.add_argument("user_id", type=int)
@@ -14,10 +14,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         try:
             user = User.objects.get(pk=options["user_id"])
-        except User.DoesNotExist:
-            raise CommandError(f"User {options['user_id']} does not exist")
-
-        username = user.username
+        except User.DoesNotExist as exc:
+            raise CommandError(f"User {options['user_id']} does not exist.") from exc
         with transaction.atomic():
+            user_repr = f"id={user.pk} email={user.email}"
             user.delete()
-        self.stdout.write(f"Deleted user {username} (id={options['user_id']})")
+        self.stdout.write(self.style.SUCCESS(f"Deleted user {user_repr}"))

@@ -7,12 +7,11 @@ logger = logging.getLogger(__name__)
 
 
 @task()
-def send_welcome_email(user_id: int) -> None:
-    logger.info("send_welcome_email started", extra={"user_id": user_id})
+def send_welcome_email(recipient: str) -> None:
     send_mail(
-        subject="Welcome!",
-        message=f"Welcome, user {user_id}!",
-        from_email="noreply@example.com",
-        recipient_list=[f"user-{user_id}@example.com"],
+        subject="Welcome to Silk Lab",
+        message="Thanks for signing up.",
+        from_email=None,
+        recipient_list=[recipient],
     )
-    logger.info("send_welcome_email finished", extra={"user_id": user_id})
+    logger.info("Welcome email sent to %s", recipient)

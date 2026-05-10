@@ -1,4 +1,4 @@
-from .base import *  # noqa: F401, F403
+from .base import *
 
 # HTTPS
 SECURE_SSL_REDIRECT = True
@@ -19,7 +19,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
-# CSP — production only; runserver skips this middleware
+# CSP
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "csp.middleware.CSPMiddleware",
@@ -32,27 +32,23 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-# Build script-src dynamically so the Umami host resolves from env at runtime.
-# ANALYTICS_HOST is already bound via base.py's env() call (imported above).
-_script_src = ["'self'"]
-if ANALYTICS_HOST:
-    _script_src.append(ANALYTICS_HOST)
+_umami_host = env("ANALYTICS_HOST", default="")
 
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'",),
-        "script-src": tuple(_script_src),
+        "script-src": ("'self'", _umami_host) if _umami_host else ("'self'",),
         "style-src": ("'self'", "'unsafe-inline'"),
         "img-src": ("'self'", "data:"),
         "font-src": ("'self'",),
-        "connect-src": ("'self'",) + ((ANALYTICS_HOST,) if ANALYTICS_HOST else ()),
+        "connect-src": ("'self'", _umami_host) if _umami_host else ("'self'",),
         "frame-ancestors": ("'none'",),
         "base-uri": ("'self'",),
         "form-action": ("'self'",),
     },
 }
 
-# Bugsink error reporting
+# Bugsink / Sentry error reporting
 if SENTRY_DSN:
     import sentry_sdk
     from sentry_sdk.integrations.django import DjangoIntegration

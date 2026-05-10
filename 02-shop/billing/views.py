@@ -1,13 +1,10 @@
 import stripe
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-
-User = get_user_model()
 
 
 def get_or_create_customer(user):
@@ -33,7 +30,8 @@ def create_checkout_session(request):
         success_url=request.build_absolute_uri("/billing/success/"),
         cancel_url=request.build_absolute_uri("/billing/cancel/"),
     )
-    return redirect(session.url or "/")
+    assert session.url
+    return redirect(session.url)
 
 
 @login_required
@@ -42,7 +40,8 @@ def customer_portal(request):
         customer=request.user.stripe_customer_id,
         return_url=request.build_absolute_uri("/billing/"),
     )
-    return redirect(session.url or "/billing/")
+    assert session.url
+    return redirect(session.url)
 
 
 @csrf_exempt
@@ -64,16 +63,22 @@ def stripe_webhook(request):
 
 
 def _handle_subscription_created(subscription):
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
     try:
         user = User.objects.get(stripe_customer_id=subscription["customer"])
     except User.DoesNotExist:
         return
-    _ = user
+    _ = user  # extend here: update subscription state on user
 
 
 def _handle_subscription_deleted(subscription):
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
     try:
         user = User.objects.get(stripe_customer_id=subscription["customer"])
     except User.DoesNotExist:
         return
-    _ = user
+    _ = user  # extend here: update subscription state on user

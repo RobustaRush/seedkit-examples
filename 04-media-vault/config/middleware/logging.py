@@ -1,8 +1,9 @@
+import time
 import uuid
 
 import structlog
 
-log = structlog.get_logger(__name__)
+log = structlog.get_logger("request")
 
 _NO_USER_PATHS = ("/healthz", "/readyz")
 
@@ -17,9 +18,16 @@ class RequestContextMiddleware:
         if not request.path.startswith(_NO_USER_PATHS):
             ctx["user_id"] = getattr(getattr(request, "user", None), "id", None)
         structlog.contextvars.bind_contextvars(**ctx)
+        start = time.monotonic()
         try:
             response = self.get_response(request)
-            log.info("request", method=request.method, path=request.path, status=response.status_code)
-            return response
         finally:
+            log.info(
+                "request",
+                method=request.method,
+                path=request.path,
+                status=getattr(locals().get("response"), "status_code", 0),
+                duration_ms=int((time.monotonic() - start) * 1000),
+            )
             structlog.contextvars.clear_contextvars()
+        return response

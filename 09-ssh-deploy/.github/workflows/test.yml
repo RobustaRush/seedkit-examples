@@ -34,10 +34,13 @@ jobs:
     env:
       DJANGO_SETTINGS_MODULE: config.settings.test
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
-      REDIS_URL: redis://localhost:6379
       DJANGO_SECRET_KEY: test-key
       DJANGO_DEBUG: "False"
       DJANGO_ALLOWED_HOSTS: "*"
+      REDIS_URL: redis://localhost:6379
+      SENTRY_DSN: ""
+      ANALYTICS_ID: ""
+      ANALYTICS_HOST: ""
 
     steps:
       - uses: actions/checkout@v4
