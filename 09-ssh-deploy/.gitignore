@@ -8,9 +8,11 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.pytest_cache/
+htmlcov/
+.coverage
 *.egg-info/
 dist/
 build/
-htmlcov/
-.coverage
-deploy/.env.prod
+.DS_Store
+*.log

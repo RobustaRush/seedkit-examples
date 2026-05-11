@@ -26,12 +26,13 @@ jobs:
 
       - uses: docker/build-push-action@v5
         with:
-          context: .
           push: true
           tags: ghcr.io/${{ github.repository }}:latest
           target: prod
+          build-args: |
+            GIT_SHA=${{ github.sha }}
 
-      - uses: appleboy/ssh-action@v1.0.3
+      - uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}

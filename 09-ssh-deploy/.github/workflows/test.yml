@@ -49,16 +49,16 @@ jobs:
       - run: uv sync --frozen
 
       - run: uv run ruff check .
-
       - run: uv run ruff format --check .
 
       - run: uv run pytest
 
       - run: uv run manage.py check --deploy --settings=config.settings.production
         env:
-          DJANGO_SECRET_KEY: ci-check-key
+          DJANGO_SECRET_KEY: ci-deploy-check-key
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
           DJANGO_ALLOWED_HOSTS: example.com
           DJANGO_CSRF_TRUSTED_ORIGINS: https://example.com
           DJANGO_BEHIND_PROXY: "True"
           REDIS_URL: redis://localhost:6379
+          SENTRY_DSN: ""

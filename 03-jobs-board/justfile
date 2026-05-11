@@ -25,5 +25,8 @@ worker:
 beat:
     uv run celery -A config beat -l info
 
-collectstatic:
-    uv run manage.py collectstatic --noinput
+makemessages:
+    uv run manage.py makemessages -l en
+
+compilemessages:
+    uv run manage.py compilemessages

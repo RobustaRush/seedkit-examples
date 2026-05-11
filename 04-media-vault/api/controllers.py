@@ -5,7 +5,7 @@ from dmr import Body, Controller
 from dmr.plugins.msgspec import MsgspecSerializer
 
 
-class MediaUpload(msgspec.Struct):
+class MediaCreate(msgspec.Struct):
     filename: str
     size: int
 
@@ -16,5 +16,5 @@ class MediaResponse(msgspec.Struct):
 
 
 class MediaController(Controller[MsgspecSerializer]):
-    async def post(self, parsed_body: Body[MediaUpload]) -> MediaResponse:
+    async def post(self, parsed_body: Body[MediaCreate]) -> MediaResponse:
         return MediaResponse(uid=uuid.uuid4(), filename=parsed_body.filename)

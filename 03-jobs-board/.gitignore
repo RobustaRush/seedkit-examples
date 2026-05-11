@@ -1,16 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# Virtual environment
 .venv/
-.env
+
+# Django
 *.sqlite3
 staticfiles/
 media/
-__pycache__/
-*.py[cod]
-*.egg-info/
-dist/
 .ruff_cache/
-.mypy_cache/
-.pytest_cache/
+
+# Celery Beat scheduler state
 celerybeat-schedule
 celerybeat-schedule.db
-celerybeat.pid
-locale/*/LC_MESSAGES/*.mo
+celerybeat-schedule-shm
+celerybeat-schedule-wal
+
+# Environment
+.env
+
+# Compiled translations
+*.mo
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store

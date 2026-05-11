@@ -20,7 +20,7 @@ Structured logging: no.
 Task runner: none.
 Add-ons:
   - debug: django-silk (profiling + `@silk_profile`)
-  - tasks: Django Tasks with the Database backend (`django-tasks-db`)
+  - tasks: Django Tasks with the Database backend (`django-tasks-db`). Also `uv run manage.py startapp jobs`, register `jobs` in `INSTALLED_APPS`, wire `jobs/apps.py` `ready()` to import `tasks`, and add a sample `@task` to `jobs/tasks.py`.
   - analytics: GoatCounter (self-hosted snippet, env-driven site code)
   - email: console backend in local (`EMAIL_URL=consolemail://`).
   - CORS: no.
@@ -44,30 +44,29 @@ Run the foundation, the boot check, start `manage.py db_worker` in a second term
 
 # 06-silk-lab
 
-Profile request paths with django-silk and run background email tasks on the DB backend.
+Profile request paths with django-silk and run background tasks on the DB backend.
 
 ## Stack
 
-| Layer | Choice |
+| Layer | Package |
 |---|---|
-| Framework | Django 6 |
-| Database | PostgreSQL (host) |
-| Profiling | django-silk (`/silk/`) |
-| Background tasks | django-tasks + DB backend (`db_worker`) |
-| Email (dev) | Console (`consolemail://`) |
-| Analytics | GoatCounter (env-driven, skipped in dev) |
-| Healthchecks | `/healthz`, `/readyz` |
+| Framework | Django 6.0 |
+| Database | PostgreSQL (`psycopg[binary]`) |
+| Settings | Split (`base` / `local` / `production` / `test`) |
+| Profiling | django-silk — dashboard at `/silk/`, `@silk_profile` decorator |
+| Background tasks | django-tasks-db (`db_worker`) |
+| Email (dev) | Console backend |
+| Analytics | GoatCounter (env-driven, disabled in dev) |
+| Health checks | `/healthz` (liveness), `/readyz` (DB ping) |
 | Lint | Ruff |
 | Tests | pytest + pytest-django |
-| DB safety | django-zeal, django-migration-linter, django-test-migrations |
-| Dev toolbox | django-extensions |
+| Dev extras | django-extensions, django-zeal, django-migration-linter, django-test-migrations |
 
 ## Setup
 
 ```sh
 createdb silk_db
-cp .env.example .env
-# Edit .env: set DJANGO_SECRET_KEY to a real value
+cp .env.example .env   # set DJANGO_SECRET_KEY to a real value
 uv sync
 uv run manage.py migrate
 uv run manage.py createsuperuser
@@ -76,32 +75,69 @@ uv run manage.py createsuperuser
 ## Run
 
 ```sh
-# Terminal 1
+# Web server
 uv run manage.py runserver
 
-# Terminal 2 — task worker
+# Task worker (separate terminal)
 uv run manage.py db_worker
 ```
 
 ## Enqueue an example task
 
-```python
-# uv run manage.py shell_plus
-from jobs.tasks import send_example_email
-send_example_email.enqueue("you@example.com")
+```sh
+uv run manage.py shell_plus
+# In the shell:
+from jobs.tasks import send_welcome_email
+send_welcome_email.enqueue("you@example.com")
 ```
 
-## Profiling
+## Profiling with Silk
 
-Visit any page, then open **http://localhost:8000/silk/** to see the request profile. The home view at `/` is decorated with `@silk_profile(name="home")`.
+Visit `http://localhost:8000/silk/` after making some requests. Silk records every request automatically.
 
-## Key commands
+To profile a specific code block, use the context manager inside a task:
+
+```python
+from silk.profiling.profiler import silk_profile
+
+with silk_profile(name="my operation"):
+    ...
+```
+
+Clear accumulated data when the table grows large:
 
 ```sh
-uv run manage.py lintmigrations       # check migrations for unsafe ops
-uv run ruff check .                   # lint
-uv run ruff format .                  # format
-uv run pytest                         # tests
-uv run manage.py show_urls            # list all URL patterns
-uv run manage.py silk_clear_request_log  # clear silk data
+uv run manage.py silk_clear_request_log
 ```
+
+## Lint
+
+```sh
+uv run ruff check .
+uv run ruff format --check .
+```
+
+## Test
+
+```sh
+uv run pytest
+```
+
+## Migration safety
+
+```sh
+uv run manage.py lintmigrations
+```
+
+## GoatCounter analytics
+
+Set env vars to enable (empty `ANALYTICS_ID` disables tracking — safe in dev):
+
+```sh
+ANALYTICS_HOST=https://stats.example.com
+ANALYTICS_ID=mysite
+```
+
+Include `{% include "_analytics.html" %}` before `</body>` in your base template.
+
+Built with [Seedkit](https://github.com/RobustaRush/seedkit).

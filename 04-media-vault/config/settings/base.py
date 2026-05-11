@@ -10,7 +10,7 @@ environ.Env.read_env(BASE_DIR / ".env")
 
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[] if not DEBUG else ["*"])
 DATABASES = {
     "default": env.db(
         "DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET
@@ -20,16 +20,23 @@ DATABASES = {
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "corsheaders",
-    "storages",
+    # third-party
+    "channels",
     "django_rq",
     "django_tasks_rq",
+    "corsheaders",
+    "django_structlog",
+    "storages",
+    # local
+    "pages",
+    "jobs",
     "api",
 ]
 
@@ -40,7 +47,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "config.middleware.logging.RequestContextMiddleware",
+    "django_structlog.middlewares.RequestMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -50,7 +57,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -62,7 +69,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -73,13 +80,13 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
-USE_I18N = True
+USE_I18N = False
 USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Redis cache
+# ── Redis ──────────────────────────────────────────────────────────────────────
 REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
 
 CACHES = {
@@ -90,7 +97,29 @@ CACHES = {
     }
 }
 
-# S3-compatible storage (MinIO in local Compose; real S3 in prod)
+# ── Channels ───────────────────────────────────────────────────────────────────
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {"hosts": [env("REDIS_URL", default="redis://127.0.0.1:6379")]},
+    },
+}
+
+# ── Django Tasks (RQ backend) ──────────────────────────────────────────────────
+TASKS = {
+    "default": {
+        "BACKEND": "django_tasks_rq.RQBackend",
+        "QUEUES": ["default"],
+    }
+}
+
+RQ_QUEUES = {
+    "default": {"URL": f"{REDIS_URL}/3"},
+}
+
+RQ = {"JOB_CLASS": "django_tasks_rq.Job"}
+
+# ── S3 / MinIO storage ─────────────────────────────────────────────────────────
 AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID", default="" if DEBUG else env.NOTSET)
 AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY", default="" if DEBUG else env.NOTSET)
 AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="" if DEBUG else env.NOTSET)
@@ -121,8 +150,9 @@ if AWS_S3_CUSTOM_DOMAIN:
 else:
     MEDIA_URL = "/media/"
 
-# Email
+# ── Email ──────────────────────────────────────────────────────────────────────
 globals().update(env.email_url("EMAIL_URL", default="consolemail://" if DEBUG else env.NOTSET))
+
 DEFAULT_FROM_EMAIL = env(
     "DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET
 )
@@ -130,35 +160,19 @@ SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
-# CORS
+# ── CORS ───────────────────────────────────────────────────────────────────────
 CORS_ALLOWED_ORIGINS = env.list(
     "DJANGO_CORS_ALLOWED_ORIGINS",
     default=["http://localhost:3000", "http://127.0.0.1:3000"] if DEBUG else [],
 )
 CORS_ALLOW_CREDENTIALS = True
+
 CSRF_TRUSTED_ORIGINS = env.list(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
     default=["http://localhost:3000"] if DEBUG else [],
 )
 
-# Django Tasks — RQ backend
-TASKS = {
-    "default": {
-        "BACKEND": "django_tasks_rq.RQBackend",
-        "QUEUES": ["default"],
-    }
-}
-
-RQ_QUEUES = {
-    "default": {"URL": f"{REDIS_URL}/3"},
-}
-
-# JOB_CLASS must live in the top-level RQ dict; django-rq's get_job_class()
-# reads from settings.RQ only — not from RQ_QUEUES. Without this the worker
-# fetches jobs as rq.job.Job and django-tasks-rq's _execute() never runs.
-RQ = {"JOB_CLASS": "django_tasks_rq.Job"}
-
-# Structured logging
+# ── Structlog ──────────────────────────────────────────────────────────────────
 PRE_CHAIN = [
     structlog.contextvars.merge_contextvars,
     structlog.stdlib.add_log_level,

@@ -23,6 +23,10 @@ dev = [
     "ruff>=0.15.12",
 ]
 
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.local"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+
 [tool.ruff]
 line-length = 100
 extend-exclude = ["migrations", "*/migrations/*"]
@@ -49,17 +53,13 @@ ignore = [
 "**/tests/**"      = ["S"]
 "**/test_*.py"     = ["S"]
 "**/tests.py"      = ["S"]
-"**/settings/*.py" = ["F405", "F403"]
+"**/settings/*.py" = ["F405", "F403", "S105", "S106"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["users", "pages", "billing"]
 
 [tool.ruff.format]
 quote-style = "double"
-
-[tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings.local"
-python_files = ["tests.py", "test_*.py", "*_tests.py"]
 
 [tool.pyright]
 include = ["."]

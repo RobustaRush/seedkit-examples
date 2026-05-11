@@ -5,8 +5,6 @@ services:
     volumes:
       - .:/app
       - /app/.venv
-    environment:
-      DJANGO_DEBUG: "True"
 
   worker:
     build:
@@ -14,18 +12,12 @@ services:
     volumes:
       - .:/app
       - /app/.venv
-    environment:
-      DJANGO_DEBUG: "True"
+    command: celery -A config worker -l info
 
   db:
     ports:
-      - "127.0.0.1:15432:5432"
+      - "127.0.0.1:5433:5432"
 
   redis:
     ports:
       - "127.0.0.1:6379:6379"
-
-  minio:
-    ports:
-      - "127.0.0.1:9000:9000"
-      - "127.0.0.1:9001:9001"

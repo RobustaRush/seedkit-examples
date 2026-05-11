@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import environ
-from celery.schedules import crontab
 from django.utils.translation import gettext_lazy as _
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -17,18 +16,30 @@ DATABASES = {"default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / '
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 INSTALLED_APPS = [
-    "mailauth.contrib.admin",  # must precede django.contrib.admin
+    # mailauth.contrib.admin must precede django.contrib.admin
+    "mailauth.contrib.admin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # third-party
     "mailauth",
     "mailauth.contrib.user",
-    "jobs",
+    # local
     "pages",
+    "jobs",
 ]
+
+AUTH_USER_MODEL = "mailauth_user.EmailUser"
+
+AUTHENTICATION_BACKENDS = [
+    "mailauth.backends.MailAuthBackend",
+]
+
+LOGIN_URL = "mailauth:login"
+LOGIN_REDIRECT_URL = "/"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -60,17 +71,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# Auth — django-mail-auth with EmailUser
-AUTH_USER_MODEL = "mailauth_user.EmailUser"
-
-AUTHENTICATION_BACKENDS = [
-    "mailauth.backends.MailAuthBackend",
-    "django.contrib.auth.backends.ModelBackend",
-]
-
-LOGIN_URL = "mailauth:login"
-LOGIN_REDIRECT_URL = "/"
-
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -78,11 +78,11 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# i18n
+# Internationalisation
 LANGUAGE_CODE = "en"
-TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
+TIME_ZONE = "UTC"
 
 LANGUAGES = [
     ("en", _("English")),
@@ -94,7 +94,7 @@ LOCALE_PATHS = [BASE_DIR / "locale"]
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Redis + Celery
+# Redis
 REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
 
 CACHES = {
@@ -105,13 +105,16 @@ CACHES = {
     }
 }
 
+# Celery
+from celery.schedules import crontab  # noqa: E402
+
 CELERY_BROKER_URL = f"{REDIS_URL}/1"
 CELERY_RESULT_BACKEND = f"{REDIS_URL}/2"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 CELERY_BEAT_SCHEDULE = {
     "daily-digest": {
-        "task": "jobs.tasks.daily_digest",
+        "task": "jobs.tasks.send_daily_digest",
         "schedule": crontab(hour=8, minute=0),
     },
 }
@@ -122,11 +125,7 @@ globals().update(env.email_url(
     default="consolemail://" if DEBUG else env.NOTSET,
 ))
 
-DEFAULT_FROM_EMAIL = env(
-    "DEFAULT_FROM_EMAIL",
-    default="webmaster@localhost" if DEBUG else env.NOTSET,
-)
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET)
 SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
-
 ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS

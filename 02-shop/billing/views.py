@@ -6,8 +6,10 @@ from django.shortcuts import redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
+from users.models import User
 
-def get_or_create_customer(user):
+
+def _get_or_create_customer(user: User) -> str:
     if user.stripe_customer_id:
         return user.stripe_customer_id
     customer = stripe.Customer.create(
@@ -21,7 +23,7 @@ def get_or_create_customer(user):
 
 @login_required
 def create_checkout_session(request):
-    customer_id = get_or_create_customer(request.user)
+    customer_id = _get_or_create_customer(request.user)  # type: ignore[arg-type]
     session = stripe.checkout.Session.create(
         customer=customer_id,
         payment_method_types=["card"],
@@ -36,8 +38,9 @@ def create_checkout_session(request):
 
 @login_required
 def customer_portal(request):
+    user: User = request.user  # type: ignore[assignment]
     session = stripe.billing_portal.Session.create(
-        customer=request.user.stripe_customer_id,
+        customer=user.stripe_customer_id,
         return_url=request.build_absolute_uri("/billing/"),
     )
     assert session.url
@@ -50,9 +53,7 @@ def stripe_webhook(request):
     payload = request.body
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
     try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
-        )
+        event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
     except (ValueError, stripe.SignatureVerificationError):
         return HttpResponse(status=400)
 
@@ -65,22 +66,18 @@ def stripe_webhook(request):
 
 
 def _handle_subscription_created(subscription):
-    from django.contrib.auth import get_user_model
-
-    User = get_user_model()
     try:
         user = User.objects.get(stripe_customer_id=subscription["customer"])
     except User.DoesNotExist:
         return
-    _ = user  # extend with subscription state tracking as needed
+    user.is_subscribed = True
+    user.save(update_fields=["is_subscribed"])
 
 
 def _handle_subscription_deleted(subscription):
-    from django.contrib.auth import get_user_model
-
-    User = get_user_model()
     try:
         user = User.objects.get(stripe_customer_id=subscription["customer"])
     except User.DoesNotExist:
         return
-    _ = user  # extend with subscription state tracking as needed
+    user.is_subscribed = False
+    user.save(update_fields=["is_subscribed"])

@@ -7,14 +7,17 @@ SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
 if env.bool("DJANGO_BEHIND_PROXY", default=False):
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+# Cookies
 SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SECURE = True
 
+# HSTS
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
 
+# Other browser hardening
 SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
@@ -37,7 +40,12 @@ CONTENT_SECURITY_POLICY = {
     },
 }
 
-# Error reporting — Bugsink (sentry-protocol)
+# Add Umami analytics host to CSP when configured
+if ANALYTICS_HOST:
+    CONTENT_SECURITY_POLICY["DIRECTIVES"]["script-src"] += (ANALYTICS_HOST,)
+    CONTENT_SECURITY_POLICY["DIRECTIVES"]["connect-src"] += (ANALYTICS_HOST,)
+
+# Error reporting (Bugsink / Sentry-compatible DSN)
 SENTRY_DSN = env("SENTRY_DSN", default="")
 if SENTRY_DSN:
     import sentry_sdk
@@ -57,3 +65,20 @@ if SENTRY_DSN:
         before_send=_scrub,
         release=env("SENTRY_RELEASE", default=None),
     )
+
+# Database backups — only in prod (collectstatic runs with DEBUG=True; dbbackup
+# evaluates AWS_ACCESS_KEY_ID without a default and would crash the build)
+if not DEBUG:
+    INSTALLED_APPS += ["dbbackup"]
+
+    DBBACKUP_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+    DBBACKUP_STORAGE_OPTIONS = {
+        "access_key": env("AWS_ACCESS_KEY_ID"),
+        "secret_key": env("AWS_SECRET_ACCESS_KEY"),
+        "bucket_name": env("DBBACKUP_BUCKET"),
+        "default_acl": "private",
+    }
+
+    DBBACKUP_CLEANUP_KEEP = 14
+    DBBACKUP_CLEANUP_KEEP_MEDIA = 7
+    DBBACKUP_FILENAME_TEMPLATE = "{databasename}-{servername}-{datetime}.{extension}"

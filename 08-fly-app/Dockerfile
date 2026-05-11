@@ -1,12 +1,12 @@
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm AS builder
-
-ENV UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy \
-    PATH="/app/.venv/bin:$PATH"
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm AS base
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential pkg-config \
     && rm -rf /var/lib/apt/lists/*
+
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
 
@@ -17,11 +17,11 @@ COPY . .
 RUN uv sync --frozen
 
 
-FROM builder AS dev
+FROM base AS dev
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
 
-FROM python:3.12-slim-bookworm AS runtime
+FROM python:3.12-slim-bookworm AS prod
 
 ENV PATH="/app/.venv/bin:$PATH"
 
@@ -32,7 +32,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN groupadd --system django && useradd --system --gid django django
 
 WORKDIR /app
-COPY --from=builder --chown=django:django /app /app
+COPY --from=base --chown=django:django /app /app
 
 USER django
 

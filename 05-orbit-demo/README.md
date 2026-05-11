@@ -40,21 +40,23 @@ Scratch project to exercise django-orbit and verify outbound mail flows are capt
 
 ## Stack
 
-| Layer | Choice |
-|---|---|
-| Runtime | Python ≥ 3.12, uv on host |
-| Framework | Django 6 |
+| Component | Choice |
+|-----------|--------|
+| Framework | Django 6.x |
 | Database | SQLite |
-| Debug toolbar | django-orbit (+ MCP) |
-| Email (local) | Mailpit via Docker (SMTP :1025, UI :8025) |
+| Settings | Single file (`config/settings.py`) |
+| Dev mode | uv on host |
+| Debug dashboard | django-orbit (`/orbit/`) |
+| Email (dev) | Mailpit via Docker (`localhost:8025`) |
+| Health checks | `/healthz`, `/readyz` |
 | Lint | Ruff |
-| Tests | manage.py test |
+| Tests | `manage.py test` |
 
 ## Setup
 
 ```sh
 cp .env.example .env
-# Edit .env — set DJANGO_SECRET_KEY to a real value for anything beyond dev
+# Edit .env — set a real DJANGO_SECRET_KEY for production
 uv run manage.py migrate
 uv run manage.py createsuperuser
 ```
@@ -69,37 +71,25 @@ docker compose up -d --wait mailpit
 uv run manage.py runserver
 ```
 
-## Key URLs
+- Admin: http://localhost:8000/admin/
+- Orbit dashboard: http://localhost:8000/orbit/
+- Mailpit UI: http://localhost:8025/
 
-| URL | What |
-|---|---|
-| http://localhost:8000/admin/ | Django admin |
-| http://localhost:8000/orbit/ | Orbit observability dashboard |
-| http://localhost:8000/healthz | Liveness probe → `ok` |
-| http://localhost:8000/readyz | Readiness probe → `ready` |
-| http://localhost:8025 | Mailpit web UI |
+## Email
 
-## Send a test mail
+`EMAIL_URL=smtp://localhost:1025` in `.env` routes all outbound mail through Mailpit.
+Every sent message appears instantly in the Mailpit web UI at `:8025`.
 
-```sh
-uv run manage.py shell -c "
-from django.core.mail import send_mail
-send_mail('hello', 'body', 'from@example.com', ['to@example.com'])
-"
-```
-
-Then open http://localhost:8025 — the message appears immediately.
-
-## Lint
+For production, replace with a real SMTP URL in `.env`:
 
 ```sh
-uv run ruff check .
-uv run ruff format .
+EMAIL_URL=smtp+tls://user:pass@smtp.example.com:587
+DEFAULT_FROM_EMAIL=no-reply@example.com
 ```
 
-## MCP (AI assistant integration)
+## django-orbit MCP (AI assistant integration)
 
-Add to `claude_desktop_config.json` (`~/Library/Application Support/Claude/`):
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
@@ -113,3 +103,28 @@ Add to `claude_desktop_config.json` (`~/Library/Application Support/Claude/`):
   }
 }
 ```
+
+## Commands
+
+```sh
+# Lint
+uv run ruff check .
+uv run ruff format .
+
+# Tests
+uv run manage.py test
+
+# Migrate
+uv run manage.py migrate
+
+# Shell
+uv run manage.py shell
+
+# Send a test mail (Mailpit must be running)
+uv run manage.py shell -c "
+from django.core.mail import send_mail
+send_mail('hello', 'body', 'from@example.com', ['to@example.com'])
+"
+```
+
+Built with [Seedkit](https://github.com/RobustaRush/seedkit).

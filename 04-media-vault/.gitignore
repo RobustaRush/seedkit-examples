@@ -1,29 +1,13 @@
-# Python
 .venv/
+.env
+*.sqlite3
+staticfiles/
+media/
+.ruff_cache/
 __pycache__/
 *.py[cod]
 *.egg-info/
 dist/
 build/
-*.egg
-
-# Django
-.env
-*.sqlite3
-staticfiles/
-media/
-
-# Ruff / type checking
-.ruff_cache/
-.pyright/
-pyrightconfig.json
-
-# Editor
-.vscode/
-.idea/
-*.swp
-*.swo
-.DS_Store
-
-# Docker
-.dockerignore
+.pytest_cache/
+.mypy_cache/

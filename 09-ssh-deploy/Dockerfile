@@ -18,13 +18,15 @@ CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
 
 FROM base AS prod
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --system django && useradd --system --gid django django
 RUN chown -R django:django /app
+
+ARG GIT_SHA=unknown
+ENV GIT_SHA=${GIT_SHA}
 
 RUN DJANGO_SETTINGS_MODULE=config.settings.production DJANGO_DEBUG=True \
     python manage.py collectstatic --noinput

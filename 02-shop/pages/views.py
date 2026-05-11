@@ -30,12 +30,7 @@ def robots_txt(_request):
     if settings.DEBUG or getattr(settings, "ROBOTS_DISALLOW_ALL", False):
         body = "User-agent: *\nDisallow: /\n"
     else:
-        body = (
-            "User-agent: *\n"
-            "Disallow: /admin/\n"
-            "Disallow: /accounts/\n"
-            "Allow: /\n"
-        )
+        body = "User-agent: *\nDisallow: /admin/\nDisallow: /accounts/\nAllow: /\n"
         sitemap = getattr(settings, "SITEMAP_URL", None)
         if sitemap:
             body += f"\nSitemap: {sitemap}\n"

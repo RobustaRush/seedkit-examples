@@ -12,7 +12,8 @@ SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DE
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 DATABASES = {
     "default": env.db(
-        "DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET
+        "DATABASE_URL",
+        default="postgres://postgres:postgres@db:5432/postgres" if DEBUG else env.NOTSET,
     )
 }
 
@@ -81,6 +82,11 @@ AUTHENTICATION_BACKENDS = [
 LOGIN_URL = "mailauth:login"
 LOGIN_REDIRECT_URL = "/"
 
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1
+AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
+AXES_RESET_ON_SUCCESS = True
+
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
@@ -89,32 +95,9 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Email
-globals().update(
-    env.email_url(
-        "EMAIL_URL",
-        default="consolemail://" if DEBUG else env.NOTSET,
-    )
-)
-DEFAULT_FROM_EMAIL = env(
-    "DEFAULT_FROM_EMAIL",
-    default="webmaster@localhost" if DEBUG else env.NOTSET,
-)
-SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
-ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
-MANAGERS = ADMINS
+# Redis
+REDIS_URL = env("REDIS_URL", default="redis://redis:6379" if DEBUG else env.NOTSET).rstrip("/")
 
-# Anymail (Postmark) — only in prod
-if not DEBUG:
-    EMAIL_BACKEND = "anymail.backends.postmark.EmailBackend"
-
-ANYMAIL = {
-    "POSTMARK_SERVER_TOKEN": env("POSTMARK_SERVER_TOKEN", default="" if DEBUG else env.NOTSET),
-    "WEBHOOK_SECRET": env("ANYMAIL_WEBHOOK_SECRET", default="" if DEBUG else env.NOTSET),
-}
-
-# Redis + Cache
-REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -128,7 +111,24 @@ CELERY_BROKER_URL = f"{REDIS_URL}/1"
 CELERY_RESULT_BACKEND = f"{REDIS_URL}/2"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
-# S3 / Storage
+# Email
+globals().update(env.email_url("EMAIL_URL", default="consolemail://" if DEBUG else env.NOTSET))
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET
+)
+SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
+ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
+MANAGERS = ADMINS
+
+if not DEBUG:
+    EMAIL_BACKEND = "anymail.backends.postmark.EmailBackend"
+
+ANYMAIL = {
+    "POSTMARK_SERVER_TOKEN": env("POSTMARK_SERVER_TOKEN", default="" if DEBUG else env.NOTSET),
+    "WEBHOOK_SECRET": env("ANYMAIL_WEBHOOK_SECRET", default="" if DEBUG else env.NOTSET),
+}
+
+# S3 / MinIO storage
 AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID", default="" if DEBUG else env.NOTSET)
 AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY", default="" if DEBUG else env.NOTSET)
 AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="" if DEBUG else env.NOTSET)
@@ -159,14 +159,9 @@ if AWS_S3_CUSTOM_DOMAIN:
 else:
     MEDIA_URL = "/media/"
 
-# django-axes
-AXES_FAILURE_LIMIT = 5
-AXES_COOLOFF_TIME = 1
-AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
-AXES_RESET_ON_SUCCESS = True
-
 # Analytics (GA4)
 ANALYTICS_ID = env("ANALYTICS_ID", default="")
+ANALYTICS_HOST = env("ANALYTICS_HOST", default="")
 
 try:
     import django_stubs_ext

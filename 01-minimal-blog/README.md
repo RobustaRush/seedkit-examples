@@ -38,47 +38,46 @@ Run the foundation, the boot check (migrate + createsuperuser), and confirm /adm
 
 # 01-minimal-blog
 
-A minimal Django blog skeleton used to verify the seedkit skill end-to-end.
+A tiny blog to verify the skill works end-to-end.
 
 ## Stack
 
-| Layer | Choice |
-|---|---|
-| Python | >=3.12 (uv on host) |
-| Django | >=6.0,<7.0 |
-| Settings | single `config/settings.py` + `django-environ` |
-| Database | SQLite (dev) |
-| Email | console backend (`consolemail://`) |
-| Auth | vanilla `django.contrib.auth` |
+- Django 6 · SQLite · uv on host
+- Email: console backend (stdout)
+- Auth: vanilla `django.contrib.auth`
 
 ## Setup
 
 ```sh
 cp .env.example .env
-# Edit .env and set a real DJANGO_SECRET_KEY for production.
-uv sync
-```
-
-## Commands
-
-```sh
+# Edit .env and set DJANGO_SECRET_KEY to a real value for production.
 uv run manage.py migrate
 uv run manage.py createsuperuser
 uv run manage.py runserver
-uv run manage.py test
 ```
 
-Open <http://127.0.0.1:8000/admin/> and log in with your superuser credentials.
+Open <http://127.0.0.1:8000/admin/> and sign in with the superuser credentials.
+
+## Commands
+
+| Task | Command |
+|------|---------|
+| Install deps | `uv sync` |
+| Migrate | `uv run manage.py migrate` |
+| Run dev server | `uv run manage.py runserver` |
+| Run tests | `uv run manage.py test` |
+| Collect static | `uv run manage.py collectstatic --noinput` |
 
 ## Environment variables
 
-See `.env.example` for the full list. Key vars:
+See `.env.example` for the full list. Key variables:
 
-| Variable | Dev default | Required in prod |
-|---|---|---|
-| `DJANGO_SECRET_KEY` | `django-insecure-build-only` | yes |
-| `DJANGO_DEBUG` | `False` | set to `False` |
-| `DJANGO_ALLOWED_HOSTS` | `[]` | yes |
-| `DATABASE_URL` | `sqlite:///db.sqlite3` | yes |
-| `EMAIL_URL` | `consolemail://` | yes |
-| `DEFAULT_FROM_EMAIL` | `webmaster@localhost` | yes |
+| Variable | Description |
+|----------|-------------|
+| `DJANGO_SECRET_KEY` | Django secret key (required in production) |
+| `DJANGO_DEBUG` | `True` for dev, unset or `False` in production |
+| `DJANGO_ALLOWED_HOSTS` | Comma-separated list of allowed hosts |
+| `DATABASE_URL` | DB URL (defaults to `db.sqlite3` when `DEBUG=True`) |
+| `EMAIL_URL` | Email backend URL (defaults to `consolemail://` in dev) |
+
+Built with [Seedkit](https://github.com/RobustaRush/seedkit).

@@ -35,4 +35,4 @@ run = "uv run pyright"
 run = "uv run manage.py collectstatic --noinput"
 
 [tasks.tailwind]
-run = "uv run manage.py tailwind runserver"
+run = "uv run manage.py tailwind build"

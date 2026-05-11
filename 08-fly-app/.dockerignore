@@ -1,4 +1,4 @@
-.venv/
+.venv
 .env
 *.sqlite3
 staticfiles/
@@ -6,11 +6,10 @@ media/
 .ruff_cache/
 __pycache__/
 *.pyc
-.pytest_cache/
-.coverage
-htmlcov/
-celerybeat-schedule*
+*.pyo
 .git/
 .gitignore
 .github/
 README.md
+htmlcov/
+.coverage

@@ -1,0 +1,15 @@
+.venv
+.git
+.gitignore
+.env
+*.sqlite3
+staticfiles/
+media/
+htmlcov/
+.coverage
+.pytest_cache/
+.ruff_cache/
+__pycache__
+*.pyc
+*.pyo
+README.md

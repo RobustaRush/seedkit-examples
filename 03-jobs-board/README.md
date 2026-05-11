@@ -20,7 +20,7 @@ Structured logging: no.
 Task runner: just.
 Add-ons:
   - redis (for Celery)
-  - tasks: Celery, with periodic tasks (Celery Beat)
+  - tasks: Celery, with periodic tasks (Celery Beat). Also `uv run manage.py startapp jobs`, register `jobs` in `INSTALLED_APPS`, and add a sample `@shared_task` to `jobs/tasks.py` referenced from `CELERY_BEAT_SCHEDULE`.
   - email: console backend in local (`EMAIL_URL=consolemail://`).
   - CORS: no.
   - REST API: none.
@@ -42,62 +42,70 @@ Ship a `docker-compose.yml` with `db` and `redis` services only. Run the foundat
 
 Job board with background email notifications and a daily digest.
 
-**Stack:** Django 6 · PostgreSQL · Redis · Celery + Beat · django-mail-auth · i18n
+## Stack
 
-## Quick start
+- **Django 6** · single `config/settings.py` · PostgreSQL · uv on host
+- **Auth** · `django-mail-auth` (passwordless magic-link)
+- **Background tasks** · Celery + Redis · Celery Beat (daily digest)
+- **Cache** · `django-redis`
+- **i18n** · Django `gettext`, `LocaleMiddleware`
+- **Health checks** · `/healthz` · `/readyz`
+- **Task runner** · `just`
+
+## Setup
 
 ```sh
-cp .env.example .env          # edit DJANGO_SECRET_KEY
-docker compose up -d --wait   # starts db + redis
+cp .env.example .env
+# Edit .env and set DJANGO_SECRET_KEY to a real random value
+just install
+docker compose up -d --wait   # starts Postgres and Redis
 just migrate
 just superuser
-just dev                      # http://127.0.0.1:8000
+just dev
 ```
 
-## Tasks
+Open <http://127.0.0.1:8000/admin/>.
 
-| Command | Description |
+## Key commands
+
+| Command | Action |
 |---|---|
-| `just install` | `uv sync` |
-| `just dev` | Django dev server |
+| `just dev` | Start Django dev server |
 | `just migrate` | Run migrations |
 | `just makemigrations` | Create new migrations |
-| `just shell` | Django shell |
 | `just superuser` | Create superuser |
-| `just test` | Run tests |
-| `just worker` | Celery worker |
-| `just beat` | Celery Beat scheduler |
-| `just collectstatic` | Collect static files |
-
-Fallback (no `just`): `uv run manage.py <cmd>`
+| `just test` | Run test suite |
+| `just worker` | Start Celery worker |
+| `just beat` | Start Celery Beat scheduler |
+| `just makemessages` | Extract translatable strings |
+| `just compilemessages` | Compile `.po` → `.mo` |
 
 ## Auth
 
-Passwordless magic-link via `django-mail-auth`. With `EMAIL_URL=consolemail://` the sign-in link prints to `runserver` stdout — click it to log in.
+`django-mail-auth` replaces passwords with one-time magic links. Visit `/accounts/login/`, enter an email, and click the link printed to the console (dev) or delivered by your SMTP provider (prod).
+
+`AUTH_USER_MODEL` is `mailauth_user.EmailUser` — an email-only user with no password column.
 
 ## Background tasks
 
-`jobs/tasks.py` defines two tasks:
-
-- `send_application_notification` — triggered on application submission
-- `daily_digest` — scheduled daily at 08:00 via Celery Beat
-
-Run worker and Beat locally:
+`CELERY_BEAT_SCHEDULE` wires `jobs.tasks.send_daily_digest` to run daily at 08:00 UTC. Add `@shared_task` functions to `jobs/tasks.py`; Celery autodiscovers them via `INSTALLED_APPS`.
 
 ```sh
-just worker   # in one terminal
-just beat     # in another
+# Run worker and beat in separate terminals
+just worker
+just beat
 ```
 
-## i18n
+## Environment variables
 
-```sh
-uv run manage.py makemessages -l de
-# edit locale/de/LC_MESSAGES/django.po
-uv run manage.py compilemessages
-```
+| Variable | Description |
+|---|---|
+| `DJANGO_SECRET_KEY` | Django secret key (required in prod) |
+| `DJANGO_DEBUG` | `True` in dev, unset in prod |
+| `DJANGO_ALLOWED_HOSTS` | Comma-separated allowed hostnames |
+| `DATABASE_URL` | Postgres connection URL |
+| `REDIS_URL` | Redis base URL (no trailing slash or DB number) |
+| `EMAIL_URL` | Email backend URL (`consolemail://` in dev) |
+| `DEFAULT_FROM_EMAIL` | From address for outgoing mail |
 
-## Health checks
-
-- `GET /healthz` → `ok` (liveness)
-- `GET /readyz` → `ready` (readiness — checks DB)
+Built with [Seedkit](https://github.com/RobustaRush/seedkit).

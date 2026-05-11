@@ -47,7 +47,7 @@ ignore = [
 "**/tests/**"      = ["S"]
 "**/test_*.py"     = ["S"]
 "**/tests.py"      = ["S"]
-"**/settings/*.py" = ["F405", "F403"]
+"**/settings/*.py" = ["F405", "F403", "S105", "S106"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["jobs", "pages", "config"]

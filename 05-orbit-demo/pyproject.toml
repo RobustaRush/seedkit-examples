@@ -36,12 +36,13 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**" = ["S"]
+"**/tests/**"  = ["S"]
 "**/test_*.py" = ["S"]
-"**/tests.py" = ["S"]
+"**/tests.py"  = ["S"]
+"**/settings/*.py" = ["F405", "F403", "S105", "S106"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["pages"]
+known-first-party = ["pages", "config"]
 
 [tool.ruff.format]
 quote-style = "double"

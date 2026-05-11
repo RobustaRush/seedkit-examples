@@ -39,77 +39,103 @@ Assume Postgres is already running locally on port 5432 with user `postgres` / p
 
 # 02-shop
 
-Small e-commerce site with admin and SMTP transactional email.
+Small e-commerce site with Django admin and SMTP transactional email.
 
 ## Stack
 
-- **Django** — web framework
-- **PostgreSQL** — database (psycopg3)
-- **django-allauth** — email login with mandatory verification in production
-- **django-axes** — brute-force lockout
-- **Tailwind CSS + DaisyUI** — frontend (standalone CLI, no Node)
-- **WhiteNoise** — static file serving in production
-- **Stripe** — payments (raw SDK)
-- **Ruff** — linting + formatting
-- **pytest + pytest-django** — test runner
-- **pyright + django-stubs** — type checking
-- **mise** — task runner
+| Layer | Package |
+|---|---|
+| Framework | Django 6.x |
+| Database | PostgreSQL (`psycopg[binary]`) |
+| Auth | `django-allauth` — email login, mandatory email verification |
+| Auth hardening | `django-axes` — brute-force lockout |
+| Static files | WhiteNoise |
+| Frontend | `django-tailwind-cli` + DaisyUI |
+| Billing | `stripe` raw SDK |
+| Settings | `django-environ`, split `base/local/production` |
+| Linting | Ruff |
+| Tests | pytest + pytest-django |
+| Types | pyright + django-stubs |
+| Tasks | mise |
 
-## Setup
+## Local setup
 
 ```sh
-cp .env.example .env
-# Edit .env: set DJANGO_SECRET_KEY, DATABASE_URL
+# 1. Create the database
 createdb shop_db
-mise run install
+
+# 2. Install dependencies
+mise run install   # or: uv sync
+
+# 3. Copy env and set a real secret key
+cp .env.example .env
+# edit .env — DATABASE_URL is already set for local postgres
+
+# 4. Migrate
 mise run migrate
+
+# 5. Create a superuser (interactive)
 mise run superuser
+
+# 6. Build CSS
+mise run tailwind
+
+# 7. Start dev server (with Tailwind watcher)
+mise run dev
 ```
 
-## Commands
+Open <http://127.0.0.1:8000/> to see the index page.  
+Open <http://127.0.0.1:8000/admin/> to access the admin.
+
+## Common tasks
+
+| Task | Command |
+|---|---|
+| Dev server + watcher | `mise run dev` |
+| Run migrations | `mise run migrate` |
+| Make migrations | `mise run makemigrations` |
+| Run tests | `mise run test` |
+| Lint | `mise run lint` |
+| Format | `mise run fmt` |
+| Type check | `mise run typecheck` |
+| Django shell | `mise run shell` |
+| Collect static | `mise run collectstatic` |
+
+Without mise: `uv run manage.py <command>` / `uv run pytest` / `uv run ruff check .`
+
+## Key endpoints
+
+| Path | Description |
+|---|---|
+| `/` | Index page |
+| `/admin/` | Django admin |
+| `/accounts/login/` | Allauth login |
+| `/accounts/signup/` | Allauth signup |
+| `/billing/checkout/` | Stripe Checkout (POST, login required) |
+| `/billing/portal/` | Stripe Customer Portal (login required) |
+| `/billing/webhook/` | Stripe webhook receiver |
+| `/healthz` | Liveness probe |
+| `/readyz` | Readiness probe (checks DB) |
+| `/robots.txt` | Robots file |
+
+## Stripe
+
+For local webhook testing:
 
 ```sh
-mise run dev          # uv run manage.py tailwind runserver
-mise run migrate      # uv run manage.py migrate
-mise run test         # uv run pytest
-mise run lint         # uv run ruff check .
-mise run fmt          # uv run ruff format .
-mise run typecheck    # uv run pyright
-mise run collectstatic
+stripe listen --forward-to localhost:8000/billing/webhook/
+# paste the printed whsec_... into .env as STRIPE_WEBHOOK_SECRET
 ```
-
-Without mise: `uv run manage.py <cmd>`.
 
 ## Environment variables
 
 See `.env.example` for the full list. Key vars:
 
-| Variable | Required | Description |
-|---|---|---|
-| `DJANGO_SECRET_KEY` | yes | Django secret key |
-| `DJANGO_DEBUG` | no | `True` for local dev |
-| `DJANGO_ALLOWED_HOSTS` | prod | Comma-separated allowed hosts |
-| `DATABASE_URL` | yes | Postgres connection URL |
-| `EMAIL_URL` | yes | `consolemail://` locally, `smtp+tls://...` in production |
-| `STRIPE_PUBLISHABLE_KEY` | billing | Stripe publishable key |
-| `STRIPE_SECRET_KEY` | billing | Stripe secret key |
-| `STRIPE_WEBHOOK_SECRET` | billing | Stripe webhook signing secret |
+- `DJANGO_SECRET_KEY` — required in production
+- `DJANGO_DEBUG` — `True` in dev, unset in production
+- `DJANGO_ALLOWED_HOSTS` — comma-separated hostnames
+- `DATABASE_URL` — postgres connection string
+- `EMAIL_URL` — `consolemail://` (dev) or `smtp+tls://...` (prod)
+- `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
 
-## Stripe local dev
-
-```sh
-stripe listen --forward-to localhost:8000/billing/webhook/
-# Use the printed whsec_... as STRIPE_WEBHOOK_SECRET in .env
-```
-
-## Endpoints
-
-- `/` — index page
-- `/admin/` — Django admin
-- `/accounts/` — allauth auth flows (login, signup, password reset)
-- `/healthz` — liveness probe (text `ok`)
-- `/readyz` — readiness probe (text `ready`, checks DB)
-- `/robots.txt` — crawler policy
-- `/billing/checkout/` — Stripe Checkout session
-- `/billing/portal/` — Stripe Customer Portal
-- `/billing/webhook/` — Stripe webhook receiver
+Built with [Seedkit](https://github.com/RobustaRush/seedkit).

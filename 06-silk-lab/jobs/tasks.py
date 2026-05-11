@@ -3,11 +3,11 @@ from django.tasks import task
 
 
 @task()
-def send_example_email(to: str) -> None:
-    """Example background task: send a plain email."""
+def send_welcome_email(to_address: str) -> None:
+    """Send a welcome email. Enqueue with: send_welcome_email.enqueue("user@example.com")"""
     send_mail(
-        subject="Hello from silk-lab",
-        message="This email was sent from a django-tasks background task.",
+        subject="Welcome to Silk Lab",
+        message="Thanks for signing up!",
         from_email=None,
-        recipient_list=[to],
+        recipient_list=[to_address],
     )

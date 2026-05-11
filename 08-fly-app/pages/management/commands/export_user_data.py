@@ -1,23 +1,26 @@
 import json
 
-from django.contrib.auth import get_user_model
-from django.core.management.base import BaseCommand
-
-User = get_user_model()
+from django.contrib.auth.models import User
+from django.core.management.base import BaseCommand, CommandError
 
 
 class Command(BaseCommand):
-    help = "Export all data for a user (GDPR subject access request)"
+    help = "Export all data for a user (GDPR Article 20)"
 
     def add_arguments(self, parser):
         parser.add_argument("user_id", type=int)
 
     def handle(self, *args, **options):
-        user = User.objects.get(pk=options["user_id"])
+        try:
+            user = User.objects.get(pk=options["user_id"])
+        except User.DoesNotExist:
+            raise CommandError(f"User {options['user_id']} does not exist") from None
+
         data = {
             "id": user.pk,
-            "username": user.get_username(),
-            "email": getattr(user, "email", ""),
-            "date_joined": str(getattr(user, "date_joined", "")),
+            "username": user.username,
+            "email": user.email,
+            "date_joined": user.date_joined.isoformat(),
+            "last_login": user.last_login.isoformat() if user.last_login else None,
         }
         self.stdout.write(json.dumps(data, indent=2))

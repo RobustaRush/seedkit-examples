@@ -19,4 +19,5 @@ _DROP_APPS = {
 INSTALLED_APPS = [a for a in INSTALLED_APPS if a not in _DROP_APPS]
 
 TEMPLATES = []
+
 ROOT_URLCONF = "config.urls_bolt"

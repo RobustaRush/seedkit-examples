@@ -3,27 +3,25 @@ primary_region = "iad"
 
 [build]
   dockerfile = "Dockerfile"
+  target = "prod"
 
 [env]
   PORT = "8000"
   DJANGO_BEHIND_PROXY = "True"
 
-# Required secrets — set via `fly secrets set`:
+# Required secrets (set via `fly secrets set`):
 #   DJANGO_SECRET_KEY
 #   DJANGO_ALLOWED_HOSTS
 #   DJANGO_CSRF_TRUSTED_ORIGINS
 #   DATABASE_URL          (auto-set by `fly postgres attach`)
 #   REDIS_URL             (auto-set by `fly redis attach`)
 #   EMAIL_URL
-#   DEFAULT_FROM_EMAIL
-#   SERVER_EMAIL
-#   POSTMARK_SERVER_TOKEN
-#   ANYMAIL_WEBHOOK_SECRET
 #   AWS_ACCESS_KEY_ID
 #   AWS_SECRET_ACCESS_KEY
 #   AWS_STORAGE_BUCKET_NAME
-#   AWS_S3_ENDPOINT_URL   (if using non-AWS S3)
-#   SENTRY_DSN            (optional)
+#   POSTMARK_SERVER_TOKEN
+#   ANYMAIL_WEBHOOK_SECRET
+#   SENTRY_DSN
 
 [processes]
   web    = "gunicorn config.wsgi --bind 0.0.0.0:8000"
@@ -31,7 +29,7 @@ primary_region = "iad"
   bolt   = "env DJANGO_SETTINGS_MODULE=config.settings.bolt python manage.py runbolt --port 8002"
 
 [deploy]
-  release_command = "python manage.py migrate"
+  release_command = "python manage.py migrate && python manage.py collectstatic --noinput"
 
 [[services]]
   internal_port = 8000
@@ -47,10 +45,14 @@ primary_region = "iad"
     port = 443
     handlers = ["tls", "http"]
 
-  [services.concurrency]
-    type = "connections"
-    hard_limit = 25
-    soft_limit = 20
+  [[services.checks]]
+    grace_period = "10s"
+    interval = "10s"
+    method = "get"
+    path = "/readyz"
+    protocol = "http"
+    timeout = "5s"
+    type = "http"
 
 [[services]]
   internal_port = 8002
@@ -58,15 +60,6 @@ primary_region = "iad"
   processes = ["bolt"]
 
   [[services.ports]]
-    port = 8002
-    handlers = ["http"]
-
-[checks]
-  [checks.health]
-    grace_period = "10s"
-    interval = "10s"
-    method = "get"
-    path = "/readyz"
-    port = 8000
-    timeout = "2s"
-    type = "http"
+    port = 443
+    handlers = ["tls", "http"]
+    force_https = false

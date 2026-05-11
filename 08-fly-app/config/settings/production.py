@@ -7,15 +7,12 @@ from .base import (
     AWS_STORAGE_BUCKET_NAME,
     MIDDLEWARE,
     STORAGES,
+    env,
 )
 
 # HTTPS
 SECURE_SSL_REDIRECT = True
 SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
-
-import environ  # noqa: E402
-
-env = environ.Env()
 
 if env.bool("DJANGO_BEHIND_PROXY", default=False):
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -27,13 +24,12 @@ SESSION_COOKIE_SAMESITE = "Lax"
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
-
 SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
-# S3 static files
+# Static files on S3
 STORAGES = {
     **STORAGES,
     "staticfiles": {
@@ -56,22 +52,22 @@ MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'",),
-        "script-src": (
-            "'self'",
-            "https://www.googletagmanager.com",
-            "https://www.google-analytics.com",
-        ),
+        "script-src": ("'self'", "https://www.googletagmanager.com"),
         "style-src": ("'self'", "'unsafe-inline'"),
         "img-src": ("'self'", "data:", "https://www.google-analytics.com"),
         "font-src": ("'self'",),
-        "connect-src": ("'self'", "https://www.google-analytics.com"),
+        "connect-src": (
+            "'self'",
+            "https://www.google-analytics.com",
+            "https://www.googletagmanager.com",
+        ),
         "frame-ancestors": ("'none'",),
         "base-uri": ("'self'",),
         "form-action": ("'self'",),
     },
 }
 
-# Error reporting (GlitchTip via sentry-sdk)
+# GlitchTip / Sentry error reporting
 SENTRY_DSN = env("SENTRY_DSN", default="")
 if SENTRY_DSN:
     import sentry_sdk
