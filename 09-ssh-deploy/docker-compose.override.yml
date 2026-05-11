@@ -5,11 +5,15 @@ services:
     volumes:
       - .:/app
       - /app/.venv
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   worker:
     build:
       target: dev
-    command: python manage.py rqworker default
     volumes:
       - .:/app
       - /app/.venv

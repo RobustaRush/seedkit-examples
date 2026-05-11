@@ -70,7 +70,7 @@ def _handle_subscription_created(subscription):
         user = User.objects.get(stripe_customer_id=subscription["customer"])
     except User.DoesNotExist:
         return
-    _ = user  # extend here: update subscription state on user
+    _ = user
 
 
 def _handle_subscription_deleted(subscription):
@@ -81,4 +81,4 @@ def _handle_subscription_deleted(subscription):
         user = User.objects.get(stripe_customer_id=subscription["customer"])
     except User.DoesNotExist:
         return
-    _ = user  # extend here: update subscription state on user
+    _ = user

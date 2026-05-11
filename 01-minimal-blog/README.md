@@ -37,32 +37,33 @@ Run the foundation, the boot check (migrate + createsuperuser), and confirm /adm
 
 # 01-minimal-blog
 
-A tiny blog scaffold — smallest path to a working Django project.
+A tiny Django blog scaffold — the bare floor used to verify the seedkit skill works end-to-end.
 
 ## Stack
 
 - Django 6.x
-- SQLite
 - django-environ (env-driven settings)
-- Console email backend
+- SQLite (local)
+- Email: console backend (`EMAIL_URL=consolemail://`)
+- uv on host
 
 ## Setup
 
 ```sh
-cp .env.example .env
-# Edit .env and set DJANGO_SECRET_KEY to a real value
+cp .env.example .env          # edit DJANGO_SECRET_KEY with a real key
+uv sync
 uv run manage.py migrate
 uv run manage.py createsuperuser
 uv run manage.py runserver
 ```
 
-Open http://127.0.0.1:8000/admin/ and log in.
+Open <http://127.0.0.1:8000/admin/>.
 
 ## Key commands
 
-```sh
-uv run manage.py migrate          # apply migrations
-uv run manage.py createsuperuser  # create admin user
-uv run manage.py runserver        # start dev server
-uv run manage.py test             # run tests
-```
+| Task | Command |
+|------|---------|
+| Install deps | `uv sync` |
+| Run migrations | `uv run manage.py migrate` |
+| Run dev server | `uv run manage.py runserver` |
+| Run tests | `uv run manage.py test` |

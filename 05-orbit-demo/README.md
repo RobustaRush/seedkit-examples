@@ -39,42 +39,58 @@ Scratch project to exercise django-orbit and verify outbound mail flows are capt
 
 ## Stack
 
-- **Django** 6.x
-- **django-orbit** (observability dashboard + MCP) — `/orbit/`
-- **Mailpit** (dev mail catcher) — Docker, port 8025 UI / 1025 SMTP
-- **Ruff** (lint + format)
-- SQLite, uv on host
+- Django 6 · SQLite · uv on host
+- **django-orbit** — observability dashboard + MCP server at `/orbit/`
+- **Mailpit** — local SMTP capture UI at `http://localhost:8025`
+- **Ruff** — lint + format
+- Health check endpoints: `/healthz`, `/readyz`
 
 ## Setup
 
 ```sh
 cp .env.example .env
-# Edit DJANGO_SECRET_KEY in .env
-uv sync
+# Edit .env — set DJANGO_SECRET_KEY to something random for dev
+
+uv sync --group dev
 uv run manage.py migrate
 uv run manage.py createsuperuser
 ```
 
 ## Run
 
-```sh
-# Start Mailpit
-docker compose up -d mailpit
+Start Mailpit (captures outbound email):
 
-# Start Django
+```sh
+docker compose up -d
+```
+
+Start Django:
+
+```sh
 uv run manage.py runserver
 ```
 
-- Admin: http://localhost:8000/admin/
-- Orbit dashboard: http://localhost:8000/orbit/
-- Mailpit UI: http://localhost:8025/
-- Liveness: http://localhost:8000/healthz
-- Readiness: http://localhost:8000/readyz
+## URLs
 
-## Email
+| URL | Description |
+|-----|-------------|
+| `http://localhost:8000/admin/` | Django admin |
+| `http://localhost:8000/orbit/` | Orbit observability dashboard |
+| `http://localhost:8000/healthz` | Liveness probe |
+| `http://localhost:8000/readyz` | Readiness probe (checks DB) |
+| `http://localhost:8025/` | Mailpit web UI |
 
-In dev, `EMAIL_URL=smtp://localhost:1025` sends all mail to Mailpit.  
-Switch to `consolemail://` if you want stdout-only output without Docker.
+## Send a test email
+
+```sh
+DJANGO_SETTINGS_MODULE=config.settings uv run python -c "
+import django; django.setup()
+from django.core.mail import send_mail
+send_mail('Test', 'Hello from orbit-demo', 'from@example.com', ['to@example.com'])
+"
+```
+
+Then open `http://localhost:8025` to see it captured.
 
 ## Lint
 
@@ -89,9 +105,9 @@ uv run ruff format .
 uv run manage.py test
 ```
 
-## Orbit MCP
+## Orbit MCP (AI assistant integration)
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+Add to `claude_desktop_config.json`:
 
 ```json
 {
@@ -104,10 +120,4 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
     }
   }
 }
-```
-
-## Cleanup
-
-```sh
-docker compose down -v
 ```

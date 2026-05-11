@@ -6,8 +6,8 @@ media/
 .ruff_cache/
 __pycache__/
 *.py[cod]
+.pytest_cache/
+htmlcov/
+.coverage
 *.egg-info/
 dist/
-.coverage
-htmlcov/
-.pytest_cache/

@@ -9,6 +9,7 @@ if env.bool("DJANGO_BEHIND_PROXY", default=False):
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = "Lax"
 
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
@@ -32,38 +33,27 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-_umami_host = env("ANALYTICS_HOST", default="")
-
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'",),
-        "script-src": ("'self'", _umami_host) if _umami_host else ("'self'",),
-        "style-src": ("'self'", "'unsafe-inline'"),
+        "script-src": ("'self'",),
+        "style-src": ("'self'", "'unsafe-inline'"),  # unsafe-inline needed for Django admin
         "img-src": ("'self'", "data:"),
         "font-src": ("'self'",),
-        "connect-src": ("'self'", _umami_host) if _umami_host else ("'self'",),
+        "connect-src": ("'self'",),
         "frame-ancestors": ("'none'",),
         "base-uri": ("'self'",),
         "form-action": ("'self'",),
     },
 }
 
-# Bugsink / Sentry error reporting
-if SENTRY_DSN:
-    import sentry_sdk
-    from sentry_sdk.integrations.django import DjangoIntegration
-
-    def _scrub(event, hint):
-        request = event.get("request") or {}
-        headers = request.get("headers") or {}
-        for h in ("Authorization", "Cookie"):
-            headers.pop(h, None)
-        return event
-
-    sentry_sdk.init(
-        dsn=SENTRY_DSN,
-        integrations=[DjangoIntegration()],
-        send_default_pii=False,
-        before_send=_scrub,
-        release=env("SENTRY_RELEASE", default=None),
+# Umami analytics CSP
+if ANALYTICS_HOST:
+    CONTENT_SECURITY_POLICY["DIRECTIVES"]["script-src"] = (
+        "'self'",
+        ANALYTICS_HOST,
+    )
+    CONTENT_SECURITY_POLICY["DIRECTIVES"]["connect-src"] = (
+        "'self'",
+        ANALYTICS_HOST,
     )

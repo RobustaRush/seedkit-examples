@@ -7,7 +7,7 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
-    help = "Export all personal data for a user (GDPR Article 20)."
+    help = "Export all data for a user (GDPR Article 20)"
 
     def add_arguments(self, parser):
         parser.add_argument("user_id", type=int)
@@ -15,8 +15,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         try:
             user = User.objects.get(pk=options["user_id"])
-        except User.DoesNotExist as exc:
-            raise CommandError(f"User {options['user_id']} does not exist.") from exc
+        except User.DoesNotExist:
+            raise CommandError(f"User {options["user_id"]} not found") from None
+
         data = {
             "id": user.pk,
             "username": user.username,

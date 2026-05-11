@@ -1,37 +1,11 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.egg-info/
-dist/
-build/
-*.egg
-
-# Virtual environments
 .venv/
-venv/
-env/
-
-# Django
+.env
 *.sqlite3
 staticfiles/
 media/
-db.sqlite3
-
-# Environment variables
-.env
-
-# Ruff
 .ruff_cache/
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
 .DS_Store
-
-# Coverage
-.coverage
-htmlcov/

@@ -43,83 +43,57 @@ Job board with background email notifications and a daily digest.
 
 ## Stack
 
-- Django 6.x (single `config/settings.py`)
-- PostgreSQL (Docker) + psycopg
-- Redis (Docker) — cache, Celery broker/results
-- Celery + Celery Beat (periodic tasks)
-- django-mail-auth (passwordless magic-link login)
-- i18n enabled (LocaleMiddleware)
-- Health check endpoints (`/healthz`, `/readyz`)
+- **Django** with single `config/settings.py`
+- **PostgreSQL** (Docker) + **uv** on host
+- **django-mail-auth** — passwordless magic-link login
+- **Celery** + **Celery Beat** — background tasks and scheduled daily digest
+- **Redis** — Celery broker and Django cache
+- **django-redis** — shared cache backend
+- **i18n** — gettext, LocaleMiddleware, `locale/` directory
+- **Health checks** — `/healthz` (liveness) and `/readyz` (readiness)
 
 ## Local dev setup
 
-### Start infrastructure
-
-```sh
-docker compose up -d db redis
-```
-
-Postgres publishes on `localhost:5432`, Redis on `localhost:6379`.
-
-### Install Python deps
-
-```sh
-uv sync
-```
-
-### Configure environment
-
 ```sh
 cp .env.example .env
-# .env already has a generated DJANGO_SECRET_KEY if you ran the seed script
-```
+# Set a real secret key:
+python -c "import secrets; print('DJANGO_SECRET_KEY=' + secrets.token_urlsafe(50))"
+# paste the line into .env
 
-### Migrate and create superuser
-
-```sh
+docker compose up -d --wait        # starts db + redis
 uv run manage.py migrate
 uv run manage.py createsuperuser
-```
-
-### Run Django
-
-```sh
 uv run manage.py runserver
 ```
 
 Open <http://localhost:8000/admin/>.
 
-### Run Celery worker
+## Key commands
 
 ```sh
+uv run manage.py migrate
+uv run manage.py test
+uv run manage.py makemessages -l en
+uv run manage.py compilemessages
+
+# Background worker (separate terminal):
 uv run celery -A config worker -l info
-```
 
-### Run Celery Beat (periodic tasks)
-
-```sh
+# Beat scheduler (separate terminal):
 uv run celery -A config beat -l info
 ```
 
-### Enqueue a task from the shell
+## Celery tasks
 
-```python
-# uv run manage.py shell
-from jobs.tasks import send_notification_email
-send_notification_email.delay(1)   # user pk=1
-```
+- `jobs.tasks.send_notification_email(user_id, subject, message)` — one-off email notification
+- `jobs.tasks.send_daily_digest()` — scheduled daily at 08:00 UTC via Beat
 
-## Beat schedule
+## Endpoints
 
-| Task | Schedule |
-|---|---|
-| `jobs.tasks.daily_digest` | Daily at 08:00 UTC |
-
-## Health checks
-
-- `GET /healthz` — liveness (always 200)
-- `GET /readyz` — readiness (200 if DB reachable, 503 otherwise)
-
-## Auth
-
-Magic-link login at `/accounts/login/`. Enter your email; click the link printed to the console (dev) or sent via SMTP (production).
+| Path | Description |
+|------|-------------|
+| `/` | Redirects to `/admin/` |
+| `/admin/` | Django admin (magic-link login) |
+| `/accounts/login/` | Magic-link login |
+| `/healthz` | Liveness probe — returns `ok` |
+| `/readyz` | Readiness probe — checks DB, returns `ready` |

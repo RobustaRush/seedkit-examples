@@ -40,33 +40,36 @@ Generate `docker-compose.yml` with services `web`, `db`, `redis`, `worker`, `min
 
 # 04-media-vault
 
-Media-heavy Django app where uploads land in S3-compatible storage and processing runs as Redis-queued background tasks.
+Media-heavy Django app where uploads land in S3 and processing runs as Redis-queued background tasks.
 
 ## Stack
 
-- **Django 6** with split settings (base / local / production)
-- **PostgreSQL 17** via `psycopg[binary]`
-- **Redis 7** cache (`django-redis`) + RQ task queue (`django-tasks-rq`)
-- **MinIO** (S3-compatible) via `django-storages[s3]`
-- **structlog** — JSON in prod, pretty-print in dev, per-request `request_id`
-- **django-modern-rest** (`msgspec` + `openapi` extras) — REST API
-- **django-cors-headers** — CORS
-- **Ruff** lint + format
-- **pyright** + `django-stubs` type checking
-- Docker Compose dev stack: `web`, `db`, `redis`, `worker`, `minio`
+- **Django** — web framework (split settings: base / local / production)
+- **PostgreSQL** — primary database (psycopg3)
+- **Redis** — cache (db/0) + task queue (db/3 via RQ)
+- **MinIO** — S3-compatible object storage (local dev); swap env vars for AWS S3 / R2 / Spaces in prod
+- **django-tasks-rq** — Django Tasks API backed by Redis Queue
+- **django-modern-rest** — typed REST API with msgspec + OpenAPI
+- **structlog** — JSON logging in prod, pretty console in dev, per-request `request_id`
+- **django-cors-headers** — CORS for cross-origin frontends
+- **django-storages[s3]** — S3 media storage
+- **Ruff** — linter + formatter
+- **Pyright + django-stubs** — static type checking
 
-## Local dev
+## Local dev (docker-compose)
 
 ```sh
-cp .env.example .env
+cp .env.example .env           # already done; edit DJANGO_SECRET_KEY
 docker compose up -d --build
 docker compose exec web uv run manage.py migrate
 docker compose exec web uv run manage.py createsuperuser
 ```
 
-Open <http://localhost:8000/admin/>
+Open http://localhost:8000/admin
 
-## Commands
+MinIO console: http://localhost:9001 (minioadmin / minioadmin)
+
+## Key commands
 
 ```sh
 # Lint
@@ -75,49 +78,31 @@ docker compose exec web uv run ruff check .
 # Format
 docker compose exec web uv run ruff format .
 
-# Type check (host)
+# Type check (run on host)
 uv run pyright
 
-# Tests
+# Run tests
 docker compose exec web uv run manage.py test
 
-# Worker logs
-docker compose logs -f worker
+# Enqueue a task manually
+docker compose exec web uv run manage.py shell -c \
+  "from api.tasks import process_media; process_media.enqueue('test-uid')"
 ```
 
-## MinIO
+## API
 
-MinIO console: <http://localhost:9001> (login: `minioadmin` / `minioadmin`)
+`POST /api/media/` — register a media upload intent
 
-Create the bucket before uploading:
-
-```sh
-docker compose exec minio mc alias set local http://localhost:9000 minioadmin minioadmin
-docker compose exec minio mc mb local/media-vault
+```json
+{"filename": "a.png", "size": 1234}
 ```
 
-Or create it via the MinIO web UI at <http://localhost:9001>.
-
-## REST API
-
-```sh
-# Create a media record (happy path)
-curl -X POST http://127.0.0.1:8000/api/media/ \
-  -H 'content-type: application/json' \
-  -d '{"filename": "photo.jpg", "size": 1024}'
-
-# Invalid body — returns 422
-curl -X POST http://127.0.0.1:8000/api/media/ \
-  -H 'content-type: application/json' \
-  -d '{"filename": "photo.jpg"}'
-```
+Returns `{"uid": "<uuid>", "filename": "a.png"}`.
 
 ## Health checks
 
-```sh
-curl http://127.0.0.1:8000/healthz   # → ok
-curl http://127.0.0.1:8000/readyz    # → ready
-```
+- `GET /healthz` → `ok` (liveness — no DB)
+- `GET /readyz` → `ready` (readiness — checks DB)
 
 ## Adding a dependency
 
@@ -126,3 +111,17 @@ uv add somepkg
 docker compose build web worker
 docker compose up -d
 ```
+
+## Environment variables
+
+See `.env.example` for the full list. Key vars:
+
+| Var | Description |
+|---|---|
+| `DATABASE_URL` | Postgres connection URL |
+| `REDIS_URL` | Redis base URL (no trailing slash) |
+| `AWS_ACCESS_KEY_ID` | S3 / MinIO access key |
+| `AWS_SECRET_ACCESS_KEY` | S3 / MinIO secret |
+| `AWS_STORAGE_BUCKET_NAME` | Bucket name |
+| `AWS_S3_ENDPOINT_URL` | Non-AWS endpoint (e.g. `http://minio:9000`) |
+| `EMAIL_URL` | Email backend URL (`consolemail://` in dev) |

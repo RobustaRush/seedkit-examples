@@ -36,37 +36,37 @@ Add-ons:
 
 Production setup: skip.
 
-Run the foundation, the boot check, start `manage.py db_worker` in a second terminal, enqueue one example task and confirm it runs. Hit a profiled view and confirm the request appears under `/silk/`. Run `uv run manage.py lintmigrations`. Write a migration test in `jobs/tests/test_migrations.py` using the `migrator` fixture that applies the initial jobs migration forward and rolls it back. Run `uv run pytest`.
+Run the foundation, the boot check, start `manage.py db_worker` in a second terminal, enqueue one example task and confirm it runs. Hit a profiled view and confirm the request appears under `/silk/`. Run `uv run manage.py lintmigrations`. Run `uv run pytest` to confirm the test runner is wired (no project-specific tests required — `django-test-migrations` is installed for the user to write migration tests later).
 ```
 
 ---
 
 # 06-silk-lab
 
-Profile request paths with django-silk and run background email tasks via Django Tasks (Database backend).
+Profile request paths with django-silk and run background email tasks via the Django Tasks DB backend.
 
 ## Stack
 
-- Django 6.0 + django-environ (split settings)
-- PostgreSQL (host)
-- django-silk — profiling dashboard at `/silk/`
-- django-tasks + django-tasks-db — background tasks, no broker required
-- GoatCounter — self-hosted analytics snippet (env-driven)
-- Email — console backend in dev
-- Health checks — `/healthz` (liveness) + `/readyz` (readiness)
+| Layer | Choice |
+|---|---|
+| Framework | Django 6.0 |
+| Database | PostgreSQL (psycopg3) |
+| Settings | Split (base / local / production / test) |
+| Profiling | django-silk (`/silk/`) |
+| Background tasks | django-tasks-db (`db_worker`) |
+| Email | console backend in dev |
+| Analytics | GoatCounter snippet (env-driven, `ANALYTICS_ID`) |
+| Health checks | `/healthz` (liveness), `/readyz` (readiness) |
+| Dev tools | django-extensions, django-zeal, django-migration-linter, django-test-migrations |
+| Lint | Ruff |
+| Tests | pytest + pytest-django |
 
-### Dev dependencies
-
-- django-silk, django-extensions, django-zeal, django-migration-linter, django-test-migrations
-- pytest, pytest-django, ruff
-
-## Setup
+## Local setup
 
 ```sh
 createdb silk_db
 cp .env.example .env
-# edit .env: set DJANGO_SECRET_KEY
-uv sync
+# Edit .env — set DJANGO_SECRET_KEY to a real value
 uv run manage.py migrate
 uv run manage.py createsuperuser
 ```
@@ -74,34 +74,30 @@ uv run manage.py createsuperuser
 ## Run
 
 ```sh
-uv run manage.py runserver          # web server
-uv run manage.py db_worker          # task worker (separate terminal)
+# Web server
+uv run manage.py runserver
+
+# Background worker (second terminal)
+uv run manage.py db_worker
 ```
 
-## Enqueue a task (example)
+Open <http://localhost:8000/admin/> and <http://localhost:8000/silk/>.
+
+## Enqueue an example task
 
 ```python
-from jobs.tasks import send_welcome_email
-send_welcome_email.enqueue("user@example.com")
+from pages.tasks import send_welcome_email
+send_welcome_email.enqueue("you@example.com")
 ```
 
 ## Commands
 
 ```sh
-uv run manage.py show_urls          # list all URL patterns (django-extensions)
-uv run manage.py lintmigrations     # audit migrations for unsafe operations
-uv run pytest                       # run test suite
-uv run ruff check .                 # lint
-uv run ruff format .                # format
+uv run manage.py migrate
+uv run manage.py lintmigrations
+uv run ruff check .
+uv run ruff format .
+uv run pytest
+uv run manage.py show_urls
+uv run manage.py shell_plus
 ```
-
-## Health checks
-
-```sh
-curl http://localhost:8000/healthz   # → ok
-curl http://localhost:8000/readyz    # → ready
-```
-
-## Silk profiling
-
-Visit `http://localhost:8000/silk/` after making any requests. The `/healthz` view is decorated with `@silk_profile` as a demo.

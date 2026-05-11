@@ -38,9 +38,9 @@ jobs:
       DJANGO_DEBUG: "False"
       DJANGO_ALLOWED_HOSTS: "*"
       REDIS_URL: redis://localhost:6379
-      SENTRY_DSN: ""
       ANALYTICS_ID: ""
       ANALYTICS_HOST: ""
+      SENTRY_DSN: ""
 
     steps:
       - uses: actions/checkout@v4
@@ -55,3 +55,10 @@ jobs:
       - run: uv run ruff format --check .
 
       - run: uv run pytest
+
+      - run: uv run manage.py check --deploy --settings=config.settings.production
+        env:
+          DJANGO_SECRET_KEY: check-key-only
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+          DJANGO_ALLOWED_HOSTS: example.com
+          DJANGO_CSRF_TRUSTED_ORIGINS: https://example.com

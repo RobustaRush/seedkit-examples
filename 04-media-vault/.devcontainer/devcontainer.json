@@ -5,7 +5,6 @@
   "workspaceFolder": "/app",
   "shutdownAction": "stopCompose",
   "postAttachCommand": "uv run manage.py migrate",
-  "forwardPorts": [8000],
   "customizations": {
     "vscode": {
       "extensions": [

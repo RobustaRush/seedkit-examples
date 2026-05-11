@@ -1,63 +1,101 @@
+## Prompt
+
+```
+/seedkit
+
+Project name: 08-fly-app
+Purpose: production app deployed to Fly.io with a slim multi-stage runtime image and S3-compatible object storage.
+
+Settings layout: split.
+Database: PostgreSQL.
+Local dev mode: docker-compose (web + db + redis + minio).
+Docker structure: override (one multi-stage `Dockerfile` with `dev`/`prod` targets, `docker-compose.yml` + `docker-compose.override.yml`).
+Lint with Ruff: yes.
+Test runner: pytest + pytest-django.
+Type check (pyright + django-stubs): yes.
+Pre-commit hooks: no.
+Internationalisation (i18n): no.
+Custom user model: no.
+Auth add-on: `django-mail-auth` (passwordless magic-link).
+Structured logging: no.
+Add-ons:
+  - redis
+  - tasks: Celery
+  - storage: S3-compatible (MinIO locally, real S3 in prod)
+  - analytics: Google Analytics 4 (GA4)
+  - email: anymail (Postmark provider). Install `django-anymail[postmark]`; set `EMAIL_BACKEND = "anymail.backends.postmark.EmailBackend"` only when not DEBUG; gate `POSTMARK_SERVER_TOKEN` from env. Wire `DEFAULT_FROM_EMAIL`, `SERVER_EMAIL`. Console backend stays as the `EMAIL_URL` fallback in dev. (django-mail-auth needs working email to send magic links.) Also include the Anymail webhook URL (`path("anymail/", include("anymail.urls"))`) and `ANYMAIL["WEBHOOK_SECRET"]`.
+  - CORS: no.
+  - REST API: `django-bolt` **with fast-path settings opt-in** (`uv add django-bolt`). Add `django_bolt` to `INSTALLED_APPS` in `base.py`. Create `config/settings/bolt.py` that imports from `base` and strips `SessionMiddleware`, `MessageMiddleware`, `CsrfViewMiddleware`, `AuthenticationMiddleware`, `WhiteNoiseMiddleware` from `MIDDLEWARE` and `django.contrib.admin`, `django.contrib.sessions`, `django.contrib.messages`, `django.contrib.staticfiles` from `INSTALLED_APPS`; sets `TEMPLATES = []` and `ROOT_URLCONF = 'config.urls_bolt'`. Create `config/urls_bolt.py` (API-only; no admin / accounts). Create an `api` app (`uv run manage.py startapp api`) with `api/api.py` exposing `BoltAPI()`, a single `GET /users/{user_id}` async handler returning a `msgspec.Struct` (`id`, `username`) populated via `await User.objects.aget(id=user_id)`. `runserver`/`gunicorn` keep using `config.settings.local` / `production`; `runbolt` runs against `config.settings.bolt`.
+  - Frontend: none.
+  - Auth hardening: `django-axes` (yes), 2FA (no).
+  - Health check endpoints: yes.
+  - `robots.txt`: no.
+  - `django-extensions`: no.
+  - Devcontainer: no.
+
+Production setup:
+  - apply Django security settings
+  - CSP via `django-csp`: yes
+  - error reporting: GlitchTip via sentry-sdk
+  - GDPR: PII scrubbing in error reports, retention defaults, user data export/delete views
+  - CI: GitHub Actions test workflow
+  - deploy target: Fly.io managed (use `[processes]` for web + worker + bolt; the `bolt` process runs `manage.py runbolt` with `DJANGO_SETTINGS_MODULE=config.settings.bolt`)
+  - production Dockerfile: multi-stage (builder + slim runtime)
+
+Run the foundation + boot check locally. Generate `Dockerfile`, `fly.toml`, `.github/workflows/test.yml`. Verify `docker build .` succeeds and the runtime stage uses `python:3.12-slim-bookworm`.
+```
+
+---
+
 # 08-fly-app
 
-Production Django app deployed to Fly.io with a multi-stage Docker image and S3-compatible object storage.
+Production Django app deployed to Fly.io with S3-compatible object storage.
 
 ## Stack
 
-- **Django** + **PostgreSQL** + **Redis**
-- **Celery** (background tasks, broker = Redis)
-- **django-mail-auth** (passwordless magic-link login)
-- **django-axes** (brute-force lockout, cache-backed in prod)
-- **django-bolt** (fast-path REST API via Rust/Actix)
-- **django-storages[s3]** (MinIO in dev, S3 in prod)
-- **anymail[postmark]** (transactional email)
-- **GA4** analytics
-- **GlitchTip** error reporting (sentry-sdk)
-- **django-csp** (Content Security Policy)
-- GDPR: `export_user_data` / `delete_user` management commands
-- **Ruff** lint + format, **pyright** type checking, **pytest**
+- Django 6 · PostgreSQL · Redis
+- Auth: `django-mail-auth` (passwordless magic-link) · `django-axes` (lockout)
+- Tasks: Celery (Redis broker)
+- Storage: S3-compatible (MinIO locally, AWS S3 / R2 in prod)
+- Email: `django-anymail` / Postmark in prod; console in dev
+- REST API: `django-bolt` (fast-path bolt settings, separate port)
+- Analytics: Google Analytics 4
+- Security: CSP (`django-csp`), Django security settings
+- Error reporting: GlitchTip / Sentry via `sentry-sdk`
+- CI: GitHub Actions · Deploy: Fly.io
 
 ## Local dev
 
 ```sh
-cp .env.example .env   # edit DJANGO_SECRET_KEY
+cp .env.example .env   # edit DJANGO_SECRET_KEY at minimum
 docker compose up -d --build
-docker compose exec web python manage.py migrate
-docker compose exec web python manage.py createsuperuser
+docker compose exec web uv run manage.py migrate
+docker compose exec web uv run manage.py createsuperuser
 ```
 
-Open <http://localhost:8000/admin/>.
+Open <http://localhost:8000>
 
-Two servers in dev:
-- `http://localhost:8000` — Django (admin, accounts, health checks)
-- `http://localhost:8001` — Bolt API (start separately; see below)
+MinIO console: <http://localhost:9001> (minioadmin / minioadmin)
 
-### Start Bolt API
+### Adding a dependency
 
 ```sh
-docker compose exec -e DJANGO_SETTINGS_MODULE=config.settings.bolt web \
-  python manage.py runbolt --dev --port 8001
+uv add somepkg
+docker compose build web worker
+docker compose up -d
 ```
 
-Then: `curl http://localhost:8001/users/1`
-
-### Health checks
+## Commands
 
 ```sh
-curl http://localhost:8000/healthz    # → ok
-curl http://localhost:8000/readyz     # → ready
-```
-
-## Testing
-
-```sh
+uv run manage.py runserver       # Django dev server (config.settings.local)
+DJANGO_SETTINGS_MODULE=config.settings.bolt uv run manage.py runbolt --dev --port 8001
 uv run pytest
 uv run ruff check .
-uv run ruff format --check .
 uv run pyright
 ```
 
-## Deploy (Fly.io)
+## Fly.io deploy
 
 ```sh
 fly launch --no-deploy
@@ -67,24 +105,23 @@ fly secrets set \
     DJANGO_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(50))') \
     DJANGO_ALLOWED_HOSTS=<your-app>.fly.dev \
     DJANGO_CSRF_TRUSTED_ORIGINS=https://<your-app>.fly.dev \
+    POSTMARK_SERVER_TOKEN=<token> \
+    DEFAULT_FROM_EMAIL=no-reply@example.com \
+    SERVER_EMAIL=django@example.com \
     AWS_ACCESS_KEY_ID=... \
     AWS_SECRET_ACCESS_KEY=... \
     AWS_STORAGE_BUCKET_NAME=... \
-    DEFAULT_FROM_EMAIL=no-reply@example.com \
-    POSTMARK_SERVER_TOKEN=... \
-    ANYMAIL_WEBHOOK_SECRET=... \
     SENTRY_DSN=...
 fly deploy
 ```
 
-Fly runs three processes from the same image:
-- `web` — gunicorn (Django)
-- `worker` — Celery worker
-- `bolt` — `manage.py runbolt` with `DJANGO_SETTINGS_MODULE=config.settings.bolt`
+Release command (`fly.toml`): runs `migrate` + `collectstatic` before traffic shifts.
+
+Processes: `web` (gunicorn), `worker` (celery), `bolt` (runbolt on port 8002).
 
 ## GDPR commands
 
 ```sh
-python manage.py export_user_data <user_id> > data.json
-python manage.py delete_user <user_id>
+uv run manage.py export_user_data <user_id>   # JSON to stdout
+uv run manage.py delete_user <user_id> --confirm
 ```

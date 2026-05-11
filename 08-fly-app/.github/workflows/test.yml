@@ -43,7 +43,8 @@ jobs:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       AWS_STORAGE_BUCKET_NAME: ""
-      ANYMAIL_WEBHOOK_SECRET: test-webhook-secret
+      POSTMARK_SERVER_TOKEN: ""
+      ANYMAIL_WEBHOOK_SECRET: ""
       SENTRY_DSN: ""
 
     steps:
@@ -57,6 +58,7 @@ jobs:
 
       - run: uv run ruff check .
       - run: uv run ruff format --check .
+
       - run: uv run pyright
 
       - run: uv run pytest

@@ -6,6 +6,7 @@ media/
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 .ruff_cache/
 celerybeat-schedule*
-*.mo
+locale/*/LC_MESSAGES/*.mo

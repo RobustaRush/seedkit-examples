@@ -5,6 +5,10 @@ services:
     volumes:
       - .:/app
       - /app/.venv
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+    ports:
+      - "8000:8000"
 
   worker:
     build:
@@ -12,6 +16,8 @@ services:
     volumes:
       - .:/app
       - /app/.venv
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
 
   db:
     ports:
@@ -24,4 +30,3 @@ services:
   minio:
     ports:
       - "9000:9000"
-      - "9001:9001"

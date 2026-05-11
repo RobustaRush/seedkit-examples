@@ -1,7 +1,7 @@
 # Python
 .venv/
 __pycache__/
-*.py[cod]
+*.pyc
 *.pyo
 *.pyd
 .Python
@@ -12,22 +12,16 @@ staticfiles/
 media/
 .env
 
-# Testing / type checking
+# Celery
+celerybeat-schedule*
+
+# Test / coverage
 .coverage
 htmlcov/
 .pytest_cache/
 .ruff_cache/
-pyrightconfig.json
-
-# Celery
-celerybeat-schedule*
-
-# Docker
-*.env.local
 
 # Editor
-.DS_Store
-.idea/
 .vscode/
+.idea/
 *.swp
-*.swo

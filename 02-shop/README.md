@@ -42,27 +42,24 @@ Small e-commerce site with admin and SMTP transactional email.
 
 ## Stack
 
-- Django 6.x, Python 3.12+
-- PostgreSQL via `psycopg[binary]` + `django-environ`
-- Split settings: `config/settings/{base,local,production}.py`
-- Custom `users.User` (email login, no username)
-- `django-allauth` — email signup/login, mandatory email verification in production
-- `django-axes` — brute-force lockout (5 failures → 1 hr cooloff)
-- WhiteNoise — static file serving (production only)
-- `django-tailwind-cli` + DaisyUI — CSS build, no Node required
-- Stripe raw SDK — Checkout session, Customer Portal, webhook handler
-- Health checks: `/healthz`, `/readyz`
-- `robots.txt`
-- Ruff lint/format, pytest + pytest-django, pyright + django-stubs
+- **Django** with split settings (`base` / `local` / `production`)
+- **PostgreSQL** via `psycopg[binary]` + `django-environ` DATABASE_URL
+- **Custom user model** — email-as-username (`users.User`)
+- **django-allauth** — email login, mandatory email verification in production
+- **django-axes** — brute-force lockout (5 failures / 1 hour cooloff)
+- **WhiteNoise** — static files
+- **django-tailwind-cli** + **DaisyUI** — CSS, no Node.js
+- **Stripe** raw SDK — checkout, customer portal, webhook
+- **pytest** + **pytest-django** — test runner
+- **Ruff** — lint + format
+- **pyright** + **django-stubs** — type checking
 
-## Setup
+## Local setup
 
 ```sh
-cp .env.example .env
-# edit .env: set DJANGO_SECRET_KEY to a real value
-
 createdb shop_db
-
+cp .env.example .env
+# edit .env — set DJANGO_SECRET_KEY to something random
 uv sync
 uv run manage.py migrate
 uv run manage.py createsuperuser
@@ -70,28 +67,32 @@ uv run manage.py tailwind build
 uv run manage.py runserver
 ```
 
-## Key commands
+Or use the watcher (rebuilds CSS on template changes):
 
 ```sh
-uv run manage.py tailwind runserver   # dev: watch + runserver
-uv run manage.py migrate
-uv run pytest
-uv run ruff check .
-uv run ruff format .
-uv run pyright
+uv run manage.py tailwind runserver
 ```
 
-## Environment variables
+## Commands
 
-See `.env.example` for the full list. Required in production:
-- `DJANGO_SECRET_KEY`
-- `DATABASE_URL`
-- `EMAIL_URL`
-- `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+| Command | Purpose |
+|---|---|
+| `uv run manage.py migrate` | Apply DB migrations |
+| `uv run manage.py tailwind build` | Build production CSS |
+| `uv run manage.py tailwind runserver` | Dev server + CSS watcher |
+| `uv run pytest` | Run tests |
+| `uv run ruff check .` | Lint |
+| `uv run ruff format .` | Format |
+| `uv run pyright` | Type check |
 
 ## Stripe local dev
 
 ```sh
 stripe listen --forward-to localhost:8000/billing/webhook/
-# use the printed whsec_... as STRIPE_WEBHOOK_SECRET in .env
+# Copy the printed whsec_... into .env as STRIPE_WEBHOOK_SECRET
 ```
+
+## Health endpoints
+
+- `GET /healthz` → `ok` (liveness)
+- `GET /readyz` → `ready` (readiness — checks DB)

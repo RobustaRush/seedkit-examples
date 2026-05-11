@@ -1,36 +1,11 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.egg
-*.egg-info/
-dist/
-build/
-.eggs/
-
-# Virtual environment
 .venv/
-
-# Django
+.env
 *.sqlite3
 staticfiles/
 media/
-db.sqlite3
-
-# Environment
-.env
-
-# Cache
 .ruff_cache/
-.mypy_cache/
-.pytest_cache/
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# macOS
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
 .DS_Store

@@ -10,7 +10,7 @@ environ.Env.read_env(BASE_DIR / ".env")
 
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"] if DEBUG else env.NOTSET)
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 DATABASES = {"default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET)}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -73,12 +73,11 @@ AUTHENTICATION_BACKENDS = [
 LOGIN_URL = "mailauth:login"
 LOGIN_REDIRECT_URL = "/"
 
-# --- i18n ---
-
+# i18n
 LANGUAGE_CODE = "en"
-TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
+TIME_ZONE = "UTC"
 
 LANGUAGES = [
     ("en", _("English")),
@@ -86,13 +85,21 @@ LANGUAGES = [
 
 LOCALE_PATHS = [BASE_DIR / "locale"]
 
-# --- Static files ---
-
+# Static files
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# --- Redis & Cache ---
+# Email
+globals().update(env.email_url(
+    "EMAIL_URL",
+    default="consolemail://" if DEBUG else env.NOTSET,
+))
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET)
+SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
+ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
+MANAGERS = ADMINS
 
+# Redis
 REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
 
 CACHES = {
@@ -103,29 +110,16 @@ CACHES = {
     }
 }
 
-# --- Celery ---
-
-from celery.schedules import crontab  # noqa: E402
-
+# Celery
 CELERY_BROKER_URL = f"{REDIS_URL}/1"
 CELERY_RESULT_BACKEND = f"{REDIS_URL}/2"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
+from celery.schedules import crontab  # noqa: E402
+
 CELERY_BEAT_SCHEDULE = {
     "daily-digest": {
-        "task": "jobs.tasks.daily_digest",
+        "task": "jobs.tasks.send_daily_digest",
         "schedule": crontab(hour=8, minute=0),
     },
 }
-
-# --- Email ---
-
-globals().update(env.email_url(
-    "EMAIL_URL",
-    default="consolemail://" if DEBUG else env.NOTSET,
-))
-
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET)
-SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
-ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
-MANAGERS = ADMINS

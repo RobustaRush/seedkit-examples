@@ -11,13 +11,19 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   worker:
     build:
       context: .
       target: prod
-    command: python manage.py rqworker default
     env_file: .env
+    command: python manage.py rqworker default
     depends_on:
       db:
         condition: service_healthy

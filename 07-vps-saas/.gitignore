@@ -1,0 +1,15 @@
+.venv/
+.env
+*.sqlite3
+staticfiles/
+media/
+.ruff_cache/
+__pycache__/
+*.pyc
+*.pyo
+.coverage
+htmlcov/
+.pytest_cache/
+celerybeat-schedule*
+dist/
+*.egg-info/
