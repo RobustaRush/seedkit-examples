@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "corsheaders",
+    "storages",
     "django_rq",
     "django_tasks_rq",
     "api",
@@ -35,20 +36,14 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "config.middleware.logging.RequestContextMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
-
-# Insert CorsMiddleware above CommonMiddleware
-common_idx = MIDDLEWARE.index("django.middleware.common.CommonMiddleware")
-MIDDLEWARE.insert(common_idx, "corsheaders.middleware.CorsMiddleware")
-
-# Insert RequestContextMiddleware after AuthenticationMiddleware
-auth_idx = MIDDLEWARE.index("django.contrib.auth.middleware.AuthenticationMiddleware")
-MIDDLEWARE.insert(auth_idx + 1, "config.middleware.logging.RequestContextMiddleware")
 
 ROOT_URLCONF = "config.urls"
 
@@ -81,7 +76,10 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-# --- Redis ---
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Redis cache
 REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
 
 CACHES = {
@@ -92,27 +90,14 @@ CACHES = {
     }
 }
 
-# --- Django Tasks (RQ backend) ---
-TASKS = {
-    "default": {
-        "BACKEND": "django_tasks_rq.RQBackend",
-        "QUEUES": ["default"],
-    }
-}
-
-RQ_QUEUES = {
-    "default": {"URL": f"{REDIS_URL}/3"},
-}
-
-RQ = {"JOB_CLASS": "django_tasks_rq.Job"}
-
-# --- S3 / MinIO Storage ---
+# S3-compatible storage (MinIO in local Compose; real S3 in prod)
 AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID", default="" if DEBUG else env.NOTSET)
 AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY", default="" if DEBUG else env.NOTSET)
 AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="" if DEBUG else env.NOTSET)
 AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="us-east-1")
 AWS_S3_ENDPOINT_URL = env("AWS_S3_ENDPOINT_URL", default="")
 AWS_S3_CUSTOM_DOMAIN = env("AWS_S3_CUSTOM_DOMAIN", default="")
+AWS_S3_URL_PROTOCOL = env("AWS_S3_URL_PROTOCOL", default="https:")
 
 if AWS_STORAGE_BUCKET_NAME:
     _default_storage = {
@@ -131,23 +116,13 @@ STORAGES = {
     },
 }
 
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
-
-AWS_S3_URL_PROTOCOL = env("AWS_S3_URL_PROTOCOL", default="https:")
 if AWS_S3_CUSTOM_DOMAIN:
     MEDIA_URL = f"{AWS_S3_URL_PROTOCOL}//{AWS_S3_CUSTOM_DOMAIN}/media/"
 else:
     MEDIA_URL = "/media/"
 
-# --- Email ---
-globals().update(
-    env.email_url(
-        "EMAIL_URL",
-        default="consolemail://" if DEBUG else env.NOTSET,
-    )
-)
-
+# Email
+globals().update(env.email_url("EMAIL_URL", default="consolemail://" if DEBUG else env.NOTSET))
 DEFAULT_FROM_EMAIL = env(
     "DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET
 )
@@ -155,19 +130,35 @@ SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
-# --- CORS ---
+# CORS
 CORS_ALLOWED_ORIGINS = env.list(
     "DJANGO_CORS_ALLOWED_ORIGINS",
     default=["http://localhost:3000", "http://127.0.0.1:3000"] if DEBUG else [],
 )
 CORS_ALLOW_CREDENTIALS = True
-
 CSRF_TRUSTED_ORIGINS = env.list(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
     default=["http://localhost:3000"] if DEBUG else [],
 )
 
-# --- Structlog ---
+# Django Tasks — RQ backend
+TASKS = {
+    "default": {
+        "BACKEND": "django_tasks_rq.RQBackend",
+        "QUEUES": ["default"],
+    }
+}
+
+RQ_QUEUES = {
+    "default": {"URL": f"{REDIS_URL}/3"},
+}
+
+# JOB_CLASS must live in the top-level RQ dict; django-rq's get_job_class()
+# reads from settings.RQ only — not from RQ_QUEUES. Without this the worker
+# fetches jobs as rq.job.Job and django-tasks-rq's _execute() never runs.
+RQ = {"JOB_CLASS": "django_tasks_rq.Job"}
+
+# Structured logging
 PRE_CHAIN = [
     structlog.contextvars.merge_contextvars,
     structlog.stdlib.add_log_level,

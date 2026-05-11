@@ -1,6 +1,6 @@
 from .base import *
 
-# HTTPS
+# HTTPS / SSL
 SECURE_SSL_REDIRECT = True
 SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
 
@@ -19,34 +19,21 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
-# Allauth — mandatory email verification in production
+# allauth
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
-
-# 2FA settings
 MFA_TOTP_ISSUER = env("DJANGO_SITE_DOMAIN", default="example.com")
-ACCOUNT_REAUTHENTICATION_REQUIRED = True
 
-# WhiteNoise manifest storage
+# WhiteNoise
+sec_idx = MIDDLEWARE.index("django.middleware.security.SecurityMiddleware")
+MIDDLEWARE.insert(sec_idx + 1, "whitenoise.middleware.WhiteNoiseMiddleware")
+
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
 # CSP
-MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "csp.middleware.CSPMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "config.middleware.logging.RequestContextMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "allauth.account.middleware.AccountMiddleware",
-    "axes.middleware.AxesMiddleware",
-]
+MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
@@ -62,7 +49,19 @@ CONTENT_SECURITY_POLICY = {
     },
 }
 
-# dbbackup
+# Sentry
+SENTRY_DSN = env("SENTRY_DSN", default="")
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        release=env("SENTRY_RELEASE", default=None),
+    )
+
+# dbbackup — wrapped in if not DEBUG so collectstatic build doesn't evaluate creds
 if not DEBUG:
     INSTALLED_APPS += ["dbbackup"]
 
@@ -73,7 +72,6 @@ if not DEBUG:
         "bucket_name": env("DBBACKUP_BUCKET"),
         "default_acl": "private",
     }
-
     DBBACKUP_CLEANUP_KEEP = 14
     DBBACKUP_CLEANUP_KEEP_MEDIA = 7
     DBBACKUP_FILENAME_TEMPLATE = "{databasename}-{servername}-{datetime}.{extension}"

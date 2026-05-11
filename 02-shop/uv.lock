@@ -33,7 +33,7 @@ requires-dist = [
     { name = "django-allauth", specifier = ">=65.16.1" },
     { name = "django-axes", specifier = ">=8.3.1" },
     { name = "django-environ", specifier = ">=0.13.0" },
-    { name = "django-tailwind-cli", specifier = ">=4.6.0" },
+    { name = "django-tailwind-cli", specifier = ">=4.6.1" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.4" },
     { name = "stripe", specifier = ">=15.1.0" },
     { name = "whitenoise", specifier = ">=6.12.0" },
@@ -249,16 +249,16 @@ wheels = [
 
 [[package]]
 name = "django-tailwind-cli"
-version = "4.6.0"
+version = "4.6.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
     { name = "django-typer" },
     { name = "semver" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fe/34/76a7f2ca5af05268b116f8010663dc0404d1c95428662976db4f720b77b1/django_tailwind_cli-4.6.0.tar.gz", hash = "sha256:c600daede503e6b3f64d97eca5dead2cca52d9057b8818ec17a75e060febbf03", size = 117689, upload-time = "2026-04-11T14:38:53.587Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/38/98/a50449645ac45bbd1a49608427314823ee0ab1792a298269d0b73348bcf4/django_tailwind_cli-4.6.1.tar.gz", hash = "sha256:e6a221940c2e50aecaeaf85638ddf28858cc2b2fc59e9ffac5f0cf1de837a2c8", size = 122384, upload-time = "2026-05-10T19:37:39.143Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f2/d4/06eb54e1d2762ff613f9f1aadcebf6c0044c39cb9e7725d22638e013fbd6/django_tailwind_cli-4.6.0-py3-none-any.whl", hash = "sha256:232016bffc89ded46420a12df3fd75b4b055ee002a335445af695f2e49abf770", size = 37002, upload-time = "2026-04-11T14:38:51.573Z" },
+    { url = "https://files.pythonhosted.org/packages/0c/1d/28ab9a2f3c662db4d46508120a83c051b05f137c1ea12a841f65feaffa3b/django_tailwind_cli-4.6.1-py3-none-any.whl", hash = "sha256:000a86e4146220429bf84bbce9783daf56bde2d47fecdde07b0af2715ae81b52", size = 38380, upload-time = "2026-05-10T19:37:37.601Z" },
 ]
 
 [[package]]
@@ -277,11 +277,11 @@ wheels = [
 
 [[package]]
 name = "idna"
-version = "3.13"
+version = "3.14"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ce/cc/762dfb036166873f0059f3b7de4565e1b5bc3d6f28a414c13da27e442f99/idna-3.13.tar.gz", hash = "sha256:585ea8fe5d69b9181ec1afba340451fba6ba764af97026f92a91d4eef164a242", size = 194210, upload-time = "2026-04-22T16:42:42.314Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/05/b1/efac073e0c297ecf2fb33c346989a529d4e19164f1759102dee5953ee17e/idna-3.14.tar.gz", hash = "sha256:466d810d7a2cc1022bea9b037c39728d51ae7dad40d480fc9b7d7ecf98ba8ee3", size = 198272, upload-time = "2026-05-10T20:32:15.935Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5d/13/ad7d7ca3808a898b4612b6fe93cde56b53f3034dcde235acb1f0e1df24c6/idna-3.13-py3-none-any.whl", hash = "sha256:892ea0cde124a99ce773decba204c5552b69c3c67ffd5f232eb7696135bc8bb3", size = 68629, upload-time = "2026-04-22T16:42:40.909Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/3c/3f62dee257eb3d6b2c1ef2a09d36d9793c7111156a73b5654d2c2305e5ce/idna-3.14-py3-none-any.whl", hash = "sha256:e677eaf072e290f7b725f9acf0b3a2bd55f9fd6f7c70abe5f0e34823d0accf69", size = 72184, upload-time = "2026-05-10T20:32:14.295Z" },
 ]
 
 [[package]]

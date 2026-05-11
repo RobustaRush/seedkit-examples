@@ -1,27 +1,17 @@
-# Python
 .venv/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-
-# Django
+.env
 *.sqlite3
 staticfiles/
 media/
-.env
-
-# Celery
-celerybeat-schedule*
-
-# Test / coverage
+.ruff_cache/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
 .coverage
 htmlcov/
-.pytest_cache/
-.ruff_cache/
-
-# Editor
-.vscode/
-.idea/
-*.swp
+celerybeat-schedule*
+dist/
+build/
+*.egg-info/
+.DS_Store

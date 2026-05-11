@@ -14,10 +14,8 @@ dependencies = [
     "django-redis>=6.0.0",
     "django-storages[s3]>=1.14.6",
     "gunicorn>=26.0.0",
-    "msgspec>=0.21.1",
     "psycopg[binary]>=3.3.4",
     "sentry-sdk>=2.59.0",
-    "whitenoise>=6.12.0",
 ]
 
 [dependency-groups]
@@ -29,12 +27,7 @@ dev = [
     "pytest>=9.0.3",
     "pytest-django>=4.12.0",
     "ruff>=0.15.12",
-    "types-pyyaml>=6.0.12",
 ]
-
-[tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings.test"
-python_files = ["tests.py", "test_*.py", "*_tests.py"]
 
 [tool.ruff]
 line-length = 100
@@ -56,16 +49,13 @@ known-first-party = ["pages", "api"]
 [tool.ruff.format]
 quote-style = "double"
 
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+
 [tool.pyright]
 include = ["."]
-exclude = [
-    "**/migrations/**",
-    "**/__pycache__",
-    ".venv",
-    "staticfiles",
-    "media",
-    "config/settings",
-]
+exclude = ["**/migrations/**", "**/__pycache__", ".venv", "staticfiles", "media", "config/settings"]
 venvPath = "."
 venv = ".venv"
 pythonVersion = "3.12"
@@ -75,18 +65,3 @@ reportMissingTypeStubs = "none"
 reportGeneralTypeIssues = "warning"
 reportOptionalMemberAccess = "warning"
 strictListInference = true
-
-[tool.coverage.run]
-source = ["."]
-omit = [
-    "**/migrations/**",
-    "**/tests/**",
-    "**/test_*.py",
-    "config/wsgi.py",
-    "config/asgi.py",
-    "manage.py",
-]
-
-[tool.coverage.report]
-show_missing = true
-skip_covered = true

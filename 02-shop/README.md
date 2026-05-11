@@ -17,6 +17,7 @@ Internationalisation (i18n): no.
 Custom user model: yes (custom `users.User` extending `AbstractUser`).
 Auth add-on: `django-allauth` (email login, mandatory email verification, no social providers).
 Structured logging: no.
+Task runner: mise.
 Add-ons:
   - storage: WhiteNoise for static files (no media volume yet)
   - email: SMTP (console backend in local, SMTP in production)
@@ -42,57 +43,73 @@ Small e-commerce site with admin and SMTP transactional email.
 
 ## Stack
 
-- **Django** with split settings (`base` / `local` / `production`)
-- **PostgreSQL** via `psycopg[binary]` + `django-environ` DATABASE_URL
-- **Custom user model** — email-as-username (`users.User`)
-- **django-allauth** — email login, mandatory email verification in production
-- **django-axes** — brute-force lockout (5 failures / 1 hour cooloff)
-- **WhiteNoise** — static files
-- **django-tailwind-cli** + **DaisyUI** — CSS, no Node.js
-- **Stripe** raw SDK — checkout, customer portal, webhook
-- **pytest** + **pytest-django** — test runner
-- **Ruff** — lint + format
-- **pyright** + **django-stubs** — type checking
+- **Django** — web framework
+- **PostgreSQL** — database (psycopg3)
+- **django-allauth** — email login with mandatory verification in production
+- **django-axes** — brute-force lockout
+- **Tailwind CSS + DaisyUI** — frontend (standalone CLI, no Node)
+- **WhiteNoise** — static file serving in production
+- **Stripe** — payments (raw SDK)
+- **Ruff** — linting + formatting
+- **pytest + pytest-django** — test runner
+- **pyright + django-stubs** — type checking
+- **mise** — task runner
 
-## Local setup
+## Setup
 
 ```sh
-createdb shop_db
 cp .env.example .env
-# edit .env — set DJANGO_SECRET_KEY to something random
-uv sync
-uv run manage.py migrate
-uv run manage.py createsuperuser
-uv run manage.py tailwind build
-uv run manage.py runserver
-```
-
-Or use the watcher (rebuilds CSS on template changes):
-
-```sh
-uv run manage.py tailwind runserver
+# Edit .env: set DJANGO_SECRET_KEY, DATABASE_URL
+createdb shop_db
+mise run install
+mise run migrate
+mise run superuser
 ```
 
 ## Commands
 
-| Command | Purpose |
-|---|---|
-| `uv run manage.py migrate` | Apply DB migrations |
-| `uv run manage.py tailwind build` | Build production CSS |
-| `uv run manage.py tailwind runserver` | Dev server + CSS watcher |
-| `uv run pytest` | Run tests |
-| `uv run ruff check .` | Lint |
-| `uv run ruff format .` | Format |
-| `uv run pyright` | Type check |
+```sh
+mise run dev          # uv run manage.py tailwind runserver
+mise run migrate      # uv run manage.py migrate
+mise run test         # uv run pytest
+mise run lint         # uv run ruff check .
+mise run fmt          # uv run ruff format .
+mise run typecheck    # uv run pyright
+mise run collectstatic
+```
+
+Without mise: `uv run manage.py <cmd>`.
+
+## Environment variables
+
+See `.env.example` for the full list. Key vars:
+
+| Variable | Required | Description |
+|---|---|---|
+| `DJANGO_SECRET_KEY` | yes | Django secret key |
+| `DJANGO_DEBUG` | no | `True` for local dev |
+| `DJANGO_ALLOWED_HOSTS` | prod | Comma-separated allowed hosts |
+| `DATABASE_URL` | yes | Postgres connection URL |
+| `EMAIL_URL` | yes | `consolemail://` locally, `smtp+tls://...` in production |
+| `STRIPE_PUBLISHABLE_KEY` | billing | Stripe publishable key |
+| `STRIPE_SECRET_KEY` | billing | Stripe secret key |
+| `STRIPE_WEBHOOK_SECRET` | billing | Stripe webhook signing secret |
 
 ## Stripe local dev
 
 ```sh
 stripe listen --forward-to localhost:8000/billing/webhook/
-# Copy the printed whsec_... into .env as STRIPE_WEBHOOK_SECRET
+# Use the printed whsec_... as STRIPE_WEBHOOK_SECRET in .env
 ```
 
-## Health endpoints
+## Endpoints
 
-- `GET /healthz` → `ok` (liveness)
-- `GET /readyz` → `ready` (readiness — checks DB)
+- `/` — index page
+- `/admin/` — Django admin
+- `/accounts/` — allauth auth flows (login, signup, password reset)
+- `/healthz` — liveness probe (text `ok`)
+- `/readyz` — readiness probe (text `ready`, checks DB)
+- `/robots.txt` — crawler policy
+- `/billing/checkout/` — Stripe Checkout session
+- `/billing/portal/` — Stripe Customer Portal
+- `/billing/webhook/` — Stripe webhook receiver

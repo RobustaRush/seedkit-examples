@@ -31,17 +31,46 @@ line-length = 100
 extend-exclude = ["migrations", "*/migrations/*"]
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "UP", "B", "DJ", "S", "SIM", "RUF"]
-ignore = ["E501", "S101", "RUF012"]
+select = [
+    "E", "W",
+    "F",
+    "I",
+    "UP",
+    "B",
+    "DJ",
+    "S",
+    "SIM",
+    "RUF",
+]
+ignore = [
+    "E501",
+    "S101",
+    "RUF012",
+]
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**" = ["S"]
-"**/test_*.py" = ["S"]
-"**/tests.py" = ["S"]
-"**/settings/*.py" = ["F405", "F403"]
+"**/tests/**"      = ["S"]
+"**/test_*.py"     = ["S"]
+"**/tests.py"      = ["S"]
+"**/settings/*.py" = ["F405", "F403", "S105"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["pages", "config"]
 
 [tool.ruff.format]
 quote-style = "double"
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "**/migrations/**",
+    "**/tests/**",
+    "**/test_*.py",
+    "config/wsgi.py",
+    "config/asgi.py",
+    "manage.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

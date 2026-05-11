@@ -21,23 +21,13 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
 # CSP
-MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "csp.middleware.CSPMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "config.middleware.logging.RequestContextMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
+MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'",),
         "script-src": ("'self'",),
-        "style-src": ("'self'", "'unsafe-inline'"),  # unsafe-inline needed for Django admin
+        "style-src": ("'self'", "'unsafe-inline'"),
         "img-src": ("'self'", "data:"),
         "font-src": ("'self'",),
         "connect-src": ("'self'",),
@@ -47,13 +37,23 @@ CONTENT_SECURITY_POLICY = {
     },
 }
 
-# Umami analytics CSP
-if ANALYTICS_HOST:
-    CONTENT_SECURITY_POLICY["DIRECTIVES"]["script-src"] = (
-        "'self'",
-        ANALYTICS_HOST,
-    )
-    CONTENT_SECURITY_POLICY["DIRECTIVES"]["connect-src"] = (
-        "'self'",
-        ANALYTICS_HOST,
+# Error reporting — Bugsink (sentry-protocol)
+SENTRY_DSN = env("SENTRY_DSN", default="")
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    def _scrub(event, hint):
+        request = event.get("request") or {}
+        headers = request.get("headers") or {}
+        for h in ("Authorization", "Cookie"):
+            headers.pop(h, None)
+        return event
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        send_default_pii=False,
+        before_send=_scrub,
+        release=env("SENTRY_RELEASE", default=None),
     )

@@ -4,9 +4,13 @@
 staticfiles/
 media/
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*.egg-info/
+dist/
 .ruff_cache/
-celerybeat-schedule*
+.mypy_cache/
+.pytest_cache/
+celerybeat-schedule
+celerybeat-schedule.db
+celerybeat.pid
 locale/*/LC_MESSAGES/*.mo

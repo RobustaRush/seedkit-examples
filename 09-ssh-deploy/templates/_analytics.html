@@ -1,4 +1,4 @@
-{% if ANALYTICS_ID and not DEBUG %}
+{% if ANALYTICS_ID and ANALYTICS_HOST and not DEBUG %}
 <script defer src="{{ ANALYTICS_HOST }}/script.js"
         data-website-id="{{ ANALYTICS_ID }}"></script>
 {% endif %}

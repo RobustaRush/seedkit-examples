@@ -6,8 +6,6 @@ _DROP_MIDDLEWARE = {
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
-    "axes.middleware.AxesMiddleware",
 }
 MIDDLEWARE = [m for m in MIDDLEWARE if m not in _DROP_MIDDLEWARE]
 

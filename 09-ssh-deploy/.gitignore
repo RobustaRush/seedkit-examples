@@ -7,8 +7,10 @@ media/
 __pycache__/
 *.pyc
 *.pyo
-.coverage
-htmlcov/
-.pytest_cache/
-dist/
+*.pyd
 *.egg-info/
+dist/
+build/
+htmlcov/
+.coverage
+deploy/.env.prod

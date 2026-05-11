@@ -37,12 +37,10 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "config.middleware.logging.RequestContextMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
-
-auth_idx = MIDDLEWARE.index("django.contrib.auth.middleware.AuthenticationMiddleware")
-MIDDLEWARE.insert(auth_idx + 1, "config.middleware.logging.RequestContextMiddleware")
 
 ROOT_URLCONF = "config.urls"
 
@@ -104,32 +102,11 @@ RQ_QUEUES = {
 
 RQ = {"JOB_CLASS": "django_tasks_rq.Job"}
 
-# Analytics (Umami self-hosted)
+# Analytics (Umami — self-hosted)
 ANALYTICS_ID = env("ANALYTICS_ID", default="")
 ANALYTICS_HOST = env("ANALYTICS_HOST", default="")
 
-# Error reporting (Bugsink / Sentry-compatible)
-SENTRY_DSN = env("SENTRY_DSN", default="")
-if SENTRY_DSN:
-    import sentry_sdk
-    from sentry_sdk.integrations.django import DjangoIntegration
-
-    def _scrub(event, hint):
-        request = event.get("request") or {}
-        headers = request.get("headers") or {}
-        for h in ("Authorization", "Cookie"):
-            headers.pop(h, None)
-        return event
-
-    sentry_sdk.init(
-        dsn=SENTRY_DSN,
-        integrations=[DjangoIntegration()],
-        send_default_pii=False,
-        before_send=_scrub,
-        release=env("SENTRY_RELEASE", default=None),
-    )
-
-# Structured logging
+# Structlog
 PRE_CHAIN = [
     structlog.contextvars.merge_contextvars,
     structlog.stdlib.add_log_level,

@@ -18,6 +18,7 @@ Internationalisation (i18n): no.
 Custom user model: no.
 Auth add-on: none.
 Structured logging: yes (`structlog`, JSON in prod / pretty in dev, request-scoped `request_id`).
+Task runner: none.
 Add-ons:
   - redis
   - tasks: Django Tasks with the Redis Queue backend (`django-tasks-rq`)
@@ -52,58 +53,91 @@ Production Django app deployed to a remote host over SSH from GitHub Actions, us
 
 ## Stack
 
-- Python 3.12+ · Django 6 · PostgreSQL 17 · Redis 7
-- django-tasks-rq (background tasks via RQ)
-- structlog (JSON in prod / pretty in dev, per-request `request_id`)
-- Umami analytics (self-hosted, env-driven)
-- Bugsink error reporting (self-hosted, Sentry-compatible)
-- django-csp Content Security Policy
-- GitHub Actions: test CI + SSH deploy
+| Layer | Choice |
+|---|---|
+| Framework | Django 6 |
+| Database | PostgreSQL 17 |
+| Cache / broker | Redis 7 |
+| Background tasks | django-tasks-rq (RQ backend) |
+| Logging | structlog (pretty dev / JSON prod) |
+| Analytics | Umami (self-hosted) |
+| Error tracking | Bugsink (self-hosted, sentry-protocol) |
+| Web server | gunicorn |
+| Lint | Ruff |
+| Tests | pytest + pytest-django |
+| CI | GitHub Actions |
+| Deploy | GitHub Actions → SSH → rsync + docker compose |
 
 ## Local development
 
 ```sh
-cp .env.example .env           # edit DJANGO_SECRET_KEY
-docker compose up -d --build   # starts web + worker + db + redis (dev target)
-docker compose exec web python manage.py migrate
+cp .env.example .env            # edit DJANGO_SECRET_KEY
+docker compose up -d --wait     # starts web, worker, db, redis
+docker compose exec -T web python manage.py migrate
 docker compose exec web python manage.py createsuperuser
-# open http://localhost:8000/admin/
 ```
 
-Adding a dependency:
+Open <http://localhost:8000/admin/>.
+
+Add a dependency:
 
 ```sh
-uv add <package>
+uv add somepkg                  # updates pyproject.toml + uv.lock
 docker compose build web worker
 docker compose up -d
 ```
 
-## Testing
+## Key URLs
+
+| URL | Purpose |
+|---|---|
+| `/admin/` | Django admin |
+| `/healthz` | Liveness probe (no DB check) |
+| `/readyz` | Readiness probe (DB check) |
+
+## Tests
 
 ```sh
 uv run pytest
+```
+
+## Lint
+
+```sh
 uv run ruff check .
-uv run ruff format --check .
+uv run ruff format .
 ```
 
 ## Production deploy
 
-1. Copy `deploy/.env.prod.example` → `deploy/.env.prod` on the server and fill in all values.
-2. Set GitHub repository secrets: `SSH_HOST`, `SSH_USER`, `SSH_KEY`, `GHCR_TOKEN`.
-3. Push to `main` — the deploy workflow builds the `prod` image, pushes to GHCR, SSH-es to the server, pulls, migrates, and brings the stack up.
+GitHub Actions runs `.github/workflows/deploy.yml` on every push to `main`:
 
-Production stack (`deploy/docker-compose.prod.yml`): web + worker + db + redis + bugsink.
+1. Builds the `prod` Docker target and pushes to `ghcr.io/<owner>/<repo>:latest`.
+2. SSH into the server, pulls the new image, runs `migrate`, restarts services.
 
-## Key endpoints
+### Required secrets (GitHub repo settings)
 
-- `/admin/` — Django admin
-- `/django-rq/` — RQ dashboard (admin-authenticated)
-- `/healthz` — liveness (no DB check)
-- `/readyz` — readiness (DB check)
+| Secret | Value |
+|---|---|
+| `SSH_HOST` | Server IP or hostname |
+| `SSH_USER` | Deploy user |
+| `SSH_KEY` | Private key (matching the server's `~/.ssh/authorized_keys`) |
+| `GHCR_TOKEN` | PAT with `read:packages` (used by the server to pull private images) |
+
+### First deploy
+
+```sh
+# On the server:
+mkdir -p /srv/09-ssh-deploy/deploy
+cp deploy/.env.prod.example /srv/09-ssh-deploy/deploy/.env.prod
+# edit /srv/09-ssh-deploy/deploy/.env.prod with real secrets
+```
+
+Then push to `main` — GitHub Actions handles the rest.
 
 ## GDPR management commands
 
 ```sh
-python manage.py export_user_data <user_id>   # JSON to stdout (Article 20)
-python manage.py delete_user <user_id> --yes  # cascade delete + audit log (Article 17)
+python manage.py export_user_data <user_id> > data.json   # Article 20
+python manage.py delete_user <user_id>                     # Article 17
 ```

@@ -17,6 +17,7 @@ Internationalisation (i18n): no.
 Custom user model: no.
 Auth add-on: none.
 Structured logging: no.
+Task runner: none.
 Add-ons:
   - debug: django-orbit (observability dashboard + MCP)
   - email: console backend in local, plus Mailpit running in Docker for richer inspection
@@ -39,58 +40,55 @@ Scratch project to exercise django-orbit and verify outbound mail flows are capt
 
 ## Stack
 
-- Django 6 · SQLite · uv on host
-- **django-orbit** — observability dashboard + MCP server at `/orbit/`
-- **Mailpit** — local SMTP capture UI at `http://localhost:8025`
-- **Ruff** — lint + format
-- Health check endpoints: `/healthz`, `/readyz`
+| Layer | Choice |
+|---|---|
+| Runtime | Python ≥ 3.12, uv on host |
+| Framework | Django 6 |
+| Database | SQLite |
+| Debug toolbar | django-orbit (+ MCP) |
+| Email (local) | Mailpit via Docker (SMTP :1025, UI :8025) |
+| Lint | Ruff |
+| Tests | manage.py test |
 
 ## Setup
 
 ```sh
 cp .env.example .env
-# Edit .env — set DJANGO_SECRET_KEY to something random for dev
-
-uv sync --group dev
+# Edit .env — set DJANGO_SECRET_KEY to a real value for anything beyond dev
 uv run manage.py migrate
 uv run manage.py createsuperuser
 ```
 
 ## Run
 
-Start Mailpit (captures outbound email):
-
 ```sh
-docker compose up -d
-```
+# Start Mailpit (captures outbound mail)
+docker compose up -d --wait mailpit
 
-Start Django:
-
-```sh
+# Start Django
 uv run manage.py runserver
 ```
 
-## URLs
+## Key URLs
 
-| URL | Description |
-|-----|-------------|
-| `http://localhost:8000/admin/` | Django admin |
-| `http://localhost:8000/orbit/` | Orbit observability dashboard |
-| `http://localhost:8000/healthz` | Liveness probe |
-| `http://localhost:8000/readyz` | Readiness probe (checks DB) |
-| `http://localhost:8025/` | Mailpit web UI |
+| URL | What |
+|---|---|
+| http://localhost:8000/admin/ | Django admin |
+| http://localhost:8000/orbit/ | Orbit observability dashboard |
+| http://localhost:8000/healthz | Liveness probe → `ok` |
+| http://localhost:8000/readyz | Readiness probe → `ready` |
+| http://localhost:8025 | Mailpit web UI |
 
-## Send a test email
+## Send a test mail
 
 ```sh
-DJANGO_SETTINGS_MODULE=config.settings uv run python -c "
-import django; django.setup()
+uv run manage.py shell -c "
 from django.core.mail import send_mail
-send_mail('Test', 'Hello from orbit-demo', 'from@example.com', ['to@example.com'])
+send_mail('hello', 'body', 'from@example.com', ['to@example.com'])
 "
 ```
 
-Then open `http://localhost:8025` to see it captured.
+Then open http://localhost:8025 — the message appears immediately.
 
 ## Lint
 
@@ -99,15 +97,9 @@ uv run ruff check .
 uv run ruff format .
 ```
 
-## Test
+## MCP (AI assistant integration)
 
-```sh
-uv run manage.py test
-```
-
-## Orbit MCP (AI assistant integration)
-
-Add to `claude_desktop_config.json`:
+Add to `claude_desktop_config.json` (`~/Library/Application Support/Claude/`):
 
 ```json
 {

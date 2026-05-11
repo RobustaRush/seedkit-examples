@@ -7,9 +7,10 @@ media/
 __pycache__/
 *.pyc
 *.pyo
-.coverage
-htmlcov/
 .pytest_cache/
-celerybeat-schedule*
-dist/
+htmlcov/
+.coverage
 *.egg-info/
+dist/
+build/
+celerybeat-schedule*

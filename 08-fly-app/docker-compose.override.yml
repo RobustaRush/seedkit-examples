@@ -6,9 +6,7 @@ services:
       - .:/app
       - /app/.venv
     environment:
-      DJANGO_SETTINGS_MODULE: config.settings.local
-    ports:
-      - "8000:8000"
+      DJANGO_DEBUG: "True"
 
   worker:
     build:
@@ -17,16 +15,17 @@ services:
       - .:/app
       - /app/.venv
     environment:
-      DJANGO_SETTINGS_MODULE: config.settings.local
+      DJANGO_DEBUG: "True"
 
   db:
     ports:
-      - "5432:5432"
+      - "127.0.0.1:15432:5432"
 
   redis:
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
 
   minio:
     ports:
-      - "9000:9000"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"

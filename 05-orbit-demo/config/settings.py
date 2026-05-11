@@ -86,7 +86,6 @@ SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
-# Logging baseline
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

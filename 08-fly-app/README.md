@@ -18,6 +18,7 @@ Internationalisation (i18n): no.
 Custom user model: no.
 Auth add-on: `django-mail-auth` (passwordless magic-link).
 Structured logging: no.
+Task runner: none.
 Add-ons:
   - redis
   - tasks: Celery
@@ -49,79 +50,107 @@ Run the foundation + boot check locally. Generate `Dockerfile`, `fly.toml`, `.gi
 
 # 08-fly-app
 
-Production Django app deployed to Fly.io with S3-compatible object storage.
+Production Django app deployed to Fly.io. Multi-stage Docker image (slim runtime), PostgreSQL, Redis, Celery workers, MinIO/S3 object storage, passwordless magic-link auth, django-bolt REST API fast path.
 
 ## Stack
 
-- Django 6 · PostgreSQL · Redis
-- Auth: `django-mail-auth` (passwordless magic-link) · `django-axes` (lockout)
-- Tasks: Celery (Redis broker)
-- Storage: S3-compatible (MinIO locally, AWS S3 / R2 in prod)
-- Email: `django-anymail` / Postmark in prod; console in dev
-- REST API: `django-bolt` (fast-path bolt settings, separate port)
-- Analytics: Google Analytics 4
-- Security: CSP (`django-csp`), Django security settings
-- Error reporting: GlitchTip / Sentry via `sentry-sdk`
-- CI: GitHub Actions · Deploy: Fly.io
+| Layer | Choice |
+|---|---|
+| Framework | Django 6 |
+| Database | PostgreSQL (psycopg3) |
+| Cache / broker | Redis (django-redis + Celery) |
+| Storage | S3-compatible (MinIO locally, S3 in prod) via django-storages |
+| Auth | django-mail-auth (passwordless magic-link) + django-axes (brute-force lockout) |
+| REST API | django-bolt (`runbolt` fast path) |
+| Email | django-anymail / Postmark (prod), console (dev) |
+| Analytics | Google Analytics 4 (optional, gated on `ANALYTICS_ID`) |
+| Error tracking | GlitchTip / Sentry via sentry-sdk |
+| Security | Django security settings + django-csp |
+| Deploy | Fly.io (web + worker + bolt processes) |
+| CI | GitHub Actions |
 
-## Local dev
+## Local development
 
 ```sh
-cp .env.example .env   # edit DJANGO_SECRET_KEY at minimum
-docker compose up -d --build
+cp .env.example .env          # edit DJANGO_SECRET_KEY at minimum
+docker compose up -d --build  # starts web, worker, db, redis, minio
 docker compose exec web uv run manage.py migrate
 docker compose exec web uv run manage.py createsuperuser
 ```
 
-Open <http://localhost:8000>
+Open <http://localhost:8000/admin/>.
 
-MinIO console: <http://localhost:9001> (minioadmin / minioadmin)
+The magic-link login is at <http://localhost:8000/accounts/login/>. In dev mode, the magic link is printed to `docker compose logs web`.
+
+### Bolt API server (separate process)
+
+```sh
+docker compose exec -e DJANGO_SETTINGS_MODULE=config.settings.bolt web \
+    uv run manage.py runbolt --dev --port 8001
+```
+
+API is available at <http://localhost:8001>. Example: `GET /users/{user_id}`.
 
 ### Adding a dependency
 
 ```sh
 uv add somepkg
-docker compose build web worker
+docker compose build
 docker compose up -d
 ```
 
-## Commands
+## Health checks
+
+| Endpoint | Purpose |
+|---|---|
+| `/healthz` | Liveness — always 200 if the process is alive |
+| `/readyz` | Readiness — 200 when DB is reachable, 503 otherwise |
+
+## Key commands
 
 ```sh
-uv run manage.py runserver       # Django dev server (config.settings.local)
-DJANGO_SETTINGS_MODULE=config.settings.bolt uv run manage.py runbolt --dev --port 8001
+uv run manage.py migrate
+uv run manage.py createsuperuser
 uv run pytest
 uv run ruff check .
+uv run ruff format .
 uv run pyright
 ```
 
-## Fly.io deploy
+## Deploy — Fly.io
 
 ```sh
 fly launch --no-deploy
 fly postgres create && fly postgres attach <db-name>
-fly redis create && fly redis attach <redis-name>
+fly redis create  && fly redis attach <redis-name>
 fly secrets set \
     DJANGO_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(50))') \
     DJANGO_ALLOWED_HOSTS=<your-app>.fly.dev \
     DJANGO_CSRF_TRUSTED_ORIGINS=https://<your-app>.fly.dev \
-    POSTMARK_SERVER_TOKEN=<token> \
+    EMAIL_URL=consolemail:// \
     DEFAULT_FROM_EMAIL=no-reply@example.com \
     SERVER_EMAIL=django@example.com \
-    AWS_ACCESS_KEY_ID=... \
-    AWS_SECRET_ACCESS_KEY=... \
-    AWS_STORAGE_BUCKET_NAME=... \
-    SENTRY_DSN=...
+    POSTMARK_SERVER_TOKEN=<token> \
+    ANYMAIL_WEBHOOK_SECRET=<secret> \
+    AWS_ACCESS_KEY_ID=<key> \
+    AWS_SECRET_ACCESS_KEY=<secret> \
+    AWS_STORAGE_BUCKET_NAME=<bucket>
 fly deploy
 ```
 
-Release command (`fly.toml`): runs `migrate` + `collectstatic` before traffic shifts.
+The `[deploy] release_command` runs `python manage.py migrate` automatically on every deploy.
 
-Processes: `web` (gunicorn), `worker` (celery), `bolt` (runbolt on port 8002).
+## Processes (fly.toml)
 
-## GDPR commands
+| Process | Command |
+|---|---|
+| `web` | `gunicorn config.wsgi --bind 0.0.0.0:8000` |
+| `worker` | `celery -A config worker -l info` |
+| `bolt` | `env DJANGO_SETTINGS_MODULE=config.settings.bolt python manage.py runbolt --port 8002` |
+
+## GDPR
 
 ```sh
-uv run manage.py export_user_data <user_id>   # JSON to stdout
-uv run manage.py delete_user <user_id> --confirm
+uv run manage.py export_user_data <user_id>   # subject access request
+uv run manage.py delete_user <user_id>        # erasure request
 ```

@@ -17,8 +17,8 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "python -c 'import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(\"http://localhost:8000/healthz\",timeout=2).status==200 else 1)'"]
       interval: 10s
-      timeout: 5s
-      retries: 10
+      timeout: 3s
+      retries: 5
       start_period: 30s
 
   celery:
@@ -40,8 +40,6 @@ services:
     image: postgres:17
     environment:
       POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

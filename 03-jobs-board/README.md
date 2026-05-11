@@ -17,6 +17,7 @@ Internationalisation (i18n): yes.
 Custom user model: no.
 Auth add-on: `django-mail-auth` (passwordless magic-link).
 Structured logging: no.
+Task runner: just.
 Add-ons:
   - redis (for Celery)
   - tasks: Celery, with periodic tasks (Celery Beat)
@@ -41,59 +42,62 @@ Ship a `docker-compose.yml` with `db` and `redis` services only. Run the foundat
 
 Job board with background email notifications and a daily digest.
 
-## Stack
+**Stack:** Django 6 · PostgreSQL · Redis · Celery + Beat · django-mail-auth · i18n
 
-- **Django** with single `config/settings.py`
-- **PostgreSQL** (Docker) + **uv** on host
-- **django-mail-auth** — passwordless magic-link login
-- **Celery** + **Celery Beat** — background tasks and scheduled daily digest
-- **Redis** — Celery broker and Django cache
-- **django-redis** — shared cache backend
-- **i18n** — gettext, LocaleMiddleware, `locale/` directory
-- **Health checks** — `/healthz` (liveness) and `/readyz` (readiness)
-
-## Local dev setup
+## Quick start
 
 ```sh
-cp .env.example .env
-# Set a real secret key:
-python -c "import secrets; print('DJANGO_SECRET_KEY=' + secrets.token_urlsafe(50))"
-# paste the line into .env
-
-docker compose up -d --wait        # starts db + redis
-uv run manage.py migrate
-uv run manage.py createsuperuser
-uv run manage.py runserver
+cp .env.example .env          # edit DJANGO_SECRET_KEY
+docker compose up -d --wait   # starts db + redis
+just migrate
+just superuser
+just dev                      # http://127.0.0.1:8000
 ```
 
-Open <http://localhost:8000/admin/>.
+## Tasks
 
-## Key commands
+| Command | Description |
+|---|---|
+| `just install` | `uv sync` |
+| `just dev` | Django dev server |
+| `just migrate` | Run migrations |
+| `just makemigrations` | Create new migrations |
+| `just shell` | Django shell |
+| `just superuser` | Create superuser |
+| `just test` | Run tests |
+| `just worker` | Celery worker |
+| `just beat` | Celery Beat scheduler |
+| `just collectstatic` | Collect static files |
+
+Fallback (no `just`): `uv run manage.py <cmd>`
+
+## Auth
+
+Passwordless magic-link via `django-mail-auth`. With `EMAIL_URL=consolemail://` the sign-in link prints to `runserver` stdout — click it to log in.
+
+## Background tasks
+
+`jobs/tasks.py` defines two tasks:
+
+- `send_application_notification` — triggered on application submission
+- `daily_digest` — scheduled daily at 08:00 via Celery Beat
+
+Run worker and Beat locally:
 
 ```sh
-uv run manage.py migrate
-uv run manage.py test
-uv run manage.py makemessages -l en
+just worker   # in one terminal
+just beat     # in another
+```
+
+## i18n
+
+```sh
+uv run manage.py makemessages -l de
+# edit locale/de/LC_MESSAGES/django.po
 uv run manage.py compilemessages
-
-# Background worker (separate terminal):
-uv run celery -A config worker -l info
-
-# Beat scheduler (separate terminal):
-uv run celery -A config beat -l info
 ```
 
-## Celery tasks
+## Health checks
 
-- `jobs.tasks.send_notification_email(user_id, subject, message)` — one-off email notification
-- `jobs.tasks.send_daily_digest()` — scheduled daily at 08:00 UTC via Beat
-
-## Endpoints
-
-| Path | Description |
-|------|-------------|
-| `/` | Redirects to `/admin/` |
-| `/admin/` | Django admin (magic-link login) |
-| `/accounts/login/` | Magic-link login |
-| `/healthz` | Liveness probe — returns `ok` |
-| `/readyz` | Readiness probe — checks DB, returns `ready` |
+- `GET /healthz` → `ok` (liveness)
+- `GET /readyz` → `ready` (readiness — checks DB)

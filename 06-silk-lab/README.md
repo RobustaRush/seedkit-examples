@@ -17,6 +17,7 @@ Internationalisation (i18n): no.
 Custom user model: no.
 Auth add-on: none.
 Structured logging: no.
+Task runner: none.
 Add-ons:
   - debug: django-silk (profiling + `@silk_profile`)
   - tasks: Django Tasks with the Database backend (`django-tasks-db`)
@@ -43,30 +44,31 @@ Run the foundation, the boot check, start `manage.py db_worker` in a second term
 
 # 06-silk-lab
 
-Profile request paths with django-silk and run background email tasks via the Django Tasks DB backend.
+Profile request paths with django-silk and run background email tasks on the DB backend.
 
 ## Stack
 
 | Layer | Choice |
 |---|---|
-| Framework | Django 6.0 |
-| Database | PostgreSQL (psycopg3) |
-| Settings | Split (base / local / production / test) |
+| Framework | Django 6 |
+| Database | PostgreSQL (host) |
 | Profiling | django-silk (`/silk/`) |
-| Background tasks | django-tasks-db (`db_worker`) |
-| Email | console backend in dev |
-| Analytics | GoatCounter snippet (env-driven, `ANALYTICS_ID`) |
-| Health checks | `/healthz` (liveness), `/readyz` (readiness) |
-| Dev tools | django-extensions, django-zeal, django-migration-linter, django-test-migrations |
+| Background tasks | django-tasks + DB backend (`db_worker`) |
+| Email (dev) | Console (`consolemail://`) |
+| Analytics | GoatCounter (env-driven, skipped in dev) |
+| Healthchecks | `/healthz`, `/readyz` |
 | Lint | Ruff |
 | Tests | pytest + pytest-django |
+| DB safety | django-zeal, django-migration-linter, django-test-migrations |
+| Dev toolbox | django-extensions |
 
-## Local setup
+## Setup
 
 ```sh
 createdb silk_db
 cp .env.example .env
-# Edit .env — set DJANGO_SECRET_KEY to a real value
+# Edit .env: set DJANGO_SECRET_KEY to a real value
+uv sync
 uv run manage.py migrate
 uv run manage.py createsuperuser
 ```
@@ -74,30 +76,32 @@ uv run manage.py createsuperuser
 ## Run
 
 ```sh
-# Web server
+# Terminal 1
 uv run manage.py runserver
 
-# Background worker (second terminal)
+# Terminal 2 — task worker
 uv run manage.py db_worker
 ```
-
-Open <http://localhost:8000/admin/> and <http://localhost:8000/silk/>.
 
 ## Enqueue an example task
 
 ```python
-from pages.tasks import send_welcome_email
-send_welcome_email.enqueue("you@example.com")
+# uv run manage.py shell_plus
+from jobs.tasks import send_example_email
+send_example_email.enqueue("you@example.com")
 ```
 
-## Commands
+## Profiling
+
+Visit any page, then open **http://localhost:8000/silk/** to see the request profile. The home view at `/` is decorated with `@silk_profile(name="home")`.
+
+## Key commands
 
 ```sh
-uv run manage.py migrate
-uv run manage.py lintmigrations
-uv run ruff check .
-uv run ruff format .
-uv run pytest
-uv run manage.py show_urls
-uv run manage.py shell_plus
+uv run manage.py lintmigrations       # check migrations for unsafe ops
+uv run ruff check .                   # lint
+uv run ruff format .                  # format
+uv run pytest                         # tests
+uv run manage.py show_urls            # list all URL patterns
+uv run manage.py silk_clear_request_log  # clear silk data
 ```

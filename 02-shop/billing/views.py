@@ -50,7 +50,9 @@ def stripe_webhook(request):
     payload = request.body
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
     try:
-        event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
+        )
     except (ValueError, stripe.SignatureVerificationError):
         return HttpResponse(status=400)
 
@@ -70,7 +72,7 @@ def _handle_subscription_created(subscription):
         user = User.objects.get(stripe_customer_id=subscription["customer"])
     except User.DoesNotExist:
         return
-    _ = user
+    _ = user  # extend with subscription state tracking as needed
 
 
 def _handle_subscription_deleted(subscription):
@@ -81,4 +83,4 @@ def _handle_subscription_deleted(subscription):
         user = User.objects.get(stripe_customer_id=subscription["customer"])
     except User.DoesNotExist:
         return
-    _ = user
+    _ = user  # extend with subscription state tracking as needed
