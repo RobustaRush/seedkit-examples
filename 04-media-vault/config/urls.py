@@ -10,5 +10,6 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("healthz", liveness, name="healthz"),
     path("readyz", readiness, name="readyz"),
+    path("django-rq/", include("django_rq.urls")),
     path(router.prefix, include((router.urls, "api"), namespace="api")),
 ]

@@ -6,14 +6,11 @@ media/
 .ruff_cache/
 .pytest_cache/
 .mypy_cache/
-htmlcov/
-.coverage
+.django_tailwind_cli/
 __pycache__/
 *.pyc
 *.pyo
-.django_tailwind_cli/
-node_modules/
 dist/
-build/
 *.egg-info/
-.DS_Store
+htmlcov/
+.coverage

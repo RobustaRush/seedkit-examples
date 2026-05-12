@@ -1,11 +1,14 @@
 {
   "name": "04-media-vault",
-  "dockerComposeFile": ["../docker-compose.yml"],
-  "service": "web",
-  "workspaceFolder": "/app",
-  "shutdownAction": "stopCompose",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12-bookworm",
+  "features": {
+    "ghcr.io/va-h/devcontainers-features/uv:1": {}
+  },
+  "postCreateCommand": "uv sync --frozen",
+  "containerEnv": {
+    "DJANGO_SETTINGS_MODULE": "config.settings.local"
+  },
   "forwardPorts": [8000],
-  "postAttachCommand": "uv run manage.py migrate",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -15,7 +18,8 @@
         "batisteo.vscode-django"
       ],
       "settings": {
-        "python.defaultInterpreterPath": "/app/.venv/bin/python"
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python",
+        "python.testing.pytestEnabled": false
       }
     }
   }

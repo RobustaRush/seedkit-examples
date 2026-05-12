@@ -1,12 +1,9 @@
-import logging
-
+import structlog
 from django.tasks import task
 
-logger = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 
 @task()
-def process_upload(filename: str, size: int) -> dict[str, str | int]:
-    """Sample background task: log upload details and return a summary."""
-    logger.info("processing_upload", extra={"filename": filename, "size": size})
-    return {"filename": filename, "size": size, "status": "processed"}
+def process_media(media_uid: str) -> None:
+    log.info("processing_media", uid=media_uid)

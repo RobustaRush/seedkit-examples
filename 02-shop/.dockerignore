@@ -10,5 +10,3 @@ __pycache__/
 staticfiles/
 node_modules/
 .django_tailwind_cli/
-htmlcov/
-media/

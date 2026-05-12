@@ -1,5 +1,1 @@
-from django.test import TestCase
-
-
-class BillingTest(TestCase):
-    pass
+# Create your tests here.

@@ -37,7 +37,6 @@ class UserManager(BaseUserManager["User"]):
 class User(AbstractUser):
     username = None  # type: ignore[assignment]
     email = models.EmailField(unique=True)
-
     stripe_customer_id = models.CharField(max_length=255, blank=True, default="")
     is_subscribed = models.BooleanField(default=False)
 

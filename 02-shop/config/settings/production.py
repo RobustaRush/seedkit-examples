@@ -1,6 +1,7 @@
 from .base import *
 
-# WhiteNoise
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+
 sec_idx = MIDDLEWARE.index("django.middleware.security.SecurityMiddleware")
 MIDDLEWARE.insert(sec_idx + 1, "whitenoise.middleware.WhiteNoiseMiddleware")
 
@@ -9,10 +10,6 @@ STORAGES = {
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
-# Allauth: require email verification in prod
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
-
-# HTTPS / security
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
 SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
 

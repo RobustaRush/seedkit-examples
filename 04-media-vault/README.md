@@ -9,8 +9,7 @@ Purpose: media-heavy app where uploads land in S3, processing runs as Redis-queu
 Settings layout: split.
 Database: PostgreSQL.
 Request handling: asgi+channels.
-Local dev mode: docker-compose (full stack: web + db + redis).
-Docker structure: simple (separate `Dockerfile.dev`, single `docker-compose.yml`).
+Postgres location: Postgres-in-Docker (`db` service in `docker-compose.yml`, port `127.0.0.1:5432` published).
 Lint with Ruff: yes.
 Test runner: manage.py test (stock Django).
 Type check (pyright + django-stubs): yes.
@@ -36,7 +35,7 @@ Add-ons:
 
 Production setup: skip.
 
-Generate `docker-compose.yml` with services `web`, `db`, `redis`, `worker`, `minio`. `web` runs `gunicorn -k uvicorn.workers.UvicornWorker config.asgi:application` (uvicorn worker since the foundation picked ASGI; HTTP and WS share the same process in dev). Run the foundation, `docker compose up -d`, migrate, createsuperuser, and confirm both a sample task enqueues and a WebSocket round-trip works.
+Generate `docker-compose.yml` with services `db`, `redis`, `minio` (local services only — Django, the rqworker, and uvicorn run on the host). Run the foundation, `docker compose up -d`, `uv run uvicorn config.asgi:application --reload --host 0.0.0.0` (HTTP + WS share one process in dev — `manage.py runserver` doesn't upgrade WebSockets), `uv run manage.py rqworker default` in a separate terminal, migrate, createsuperuser, and confirm a sample task enqueues and a WebSocket round-trip works.
 ```
 
 ---
@@ -47,79 +46,87 @@ Media-heavy app where uploads land in S3, processing runs as Redis-queued backgr
 
 ## Stack
 
-| Component | Technology |
+| Layer | Choice |
 |---|---|
-| Framework | Django 6 (ASGI + channels) |
-| Database | PostgreSQL 17 |
-| Cache | Redis 7 (django-redis, DB 0) |
-| Channel layer | channels-redis (DB 1) |
-| Background tasks | django-tasks + django-tasks-rq (RQ, DB 3) |
-| Storage | S3-compatible (MinIO in dev, any S3 in prod) |
-| REST API | django-modern-rest (msgspec + openapi) |
-| Structured logging | structlog + django-structlog |
-| Server | gunicorn + UvicornWorker |
-| Lint | Ruff |
-| Types | pyright + django-stubs |
+| Framework | Django 6.0 |
+| Database | PostgreSQL 17 (Docker) |
+| Request handling | ASGI + channels (uvicorn) |
+| Task queue | django-tasks-rq (Redis) |
+| Channel layer | channels-redis |
+| Storage | S3-compatible (MinIO in dev) |
+| REST API | django-modern-rest (msgspec) |
+| Logging | structlog (pretty dev / JSON prod) |
 
-## Quick start
+## Prerequisites
+
+- Python 3.12+
+- uv
+- Docker + Docker Compose
+
+## Setup
 
 ```sh
 cp .env.example .env
-# edit .env — set a real DJANGO_SECRET_KEY
-docker compose up -d --wait
-docker compose exec web uv run manage.py migrate
-docker compose exec web uv run manage.py createsuperuser
+# Edit .env — set a real DJANGO_SECRET_KEY
+docker compose up -d --wait        # start db, redis, minio
+uv run manage.py migrate
+uv run manage.py createsuperuser
 ```
 
-Open <http://localhost:8000/admin/>.
-
-MinIO console: <http://localhost:9001/> (credentials from `.env`).
-
-## Key commands
+## Run
 
 ```sh
-# Migrate
-docker compose exec web uv run manage.py migrate
+# Terminal 1 — HTTP + WebSocket server
+uv run uvicorn config.asgi:application --reload --host 0.0.0.0 --port 8000
 
-# Run tests
-docker compose exec web uv run manage.py test
-
-# Lint
-uv run ruff check .
-
-# Type check
-uv run pyright
-
-# Worker logs
-docker compose logs -f worker
-
-# Tear down (removes volumes)
-docker compose down -v
+# Terminal 2 — background task worker
+uv run manage.py rqworker default
 ```
 
-## Services
-
-| Service | Port | Purpose |
-|---|---|---|
-| `web` | 8000 | HTTP + WebSocket (gunicorn + UvicornWorker) |
-| `db` | — | PostgreSQL (internal only) |
-| `redis` | — | Cache / channel layer / RQ broker (internal only) |
-| `worker` | — | RQ worker (`manage.py rqworker default`) |
-| `minio` | 9000, 9001 | S3-compatible object store |
+Open <http://localhost:8000/admin/> and sign in.
 
 ## API
 
-`POST /api/media/` — accept `{"filename": str, "size": int}`, return `{"uid": uuid, "filename": str}`.
-
-Missing `size` returns 422.
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| POST | `/api/media/` | `{"filename": str, "size": int}` | `{"uid": uuid, "filename": str}` |
 
 ## WebSocket
 
-Connect to `ws://localhost:8000/ws/echo/` with `Origin: http://localhost`. Any JSON sent is echoed back.
+Connect to `ws://localhost:8000/ws/echo/` — sends back every JSON message unchanged.
 
 ## Health checks
 
-- `GET /healthz` → `ok` (liveness)
-- `GET /readyz` → `ready` (readiness — DB probe)
+| URL | Behaviour |
+|---|---|
+| `/healthz` | Always 200 `ok` (liveness) |
+| `/readyz` | 200 `ready` when DB is reachable; 503 otherwise |
+
+## Services
+
+| Service | Local URL |
+|---|---|
+| Django / uvicorn | <http://localhost:8000> |
+| MinIO API | <http://localhost:9000> |
+| MinIO Console | <http://localhost:9001> (user: minioadmin / minioadmin) |
+
+## Test
+
+```sh
+uv run manage.py test
+```
+
+## Lint / format
+
+```sh
+uv run ruff check .
+uv run ruff format .
+```
+
+## Type check
+
+```sh
+uv run pyright
+```
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

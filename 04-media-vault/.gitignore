@@ -5,11 +5,12 @@ staticfiles/
 media/
 .ruff_cache/
 .pytest_cache/
-.mypy_cache/
 __pycache__/
 *.pyc
 *.pyo
-*.pyd
-.DS_Store
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
 node_modules/
 .django_tailwind_cli/

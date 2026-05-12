@@ -4,16 +4,9 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
-*.egg
 *.egg-info/
 dist/
 build/
-eggs/
-parts/
-var/
-sdist/
-wheels/
-*.so
 
 # Virtual environment
 .venv/
@@ -26,18 +19,15 @@ wheels/
 staticfiles/
 media/
 
-# Caches
-.ruff_cache/
-.mypy_cache/
-.pytest_cache/
-
 # Editor
-.vscode/
+.DS_Store
 .idea/
+.vscode/
 *.swp
 *.swo
-*~
 
-# OS
-.DS_Store
-Thumbs.db
+# Ruff
+.ruff_cache/
+
+# uv
+.python-version

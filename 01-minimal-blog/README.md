@@ -8,7 +8,6 @@ Purpose: a tiny blog to verify the skill works end-to-end.
 
 Settings layout: single file (`config/settings.py`).
 Database: SQLite.
-Local dev mode: uv on host.
 Lint with Ruff: no.
 Test runner: manage.py test (stock Django).
 Type check (pyright + django-stubs): no.
@@ -38,44 +37,40 @@ Run the foundation, the boot check (migrate + createsuperuser), and confirm /adm
 
 # 01-minimal-blog
 
-A tiny blog to verify the skill works end-to-end.
+A tiny blog to verify the seedkit skill works end-to-end.
 
 ## Stack
 
-| Component | Choice |
-|-----------|--------|
+| Layer | Choice |
+|---|---|
+| Python | >=3.12 |
 | Framework | Django 6 |
-| Database | SQLite (file: `db.sqlite3`) |
-| Settings | Single file (`config/settings.py`) |
-| Request handling | WSGI |
-| Dev mode | uv on host |
-| Email | Console backend (`consolemail://`) |
+| Database | SQLite |
+| Settings | Single file (`config/settings.py`) via django-environ |
+| Auth | Vanilla `django.contrib.auth` |
+| Email | Console backend (dev) |
 
-## Setup
+## Getting started
 
 ```sh
 cp .env.example .env
-# Edit .env and set a real DJANGO_SECRET_KEY for anything beyond local dev
+# Edit .env — set a real DJANGO_SECRET_KEY for production
+
 uv run manage.py migrate
 uv run manage.py createsuperuser
-```
-
-## Run
-
-```sh
 uv run manage.py runserver
 ```
 
-Open <http://127.0.0.1:8000/admin/> and sign in with your superuser credentials.
+Then open <http://127.0.0.1:8000/admin/> and sign in.
 
-## Test
+## Key commands
 
-```sh
-uv run manage.py test
-```
-
-## Dependencies
-
-See `pyproject.toml` for pinned versions.
+| Command | Purpose |
+|---|---|
+| `uv run manage.py migrate` | Apply database migrations |
+| `uv run manage.py createsuperuser` | Create an admin user |
+| `uv run manage.py runserver` | Start the development server |
+| `uv run manage.py test` | Run the test suite |
+| `uv run manage.py collectstatic --noinput` | Collect static files |
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

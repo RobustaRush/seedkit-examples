@@ -8,7 +8,7 @@ Purpose: job board with background email notifications and a daily digest.
 
 Settings layout: single file.
 Database: PostgreSQL.
-Local dev mode: uv on host. Postgres location: run only Postgres in Docker, Django runs on the host (publish 5432 to localhost).
+Postgres location: Postgres in Docker (`docker-compose.yml` from `references/docker.md`, port `127.0.0.1:5432` published to the host).
 Lint with Ruff: no.
 Test runner: manage.py test (stock Django).
 Type check (pyright + django-stubs): no.
@@ -44,54 +44,56 @@ Job board with background email notifications and a daily digest.
 
 ## Stack
 
-- Django 6 + django-environ
-- PostgreSQL (Docker) · Django runs on the host via uv
-- Redis (Docker) · Celery broker + result backend + cache
-- Celery + Celery Beat (periodic tasks)
-- django-mail-auth (passwordless magic-link)
-- i18n (gettext, LocaleMiddleware)
-- Health check endpoints (`/healthz`, `/readyz`)
+- Django 6 · PostgreSQL · django-environ
+- Auth: django-mail-auth (passwordless magic-link)
+- Background tasks: Celery + Redis + Celery Beat
+- Health checks: `/healthz` (liveness) · `/readyz` (readiness)
+- i18n: gettext + LocaleMiddleware
+- Task runner: just
 
-## Prerequisites
+## Requirements
 
+- Python 3.12+
 - [uv](https://docs.astral.sh/uv/)
 - [just](https://github.com/casey/just)
-- Docker Desktop (for db + redis)
+- Docker (for Postgres + Redis)
 
 ## Setup
 
 ```sh
-cp .env.example .env   # edit DJANGO_SECRET_KEY
-docker compose up -d --wait
+cp .env.example .env          # then edit DJANGO_SECRET_KEY
+docker compose up -d --wait   # start Postgres + Redis
 just migrate
 just superuser
 just dev
 ```
 
-Open <http://127.0.0.1:8000/admin/> and sign in.
+Open <http://127.0.0.1:8000/admin/> to sign in.
 
-## Commands
+## Tasks
 
-| Command | Action |
-|---|---|
-| `just install` | Install / sync dependencies |
-| `just dev` | Start dev server |
-| `just migrate` | Run migrations |
-| `just makemigrations` | Create migrations |
-| `just shell` | Django shell |
+| Task | Description |
+|------|-------------|
+| `just install` | Install dependencies |
+| `just dev` | Start development server |
+| `just migrate` | Run database migrations |
+| `just makemigrations` | Create new migrations |
+| `just shell` | Open Django shell |
 | `just superuser` | Create superuser |
-| `just test` | Run tests |
+| `just test` | Run test suite |
 | `just worker` | Start Celery worker |
 | `just beat` | Start Celery Beat scheduler |
 
-Fallback (no just): `uv run manage.py <cmd>`
+Or use `uv run manage.py <cmd>` directly.
 
-## Background tasks
+## Celery tasks
 
-Tasks live in `jobs/tasks.py`. The Beat schedule is in `CELERY_BEAT_SCHEDULE` in `config/settings.py`. Run worker and beat in separate terminals for local development.
+- `jobs.tasks.send_notification_email(job_id, recipient_email)` — ad-hoc notification
+- `jobs.tasks.send_daily_digest()` — scheduled daily at 08:00 via `CELERY_BEAT_SCHEDULE`
 
-## Auth
+## Health checks
 
-Magic-link login — users enter their email and receive a one-time sign-in link. The link prints to `runserver` stdout when `EMAIL_URL=consolemail://`.
+- `GET /healthz` → `ok` (liveness)
+- `GET /readyz` → `ready` (readiness — checks DB)
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

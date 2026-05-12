@@ -10,17 +10,16 @@ environ.Env.read_env(BASE_DIR / ".env")
 
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)
-ALLOWED_HOSTS = env.list(
-    "DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"] if DEBUG else env.NOTSET
-)
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 DATABASES = {
     "default": env.db(
-        "DATABASE_URL",
-        default="postgres://postgres:postgres@db:5432/postgres" if DEBUG else env.NOTSET,
+        "DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET
     )
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Application definition
 
 INSTALLED_APPS = [
     "daphne",
@@ -35,6 +34,7 @@ INSTALLED_APPS = [
     "django_rq",
     "django_tasks_rq",
     "django_structlog",
+    "storages",
     "jobs",
     "api",
 ]
@@ -70,6 +70,8 @@ TEMPLATES = [
 
 ASGI_APPLICATION = "config.asgi.application"
 
+# Password validation
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -84,8 +86,9 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# --- Redis ---
-REDIS_URL = env("REDIS_URL", default="redis://redis:6379" if DEBUG else env.NOTSET).rstrip("/")
+# Redis
+
+REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
 
 CACHES = {
     "default": {
@@ -95,15 +98,17 @@ CACHES = {
     }
 }
 
-# --- Channels ---
+# Channels
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [f"{REDIS_URL}/1"]},
+        "CONFIG": {"hosts": [env("REDIS_URL", default="redis://127.0.0.1:6379")]},
     },
 }
 
-# --- Tasks (RQ) ---
+# Django Tasks — RQ backend
+
 TASKS = {
     "default": {
         "BACKEND": "django_tasks_rq.RQBackend",
@@ -117,7 +122,8 @@ RQ_QUEUES = {
 
 RQ = {"JOB_CLASS": "django_tasks_rq.Job"}
 
-# --- S3 / MinIO storage ---
+# S3 / MinIO storage
+
 AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID", default="" if DEBUG else env.NOTSET)
 AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY", default="" if DEBUG else env.NOTSET)
 AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="" if DEBUG else env.NOTSET)
@@ -132,11 +138,15 @@ if AWS_STORAGE_BUCKET_NAME:
         "OPTIONS": {"location": "media"},
     }
 else:
-    _default_storage = {"BACKEND": "django.core.files.storage.FileSystemStorage"}
+    _default_storage = {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    }
 
 STORAGES = {
     "default": _default_storage,
-    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
 }
 
 if AWS_S3_CUSTOM_DOMAIN:
@@ -144,27 +154,38 @@ if AWS_S3_CUSTOM_DOMAIN:
 else:
     MEDIA_URL = "/media/"
 
-# --- Email ---
-globals().update(env.email_url("EMAIL_URL", default="consolemail://" if DEBUG else env.NOTSET))
+# Email
+
+globals().update(
+    env.email_url(
+        "EMAIL_URL",
+        default="consolemail://" if DEBUG else env.NOTSET,
+    )
+)
+
 DEFAULT_FROM_EMAIL = env(
-    "DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET
+    "DEFAULT_FROM_EMAIL",
+    default="webmaster@localhost" if DEBUG else env.NOTSET,
 )
 SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
-# --- CORS ---
+# CORS
+
 CORS_ALLOWED_ORIGINS = env.list(
     "DJANGO_CORS_ALLOWED_ORIGINS",
     default=["http://localhost:3000", "http://127.0.0.1:3000"] if DEBUG else [],
 )
 CORS_ALLOW_CREDENTIALS = True
+
 CSRF_TRUSTED_ORIGINS = env.list(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
     default=["http://localhost:3000"] if DEBUG else [],
 )
 
-# --- structlog ---
+# Structlog
+
 PRE_CHAIN = [
     structlog.contextvars.merge_contextvars,
     structlog.stdlib.add_log_level,

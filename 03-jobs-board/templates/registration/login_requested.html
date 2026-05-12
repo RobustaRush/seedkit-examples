@@ -1,6 +1,7 @@
 {% extends "base.html" %}
-{% block title %}Check your inbox{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Check your inbox" %}{% endblock %}
 {% block content %}
-<h1>Check your inbox</h1>
-<p>We sent a sign-in link to that address. The link is valid for a few minutes.</p>
+<h1>{% trans "Check your inbox" %}</h1>
+<p>{% trans "We sent a sign-in link to that address. The link is valid for a few minutes." %}</p>
 {% endblock %}
