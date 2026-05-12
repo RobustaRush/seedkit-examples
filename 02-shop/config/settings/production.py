@@ -1,7 +1,6 @@
 from .base import *
 
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
-
+# WhiteNoise
 sec_idx = MIDDLEWARE.index("django.middleware.security.SecurityMiddleware")
 MIDDLEWARE.insert(sec_idx + 1, "whitenoise.middleware.WhiteNoiseMiddleware")
 
@@ -10,6 +9,10 @@ STORAGES = {
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
+# Allauth: require email verification in prod
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+
+# HTTPS / security
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
 SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
 
@@ -23,12 +26,9 @@ SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
 
+SILENCED_SYSTEM_CHECKS = ["security.W005", "security.W021"]
+
 SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
-
-SILENCED_SYSTEM_CHECKS = [
-    "security.W005",  # SECURE_HSTS_INCLUDE_SUBDOMAINS — opt in after all subdomains serve HTTPS
-    "security.W021",  # SECURE_HSTS_PRELOAD — opt in after manual review of consequences
-]

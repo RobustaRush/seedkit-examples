@@ -4,9 +4,11 @@ from django.contrib import admin
 from django.urls import include, path
 
 from billing import views as billing_views
-from pages.views import IndexView, liveness, readiness, robots_txt
+from config.views import liveness, readiness, robots_txt
+from pages.views import IndexView
 
 urlpatterns = [
+    path("", IndexView.as_view(), name="index"),
     path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),
     path("billing/checkout/", billing_views.create_checkout_session, name="billing-checkout"),
@@ -15,7 +17,6 @@ urlpatterns = [
     path("healthz", liveness, name="healthz"),
     path("readyz", readiness, name="readyz"),
     path("robots.txt", robots_txt, name="robots"),
-    path("", IndexView.as_view(), name="index"),
 ]
 
 if settings.DEBUG:

@@ -7,6 +7,9 @@ run = "uv sync"
 [tasks.dev]
 run = "uv run manage.py runserver"
 
+[tasks.bolt]
+run = "env DJANGO_SETTINGS_MODULE=config.settings.bolt uv run manage.py runbolt --dev"
+
 [tasks.migrate]
 run = "uv run manage.py migrate"
 

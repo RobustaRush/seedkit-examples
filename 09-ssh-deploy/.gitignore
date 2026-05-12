@@ -4,11 +4,11 @@
 staticfiles/
 media/
 .ruff_cache/
+.pytest_cache/
+.mypy_cache/
+htmlcov/
+.coverage
 __pycache__/
 *.pyc
 *.pyo
-.pytest_cache/
-htmlcov/
-.coverage
-dist/
-*.egg-info/
+*.pyd

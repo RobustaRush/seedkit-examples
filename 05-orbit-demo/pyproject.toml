@@ -7,12 +7,6 @@ dependencies = [
     "django-environ>=0.13.0",
 ]
 
-[dependency-groups]
-dev = [
-    "django-orbit[mcp]>=0.8.1",
-    "ruff>=0.15.12",
-]
-
 [tool.ruff]
 line-length = 100
 extend-exclude = ["migrations", "*/migrations/*"]
@@ -36,13 +30,19 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**"    = ["S"]
-"**/test_*.py"   = ["S"]
-"**/tests.py"    = ["S"]
-"config/settings.py" = ["F405", "F403", "S105", "S106"]
+"**/tests/**" = ["S"]
+"**/test_*.py" = ["S"]
+"**/tests.py" = ["S"]
+"**/settings*.py" = ["F405", "F403", "S105", "S106"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["pages"]
+known-first-party = ["config"]
 
 [tool.ruff.format]
 quote-style = "double"
+
+[dependency-groups]
+dev = [
+    "django-orbit[mcp]>=0.8.1",
+    "ruff>=0.15.12",
+]

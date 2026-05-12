@@ -10,7 +10,9 @@ environ.Env.read_env(BASE_DIR / ".env")
 
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"] if DEBUG else env.NOTSET)
+ALLOWED_HOSTS = env.list(
+    "DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"] if DEBUG else env.NOTSET
+)
 DATABASES = {
     "default": env.db(
         "DATABASE_URL",
@@ -28,20 +30,19 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "channels",
+    "corsheaders",
     "django_rq",
     "django_tasks_rq",
-    "corsheaders",
-    "channels",
-    "chat",
+    "django_structlog",
     "jobs",
-    "pages",
     "api",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -55,7 +56,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": [],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -78,7 +79,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
-USE_I18N = False
 USE_TZ = True
 
 STATIC_URL = "/static/"
@@ -103,7 +103,7 @@ CHANNEL_LAYERS = {
     },
 }
 
-# --- Tasks (django-tasks-rq) ---
+# --- Tasks (RQ) ---
 TASKS = {
     "default": {
         "BACKEND": "django_tasks_rq.RQBackend",
@@ -127,7 +127,7 @@ AWS_S3_CUSTOM_DOMAIN = env("AWS_S3_CUSTOM_DOMAIN", default="")
 AWS_S3_URL_PROTOCOL = env("AWS_S3_URL_PROTOCOL", default="https:")
 
 if AWS_STORAGE_BUCKET_NAME:
-    _default_storage: dict = {
+    _default_storage = {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
         "OPTIONS": {"location": "media"},
     }
@@ -145,12 +145,12 @@ else:
     MEDIA_URL = "/media/"
 
 # --- Email ---
-globals().update(
-    env.email_url("EMAIL_URL", default="consolemail://" if DEBUG else env.NOTSET)
+globals().update(env.email_url("EMAIL_URL", default="consolemail://" if DEBUG else env.NOTSET))
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET
 )
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET)
 SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
-ADMINS = [(e.split("@")[0], e) for e in env.list("DJANGO_ADMINS", default=[])]
+ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
 # --- CORS ---
@@ -159,8 +159,12 @@ CORS_ALLOWED_ORIGINS = env.list(
     default=["http://localhost:3000", "http://127.0.0.1:3000"] if DEBUG else [],
 )
 CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = env.list(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    default=["http://localhost:3000"] if DEBUG else [],
+)
 
-# --- Structlog ---
+# --- structlog ---
 PRE_CHAIN = [
     structlog.contextvars.merge_contextvars,
     structlog.stdlib.add_log_level,

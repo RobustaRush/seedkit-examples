@@ -10,17 +10,18 @@ primary_region = "iad"
 
 # Required secrets (set via `fly secrets set`):
 #   DJANGO_SECRET_KEY
-#   DJANGO_ALLOWED_HOSTS     — <appname>.fly.dev plus any custom domain
-#   DJANGO_CSRF_TRUSTED_ORIGINS — https://<host>
-#   DATABASE_URL             — auto-set by `fly postgres attach`
-#   REDIS_URL                — auto-set by `fly redis attach`
-#   EMAIL_URL or POSTMARK_SERVER_TOKEN
-#   DEFAULT_FROM_EMAIL
-#   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME
-#   SENTRY_DSN               — if GlitchTip error reporting is enabled
+#   DJANGO_ALLOWED_HOSTS
+#   DJANGO_CSRF_TRUSTED_ORIGINS
+#   DATABASE_URL          (auto-set by `fly postgres attach`)
+#   REDIS_URL             (auto-set by `fly redis attach`)
+#   EMAIL_URL
+#   POSTMARK_SERVER_TOKEN
+#   ANYMAIL_WEBHOOK_SECRET
+#   AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_STORAGE_BUCKET_NAME
+#   SENTRY_DSN            (optional)
 
 [deploy]
-  # `python` not `uv run` — the prod stage (python:3.12-slim-bookworm) has no uv.
+  # `python` not `uv run` — the runtime stage has no uv binary, only the venv.
   release_command = "python manage.py migrate && python manage.py collectstatic --noinput"
 
 [processes]
@@ -50,16 +51,7 @@ primary_region = "iad"
   [[services.checks]]
     grace_period = "10s"
     interval = "10s"
-    method = "GET"
+    method = "get"
     path = "/readyz"
     protocol = "http"
     timeout = "5s"
-
-[[services]]
-  internal_port = 8002
-  protocol = "tcp"
-  processes = ["bolt"]
-
-  [[services.ports]]
-    port = 8002
-    handlers = ["http"]

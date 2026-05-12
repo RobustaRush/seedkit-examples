@@ -24,10 +24,6 @@ dev = [
     "ruff>=0.15.12",
 ]
 
-[tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings.local"
-python_files = ["tests.py", "test_*.py", "*_tests.py"]
-
 [tool.ruff]
 line-length = 100
 extend-exclude = ["migrations", "*/migrations/*"]
@@ -43,10 +39,14 @@ ignore = ["E501", "S101", "RUF012"]
 "**/settings/*.py" = ["F405", "F403", "S105", "S106"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["users", "pages", "billing"]
+known-first-party = ["users", "pages", "billing", "config"]
 
 [tool.ruff.format]
 quote-style = "double"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
 
 [tool.pyright]
 include = ["."]
@@ -60,3 +60,11 @@ reportMissingTypeStubs = "none"
 reportGeneralTypeIssues = "warning"
 reportOptionalMemberAccess = "warning"
 strictListInference = true
+
+[tool.coverage.run]
+source = ["."]
+omit = ["**/migrations/**", "**/tests/**", "**/test_*.py", "config/wsgi.py", "config/asgi.py", "manage.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

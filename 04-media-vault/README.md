@@ -43,149 +43,83 @@ Generate `docker-compose.yml` with services `web`, `db`, `redis`, `worker`, `min
 
 # 04-media-vault
 
-Media-heavy Django app: uploads land in S3-compatible storage (MinIO in dev), background processing runs as Redis-queued tasks, and clients subscribe over WebSockets for status updates.
+Media-heavy app where uploads land in S3, processing runs as Redis-queued background tasks, and clients subscribe over WebSockets for status updates.
 
 ## Stack
 
-| Layer | Technology |
+| Component | Technology |
 |---|---|
-| Runtime | Python 3.12, Django 6, ASGI + django-channels |
-| Server | gunicorn + UvicornWorker |
+| Framework | Django 6 (ASGI + channels) |
 | Database | PostgreSQL 17 |
-| Cache | Redis 7 (django-redis) |
-| Task queue | django-tasks-rq (RQ backend) + django-rq admin |
-| Storage | S3-compatible via django-storages (MinIO in dev) |
-| WebSockets | channels-redis channel layer |
+| Cache | Redis 7 (django-redis, DB 0) |
+| Channel layer | channels-redis (DB 1) |
+| Background tasks | django-tasks + django-tasks-rq (RQ, DB 3) |
+| Storage | S3-compatible (MinIO in dev, any S3 in prod) |
 | REST API | django-modern-rest (msgspec + openapi) |
-| Logging | structlog — pretty in dev, JSON in prod |
+| Structured logging | structlog + django-structlog |
+| Server | gunicorn + UvicornWorker |
 | Lint | Ruff |
 | Types | pyright + django-stubs |
 
-## Local development
-
-### Prerequisites
-
-- Docker + Docker Compose
-- uv (`brew install uv`)
-
-### First run
+## Quick start
 
 ```sh
 cp .env.example .env
-# Edit .env — set DJANGO_SECRET_KEY to a real value (or generate one):
-# uv run python -c "import secrets; print(secrets.token_urlsafe(50))"
-
-docker compose up -d --build --wait
+# edit .env — set a real DJANGO_SECRET_KEY
+docker compose up -d --wait
 docker compose exec web uv run manage.py migrate
-docker compose exec web uv run manage.py createsuperuser --username admin --email admin@example.com
+docker compose exec web uv run manage.py createsuperuser
 ```
 
 Open <http://localhost:8000/admin/>.
 
-MinIO console: <http://localhost:9001> (user/pass from `.env` `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`).
+MinIO console: <http://localhost:9001/> (credentials from `.env`).
 
-Create the storage bucket (once, after MinIO is running):
-
-```sh
-uv run python -c "
-import boto3, os
-s3 = boto3.client('s3', endpoint_url='http://127.0.0.1:9000',
-    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID', 'minioadmin'),
-    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY', 'minioadmin'),
-    region_name='us-east-1')
-s3.create_bucket(Bucket='media-vault')
-print('bucket ready')
-"
-```
-
-### Day-to-day commands
+## Key commands
 
 ```sh
+# Migrate
+docker compose exec web uv run manage.py migrate
+
+# Run tests
+docker compose exec web uv run manage.py test
+
 # Lint
 uv run ruff check .
-uv run ruff format .
 
 # Type check
 uv run pyright
 
-# Tests
-docker compose exec web uv run manage.py test
+# Worker logs
+docker compose logs -f worker
 
-# Migrations
-docker compose exec web uv run manage.py makemigrations
-docker compose exec web uv run manage.py migrate
-
-# Enqueue a sample task from a shell
-docker compose exec web uv run manage.py shell -c "
-from jobs.tasks import process_media
-result = process_media.enqueue('test-uid-1234', 'photo.jpg')
-print('job id:', result.id)
-"
+# Tear down (removes volumes)
+docker compose down -v
 ```
 
-### Services
+## Services
 
-| Service | URL |
-|---|---|
-| Django app | <http://localhost:8000> |
-| Admin | <http://localhost:8000/admin/> |
-| RQ dashboard | <http://localhost:8000/django-rq/> |
-| Health | <http://localhost:8000/healthz> |
-| Readiness | <http://localhost:8000/readyz> |
-| MinIO console | <http://localhost:9001> |
+| Service | Port | Purpose |
+|---|---|---|
+| `web` | 8000 | HTTP + WebSocket (gunicorn + UvicornWorker) |
+| `db` | — | PostgreSQL (internal only) |
+| `redis` | — | Cache / channel layer / RQ broker (internal only) |
+| `worker` | — | RQ worker (`manage.py rqworker default`) |
+| `minio` | 9000, 9001 | S3-compatible object store |
 
-### API
+## API
 
-`POST /api/media/` — register a new media upload.
+`POST /api/media/` — accept `{"filename": str, "size": int}`, return `{"uid": uuid, "filename": str}`.
 
-Request:
-```json
-{"filename": "photo.jpg", "size": 102400}
-```
+Missing `size` returns 422.
 
-Response `201`:
-```json
-{"uid": "e88c281b-...", "filename": "photo.jpg"}
-```
+## WebSocket
 
-### WebSocket echo
+Connect to `ws://localhost:8000/ws/echo/` with `Origin: http://localhost`. Any JSON sent is echoed back.
 
-Connect to `ws://localhost:8000/ws/echo/` (requires `Origin: http://localhost`). Every JSON message is echoed back verbatim. Used for verifying the channel layer is live before wiring real consumers.
+## Health checks
 
-```sh
-uv run python -c "
-import asyncio, json, websockets
-async def main():
-    async with websockets.connect('ws://localhost:8000/ws/echo/', origin='http://localhost') as ws:
-        await ws.send(json.dumps({'text': 'hello'}))
-        print(await ws.recv())
-asyncio.run(main())
-"
-```
-
-## Project layout
-
-```
-config/
-  settings/
-    base.py        — shared settings (all add-ons wired here)
-    local.py       — dev overrides (currently just base import)
-    production.py  — prod overrides (S3 static)
-  asgi.py          — ProtocolTypeRouter: HTTP + WebSocket
-  routing.py       — WebSocket URL patterns
-  urls.py          — HTTP URL patterns
-api/               — django-modern-rest MediaController
-chat/              — EchoConsumer (WebSocket)
-jobs/              — sample @task (process_media)
-pages/             — /healthz + /readyz views
-```
-
-## Adding a dependency
-
-```sh
-uv add somepkg
-docker compose build web worker
-docker compose up -d
-```
+- `GET /healthz` → `ok` (liveness)
+- `GET /readyz` → `ready` (readiness — DB probe)
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

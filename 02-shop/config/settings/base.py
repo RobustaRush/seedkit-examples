@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import environ
+import stripe as _stripe
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -10,11 +11,7 @@ environ.Env.read_env(BASE_DIR / ".env")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
-DATABASES = {
-    "default": env.db(
-        "DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET
-    )
-}
+DATABASES = {"default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET)}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -49,12 +46,6 @@ MIDDLEWARE = [
     "axes.middleware.AxesMiddleware",
 ]
 
-AUTHENTICATION_BACKENDS = [
-    "axes.backends.AxesBackend",
-    "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
-]
-
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
@@ -81,11 +72,10 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
-USE_I18N = False
 USE_TZ = True
 
+# Static + media
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "assets"]
@@ -93,7 +83,14 @@ STATICFILES_DIRS = [BASE_DIR / "assets"]
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Auth
 AUTH_USER_MODEL = "users.User"
+
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesBackend",
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
 
 SITE_ID = 1
 LOGIN_REDIRECT_URL = "/"
@@ -104,34 +101,30 @@ ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "optional"
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 
+# Axes
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1
 AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
 AXES_RESET_ON_SUCCESS = True
 
+# Tailwind
 TAILWIND_CLI_VERSION = "4.1.3"
 TAILWIND_CLI_SRC_CSS = "tailwind-src/css/source.css"
 
-globals().update(
-    env.email_url(
-        "EMAIL_URL",
-        default="consolemail://" if DEBUG else env.NOTSET,
-    )
-)
-
-DEFAULT_FROM_EMAIL = env(
-    "DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET
-)
+# Email
+globals().update(env.email_url(
+    "EMAIL_URL",
+    default="consolemail://" if DEBUG else env.NOTSET,
+))
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET)
 SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
-import stripe as _stripe  # noqa: E402
-
+# Stripe
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY", default="")
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")
-
 _stripe.api_key = STRIPE_SECRET_KEY
 
 try:

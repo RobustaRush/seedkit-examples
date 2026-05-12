@@ -7,7 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 
-def get_or_create_customer(user):
+def _get_or_create_customer(user):
     if user.stripe_customer_id:
         return user.stripe_customer_id
     customer = stripe.Customer.create(
@@ -21,7 +21,7 @@ def get_or_create_customer(user):
 
 @login_required
 def create_checkout_session(request):
-    customer_id = get_or_create_customer(request.user)
+    customer_id = _get_or_create_customer(request.user)
     session = stripe.checkout.Session.create(
         customer=customer_id,
         payment_method_types=["card"],
@@ -50,7 +50,9 @@ def stripe_webhook(request):
     payload = request.body
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
     try:
-        event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
+        )
     except (ValueError, stripe.SignatureVerificationError):
         return HttpResponse(status=400)
 

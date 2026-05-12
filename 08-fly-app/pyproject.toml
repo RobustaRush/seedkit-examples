@@ -3,7 +3,6 @@ name = "08-fly-app"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
-    "celery-types>=0.26.0",
     "celery[redis]>=5.6.3",
     "django>=6.0,<7.0",
     "django-anymail[postmark]>=15.0",
@@ -22,10 +21,12 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "celery-types>=0.26.0",
     "django-stubs>=6.0.4",
     "django-stubs-ext>=6.0.4",
     "pyright>=1.1.409",
     "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
     "pytest-django>=4.12.0",
     "ruff>=0.15.12",
 ]
@@ -33,6 +34,21 @@ dev = [
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.test"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "**/migrations/**",
+    "**/tests/**",
+    "**/test_*.py",
+    "config/wsgi.py",
+    "config/asgi.py",
+    "manage.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
 
 [tool.ruff]
 line-length = 100
@@ -73,18 +89,3 @@ reportMissingTypeStubs = "none"
 reportGeneralTypeIssues = "warning"
 reportOptionalMemberAccess = "warning"
 strictListInference = true
-
-[tool.coverage.run]
-source = ["."]
-omit = [
-    "**/migrations/**",
-    "**/tests/**",
-    "**/test_*.py",
-    "config/wsgi.py",
-    "config/asgi.py",
-    "manage.py",
-]
-
-[tool.coverage.report]
-show_missing = true
-skip_covered = true

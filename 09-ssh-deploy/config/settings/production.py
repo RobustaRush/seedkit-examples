@@ -1,9 +1,10 @@
-import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
+import environ
 
 from .base import *
 
-# HTTPS
+env = environ.Env()
+
+# Security
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
 SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
 
@@ -28,23 +29,27 @@ CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 # CSP
 MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 
+_UMAMI = (ANALYTICS_HOST,) if ANALYTICS_HOST else ()
+
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'",),
-        "script-src": ("'self'",),
+        "script-src": ("'self'", *_UMAMI),
         "style-src": ("'self'", "'unsafe-inline'"),
         "img-src": ("'self'", "data:"),
         "font-src": ("'self'",),
-        "connect-src": ("'self'",),
+        "connect-src": ("'self'", *_UMAMI),
         "frame-ancestors": ("'none'",),
         "base-uri": ("'self'",),
         "form-action": ("'self'",),
     },
 }
 
-# Error reporting (Bugsink / Sentry protocol via sentry-sdk)
+# Error reporting (Bugsink via sentry-sdk)
 SENTRY_DSN = env("SENTRY_DSN", default="")
 if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
 
     def _scrub(event, hint):
         request = event.get("request") or {}
@@ -61,8 +66,7 @@ if SENTRY_DSN:
         release=env("SENTRY_RELEASE", default=None),
     )
 
-# Database backups — wrapped in `if not DEBUG` so the Dockerfile collectstatic
-# step (which runs with DJANGO_DEBUG=True) doesn't evaluate env("AWS_ACCESS_KEY_ID").
+# DB backups (S3-compatible)
 if not DEBUG:
     INSTALLED_APPS += ["dbbackup"]
 

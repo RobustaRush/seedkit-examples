@@ -4,20 +4,9 @@ services:
       target: dev
     volumes:
       - .:/app
-      - /app/.venv      # anonymous volume shadows any host .venv from the bind mount
 
   worker:
     build:
       target: dev
     volumes:
       - .:/app
-      - /app/.venv
-    command: celery -A config worker -l info
-
-  db:
-    ports:
-      - "127.0.0.1:5433:5432"
-
-  redis:
-    ports:
-      - "127.0.0.1:6380:6379"

@@ -20,9 +20,8 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
-
       redis:
-        image: redis:7-alpine
+        image: redis:7
         ports:
           - 6379:6379
         options: >-
@@ -40,11 +39,11 @@ jobs:
       DEFAULT_FROM_EMAIL: test@example.com
       SERVER_EMAIL: test@example.com
       REDIS_URL: redis://localhost:6379
-      AWS_ACCESS_KEY_ID: test
-      AWS_SECRET_ACCESS_KEY: test
+      POSTMARK_SERVER_TOKEN: test-token
+      ANYMAIL_WEBHOOK_SECRET: test-secret
+      AWS_ACCESS_KEY_ID: test-key
+      AWS_SECRET_ACCESS_KEY: test-secret
       AWS_STORAGE_BUCKET_NAME: ""
-      ANALYTICS_ID: ""
-      SENTRY_DSN: ""
 
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +56,5 @@ jobs:
 
       - run: uv run ruff check .
       - run: uv run ruff format --check .
-
       - run: uv run pyright
-
-      - run: uv run pytest
+      - run: uv run pytest --cov --cov-report=xml

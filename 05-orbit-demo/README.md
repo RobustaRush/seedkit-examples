@@ -36,51 +36,45 @@ Run the foundation + boot check. Spin up Mailpit via a one-service `docker-compo
 
 # 05-orbit-demo
 
-Scratch project to exercise **django-orbit** (observability dashboard + MCP) and verify
-outbound mail flows are captured via **Mailpit**.
+Scratch project to exercise `django-orbit` and verify outbound mail flows are captured.
 
 ## Stack
 
 | Layer | Choice |
 |---|---|
-| Framework | Django 6 |
-| Settings | Single `config/settings.py` via `django-environ` |
-| Database | SQLite (`db.sqlite3`) |
-| Dev mode | uv on host |
-| Observability | django-orbit — dashboard at `/orbit/`, MCP at `manage.py orbit_mcp` |
-| Email (dev) | SMTP → Mailpit on `localhost:1025`; fallback `consolemail://` |
-| Health checks | `/healthz` (liveness), `/readyz` (readiness + DB probe) |
+| Framework | Django 6.x |
+| Database | SQLite (file `db.sqlite3`) |
+| Observability | django-orbit 0.8.x — dashboard at `/orbit/` |
+| Email (dev) | SMTP → Mailpit (Docker) — web UI at `http://localhost:8025` |
 | Lint | Ruff |
+| Tests | `manage.py test` (stock Django) |
 
-## Quick start
+## Setup
 
 ```sh
-cp .env.example .env         # then edit DJANGO_SECRET_KEY
+cp .env.example .env          # then edit DJANGO_SECRET_KEY
 uv sync
 uv run manage.py migrate
 uv run manage.py createsuperuser
+```
+
+## Run
+
+```sh
+# Start Mailpit (captures outgoing SMTP)
+docker compose up -d --wait
+
+# Start Django
 uv run manage.py runserver
 ```
 
-Open <http://localhost:8000/admin/> and sign in.
+- Admin: <http://localhost:8000/admin/>
+- Orbit dashboard: <http://localhost:8000/orbit/>
+- Mailpit inbox: <http://localhost:8025/>
+- Liveness: <http://localhost:8000/healthz>
+- Readiness: <http://localhost:8000/readyz>
 
-## Mailpit (local mail inspection)
-
-Requires Docker.
-
-```sh
-docker compose up -d mailpit
-```
-
-Point Django at Mailpit by setting in `.env`:
-
-```sh
-EMAIL_URL=smtp://localhost:1025
-```
-
-Open <http://localhost:8025> to view captured emails.
-
-Send a test message:
+## Send a test mail
 
 ```sh
 uv run manage.py shell -c "
@@ -89,14 +83,22 @@ send_mail('hello', 'body', 'from@example.com', ['to@example.com'])
 "
 ```
 
-## Orbit dashboard
+Check <http://localhost:8025> — the message appears immediately.
 
-Requires `DEBUG=True`.
+## Lint
 
-- Dashboard: <http://localhost:8000/orbit/>
-- Stats: <http://localhost:8000/orbit/stats/>
+```sh
+uv run ruff check .
+uv run ruff format .
+```
 
-### MCP integration (Claude Desktop)
+## Test
+
+```sh
+uv run manage.py test
+```
+
+## MCP (AI assistant integration)
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -112,24 +114,5 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
   }
 }
 ```
-
-## Key commands
-
-| Task | Command |
-|---|---|
-| Install deps | `uv sync` |
-| Run dev server | `uv run manage.py runserver` |
-| Migrate | `uv run manage.py migrate` |
-| Create superuser | `uv run manage.py createsuperuser` |
-| Lint | `uv run ruff check .` |
-| Format | `uv run ruff format .` |
-| Tests | `uv run manage.py test` |
-| Start Mailpit | `docker compose up -d mailpit` |
-| Stop Mailpit | `docker compose down` |
-
-## Dependencies
-
-See `pyproject.toml` for pinned versions. Runtime: `django`, `django-environ`.
-Dev: `django-orbit[mcp]`, `ruff`.
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

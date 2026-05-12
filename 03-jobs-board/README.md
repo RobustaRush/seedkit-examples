@@ -44,52 +44,54 @@ Job board with background email notifications and a daily digest.
 
 ## Stack
 
-- Django 6 · PostgreSQL · Celery + Beat · Redis
-- Auth: `django-mail-auth` (passwordless magic-link)
-- Health checks: `/healthz`, `/readyz`
-- i18n: gettext / LocaleMiddleware
-- Task runner: just
+- Django 6 + django-environ
+- PostgreSQL (Docker) · Django runs on the host via uv
+- Redis (Docker) · Celery broker + result backend + cache
+- Celery + Celery Beat (periodic tasks)
+- django-mail-auth (passwordless magic-link)
+- i18n (gettext, LocaleMiddleware)
+- Health check endpoints (`/healthz`, `/readyz`)
+
+## Prerequisites
+
+- [uv](https://docs.astral.sh/uv/)
+- [just](https://github.com/casey/just)
+- Docker Desktop (for db + redis)
 
 ## Setup
 
 ```sh
 cp .env.example .env   # edit DJANGO_SECRET_KEY
-just install
 docker compose up -d --wait
 just migrate
 just superuser
 just dev
 ```
 
-Open <http://localhost:8000/admin/>.
+Open <http://127.0.0.1:8000/admin/> and sign in.
 
-## Tasks
+## Commands
 
-| Task | Command |
-|------|---------|
-| `just install` | `uv sync` |
-| `just dev` | `uv run manage.py runserver` |
-| `just migrate` | `uv run manage.py migrate` |
-| `just makemigrations` | `uv run manage.py makemigrations` |
-| `just shell` | `uv run manage.py shell` |
-| `just superuser` | `uv run manage.py createsuperuser` |
-| `just test` | `uv run manage.py test` |
-| `just worker` | `uv run celery -A config worker -l info` |
-| `just beat` | `uv run celery -A config beat -l info` |
+| Command | Action |
+|---|---|
+| `just install` | Install / sync dependencies |
+| `just dev` | Start dev server |
+| `just migrate` | Run migrations |
+| `just makemigrations` | Create migrations |
+| `just shell` | Django shell |
+| `just superuser` | Create superuser |
+| `just test` | Run tests |
+| `just worker` | Start Celery worker |
+| `just beat` | Start Celery Beat scheduler |
 
-## Environment variables
+Fallback (no just): `uv run manage.py <cmd>`
 
-See `.env.example` for all supported env vars.
+## Background tasks
 
-## Services
+Tasks live in `jobs/tasks.py`. The Beat schedule is in `CELERY_BEAT_SCHEDULE` in `config/settings.py`. Run worker and beat in separate terminals for local development.
 
-The `docker-compose.yml` runs `db` (PostgreSQL 17) and `redis` (Redis 7) only.
-Django runs on the host with `just dev`.
+## Auth
 
-## Celery
-
-Autodiscovery scans all `INSTALLED_APPS`. Add `@shared_task` functions to any app's `tasks.py`.
-
-`CELERY_BEAT_SCHEDULE` in `config/settings.py` schedules `jobs.tasks.send_daily_digest` daily at 08:00.
+Magic-link login — users enter their email and receive a one-time sign-in link. The link prints to `runserver` stdout when `EMAIL_URL=consolemail://`.
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

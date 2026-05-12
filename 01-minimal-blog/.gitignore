@@ -3,38 +3,41 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+.Python
 *.egg
 *.egg-info/
 dist/
 build/
-.eggs/
+eggs/
+parts/
+var/
+sdist/
+wheels/
+*.so
 
 # Virtual environment
 .venv/
-venv/
-env/
+
+# Environment
+.env
 
 # Django
 *.sqlite3
 staticfiles/
 media/
-.env
 
-# uv
-.python-version
+# Caches
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
 
-# Editors
-.idea/
+# Editor
 .vscode/
+.idea/
 *.swp
 *.swo
+*~
 
-# macOS
+# OS
 .DS_Store
-
-# Ruff
-.ruff_cache/
-
-# Coverage
-.coverage
-htmlcov/
+Thumbs.db

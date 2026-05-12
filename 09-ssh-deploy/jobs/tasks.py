@@ -1,11 +1,11 @@
-import logging
-
+import structlog
 from django.tasks import task
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 @task()
-def send_welcome_email(user_id: int) -> None:
+def sample_task(message: str = "hello") -> str:
     """Sample background task — replace with real work."""
-    logger.info("send_welcome_email", extra={"user_id": user_id})
+    logger.info("sample_task.run", message=message)
+    return f"done: {message}"

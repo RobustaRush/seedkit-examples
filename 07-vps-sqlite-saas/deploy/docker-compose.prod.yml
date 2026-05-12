@@ -1,6 +1,6 @@
 services:
   web:
-    image: ghcr.io/yourgithubuser/07-vps-sqlite-saas:latest
+    image: ghcr.io/{owner}/07-vps-sqlite-saas:latest
     restart: unless-stopped
     env_file: .env.prod
     volumes:

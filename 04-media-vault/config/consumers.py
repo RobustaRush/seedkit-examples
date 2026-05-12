@@ -5,8 +5,5 @@ class EchoConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self) -> None:
         await self.accept()
 
-    async def disconnect(self, code: int) -> None:
-        pass
-
-    async def receive_json(self, content: dict, **kwargs: object) -> None:
+    async def receive_json(self, content: dict, **kwargs: object) -> None:  # type: ignore[override]
         await self.send_json(content)

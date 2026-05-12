@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import environ
 from django.utils.translation import gettext_lazy as _
 
@@ -15,7 +16,7 @@ DATABASES = {"default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / '
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 INSTALLED_APPS = [
-    "mailauth.contrib.admin",
+    "mailauth.contrib.admin",  # must be before django.contrib.admin
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -23,7 +24,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "mailauth",
-    "pages",
     "jobs",
 ]
 
@@ -64,20 +64,11 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-AUTHENTICATION_BACKENDS = [
-    "mailauth.backends.MailAuthBackend",
-    "django.contrib.auth.backends.ModelBackend",
-]
-
-LOGIN_URL = "mailauth:login"
-LOGIN_REDIRECT_URL = "/admin/"
-
 # --- i18n ---
-
 LANGUAGE_CODE = "en"
+TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
-TIME_ZONE = "UTC"
 
 LANGUAGES = [
     ("en", _("English")),
@@ -86,24 +77,33 @@ LANGUAGES = [
 LOCALE_PATHS = [BASE_DIR / "locale"]
 
 # --- Static files ---
-
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# --- Email ---
+# --- Auth (django-mail-auth) ---
+AUTHENTICATION_BACKENDS = [
+    "mailauth.backends.MailAuthBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
 
+LOGIN_URL = "mailauth:login"
+LOGIN_REDIRECT_URL = "/"
+
+# --- Email ---
 globals().update(env.email_url(
     "EMAIL_URL",
     default="consolemail://" if DEBUG else env.NOTSET,
 ))
 
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET)
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL",
+    default="webmaster@localhost" if DEBUG else env.NOTSET,
+)
 SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
 # --- Redis + Cache ---
-
 REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
 
 CACHES = {
@@ -115,12 +115,11 @@ CACHES = {
 }
 
 # --- Celery ---
+from celery.schedules import crontab  # noqa: E402
 
 CELERY_BROKER_URL = f"{REDIS_URL}/1"
 CELERY_RESULT_BACKEND = f"{REDIS_URL}/2"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-
-from celery.schedules import crontab  # noqa: E402
 
 CELERY_BEAT_SCHEDULE = {
     "daily-digest": {

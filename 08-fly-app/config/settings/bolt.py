@@ -1,23 +1,23 @@
 from .base import *
+from .base import INSTALLED_APPS, MIDDLEWARE
 
-_strip_middleware = {
+_DROP_MIDDLEWARE = {
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
 }
+MIDDLEWARE = [m for m in MIDDLEWARE if m not in _DROP_MIDDLEWARE]
 
-MIDDLEWARE = [m for m in MIDDLEWARE if m not in _strip_middleware]
-
-_strip_apps = {
+_DROP_APPS = {
     "django.contrib.admin",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "mailauth.contrib.admin",
 }
-
-INSTALLED_APPS = [app for app in INSTALLED_APPS if app not in _strip_apps]
+INSTALLED_APPS = [a for a in INSTALLED_APPS if a not in _DROP_APPS]
 
 TEMPLATES = []
 
