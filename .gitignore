@@ -2,6 +2,7 @@
 # never published.
 logs/
 .claude/
+.gemini/
 .start-*
 
 # Python / Django runtime artefacts. Each project under here is a fresh
