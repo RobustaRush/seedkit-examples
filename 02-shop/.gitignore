@@ -5,10 +5,9 @@ staticfiles/
 media/
 .ruff_cache/
 __pycache__/
-*.py[cod]
+*.pyc
+*.pyo
 .pytest_cache/
 htmlcov/
 .coverage
-*.egg-info/
-dist/
 .django_tailwind_cli/

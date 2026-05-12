@@ -4,7 +4,7 @@ from django.db import transaction
 
 
 class Command(BaseCommand):
-    help = "Delete a user and all their data (GDPR Article 17)"
+    help = "Delete all data for a user (GDPR right to erasure)"
 
     def add_arguments(self, parser):
         parser.add_argument("user_id", type=int)
@@ -13,10 +13,9 @@ class Command(BaseCommand):
         try:
             user = User.objects.get(pk=options["user_id"])
         except User.DoesNotExist:
-            raise CommandError(f"User {options['user_id']} does not exist") from None
+            raise CommandError(f"User {options['user_id']} not found")
 
+        email = user.email
         with transaction.atomic():
-            user_repr = str(user)
             user.delete()
-
-        self.stdout.write(self.style.SUCCESS(f"Deleted user {user_repr}"))
+        self.stdout.write(self.style.SUCCESS(f"Deleted user {email} (id={options['user_id']})"))

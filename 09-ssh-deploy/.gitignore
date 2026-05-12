@@ -1,18 +1,38 @@
-.venv/
-.env
-*.sqlite3
-staticfiles/
-media/
-.ruff_cache/
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.pytest_cache/
-htmlcov/
-.coverage
+.Python
 *.egg-info/
 dist/
 build/
+
+# Virtual environment
+.venv/
+
+# Django
+*.sqlite3
+staticfiles/
+media/
+.env
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Ruff
+.ruff_cache/
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS
 .DS_Store
+
+# Docker
 *.log

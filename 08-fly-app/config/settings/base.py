@@ -10,16 +10,12 @@ environ.Env.read_env(BASE_DIR / ".env")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
-DATABASES = {
-    "default": env.db(
-        "DATABASE_URL",
-        default="postgres://postgres:postgres@db:5432/postgres" if DEBUG else env.NOTSET,
-    )
-}
+DATABASES = {"default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET)}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 INSTALLED_APPS = [
+    # mailauth.contrib.admin must precede django.contrib.admin
     "mailauth.contrib.admin",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -55,6 +51,7 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
+                "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -79,24 +76,26 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 
-LOGIN_URL = "mailauth:login"
-LOGIN_REDIRECT_URL = "/"
-
-AXES_FAILURE_LIMIT = 5
-AXES_COOLOFF_TIME = 1
-AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
-AXES_RESET_ON_SUCCESS = True
-
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
-USE_I18N = True
+USE_I18N = False
 USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# django-mail-auth
+LOGIN_URL = "mailauth:login"
+LOGIN_REDIRECT_URL = "/"
+
+# django-axes
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1
+AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
+AXES_RESET_ON_SUCCESS = True
+
 # Redis
-REDIS_URL = env("REDIS_URL", default="redis://redis:6379" if DEBUG else env.NOTSET).rstrip("/")
+REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
 
 CACHES = {
     "default": {
@@ -111,12 +110,18 @@ CELERY_BROKER_URL = f"{REDIS_URL}/1"
 CELERY_RESULT_BACKEND = f"{REDIS_URL}/2"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
-# Email
-globals().update(env.email_url("EMAIL_URL", default="consolemail://" if DEBUG else env.NOTSET))
+# Email — consolemail in dev; anymail Postmark backend in prod
+globals().update(env.email_url(
+    "EMAIL_URL",
+    default="consolemail://" if DEBUG else env.NOTSET,
+))
+
 DEFAULT_FROM_EMAIL = env(
-    "DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET
+    "DEFAULT_FROM_EMAIL",
+    default="webmaster@localhost" if DEBUG else env.NOTSET,
 )
 SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
+
 ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
@@ -128,7 +133,7 @@ ANYMAIL = {
     "WEBHOOK_SECRET": env("ANYMAIL_WEBHOOK_SECRET", default="" if DEBUG else env.NOTSET),
 }
 
-# S3 / MinIO storage
+# S3-compatible storage (MinIO locally, real S3 in prod)
 AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID", default="" if DEBUG else env.NOTSET)
 AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY", default="" if DEBUG else env.NOTSET)
 AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="" if DEBUG else env.NOTSET)
@@ -138,20 +143,16 @@ AWS_S3_CUSTOM_DOMAIN = env("AWS_S3_CUSTOM_DOMAIN", default="")
 AWS_S3_URL_PROTOCOL = env("AWS_S3_URL_PROTOCOL", default="https:")
 
 if AWS_STORAGE_BUCKET_NAME:
-    _default_storage = {
+    _default_storage: dict = {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
         "OPTIONS": {"location": "media"},
     }
 else:
-    _default_storage = {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    }
+    _default_storage = {"BACKEND": "django.core.files.storage.FileSystemStorage"}
 
 STORAGES = {
     "default": _default_storage,
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
 
 if AWS_S3_CUSTOM_DOMAIN:

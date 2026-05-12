@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 
 class Command(BaseCommand):
-    help = "Export all data for a user (GDPR Article 20)"
+    help = "Export all data for a user as JSON (GDPR data portability)"
 
     def add_arguments(self, parser):
         parser.add_argument("user_id", type=int)
@@ -14,7 +14,7 @@ class Command(BaseCommand):
         try:
             user = User.objects.get(pk=options["user_id"])
         except User.DoesNotExist:
-            raise CommandError(f"User {options['user_id']} does not exist") from None
+            raise CommandError(f"User {options['user_id']} not found")
 
         data = {
             "id": user.pk,

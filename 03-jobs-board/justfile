@@ -24,9 +24,3 @@ worker:
 
 beat:
     uv run celery -A config beat -l info
-
-makemessages:
-    uv run manage.py makemessages -l en
-
-compilemessages:
-    uv run manage.py compilemessages

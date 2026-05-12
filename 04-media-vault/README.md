@@ -43,105 +43,80 @@ Generate `docker-compose.yml` with services `web`, `db`, `redis`, `worker`, `min
 
 # 04-media-vault
 
-Media-heavy Django app: uploads land in S3 (MinIO in local dev), processing runs as Redis-queued background tasks, and clients subscribe over WebSockets for status updates.
+Media-heavy app where uploads land in S3, processing runs as Redis-queued background tasks, and clients subscribe over WebSockets for status updates.
 
 ## Stack
 
-| Layer | Choice |
-|---|---|
-| Framework | Django 6 |
-| Request handling | ASGI + django-channels (gunicorn + UvicornWorker) |
-| Database | PostgreSQL 17 |
-| Cache | Redis (django-redis) |
-| Channel layer | channels-redis |
-| Background tasks | django-tasks + RQ backend (django-tasks-rq) |
-| Storage | S3-compatible — MinIO in dev, any S3 in prod |
-| REST API | django-modern-rest (msgspec + openapi extras) |
-| Logging | structlog (pretty in dev / JSON in prod) |
-| Lint | Ruff |
-| Types | pyright + django-stubs |
-| Dev env | docker-compose (web, worker, db, redis, minio) |
+- **Django 6** · ASGI + channels · PostgreSQL · Redis
+- **Channels + channels-redis** — WebSocket support (`/ws/echo/`)
+- **django-tasks-rq** — background jobs via Redis Queue
+- **django-storages[s3]** — S3-compatible storage (MinIO in dev)
+- **django-modern-rest** — REST API (`POST /api/media/`)
+- **structlog** — structured JSON logging in production, pretty in dev
+- **django-cors-headers** — CORS support
+- **Ruff** — linting + formatting
+- **pyright + django-stubs** — type checking
+- Local dev: **docker-compose** (web + db + redis + worker + minio)
 
-## Local dev
+## Quick start
 
 ```sh
-cp .env.example .env          # set DJANGO_SECRET_KEY to something real
-docker compose up -d --build  # starts web, worker, db, redis, minio
+cp .env.example .env
+docker compose up -d --build --wait
 docker compose exec web uv run manage.py migrate
 docker compose exec web uv run manage.py createsuperuser
 ```
 
-Open <http://localhost:8000/admin/>.
+Open <http://localhost:8000/admin/>
 
-## Key URLs
+## Key commands
 
-| URL | Purpose |
+```sh
+# Start all services
+docker compose up -d
+
+# Migrate
+docker compose exec web uv run manage.py migrate
+
+# Run tests
+docker compose exec web uv run manage.py test
+
+# Lint
+docker compose exec web uv run ruff check .
+
+# Format
+docker compose exec web uv run ruff format .
+
+# Type check (on host)
+uv run pyright
+
+# Tail logs
+docker compose logs -f web worker
+
+# MinIO console
+open http://localhost:9001   # user: minioadmin / minioadmin
+```
+
+## Services
+
+| Service | URL |
 |---|---|
-| `/admin/` | Django admin |
-| `/api/media/` | `POST` — create media record |
-| `/ws/echo/` | WebSocket echo endpoint |
-| `/healthz` | Liveness probe |
-| `/readyz` | Readiness probe (checks DB) |
-| `/django-rq/` | RQ dashboard (admin-gated) |
-
-## API — POST /api/media/
-
-Request:
-```json
-{ "filename": "photo.jpg", "size": 102400 }
-```
-
-Response `201`:
-```json
-{ "uid": "...", "filename": "photo.jpg" }
-```
+| Web (Django) | http://localhost:8000 |
+| Admin | http://localhost:8000/admin/ |
+| REST API | http://localhost:8000/api/media/ |
+| WebSocket echo | ws://localhost:8000/ws/echo/ |
+| Health | http://localhost:8000/healthz |
+| Readiness | http://localhost:8000/readyz |
+| RQ dashboard | http://localhost:8000/django-rq/ |
+| MinIO console | http://localhost:9001 |
 
 ## Background tasks
 
-Tasks live in `jobs/tasks.py`. Add `@task()`-decorated functions; they're
-auto-imported by `JobsConfig.ready()`. Enqueue from anywhere:
+Tasks are defined in `jobs/tasks.py`. The worker picks them up from Redis queue `default`.
 
 ```python
 from jobs.tasks import process_upload
-result = process_upload.enqueue("photo.jpg", 102400)
-```
-
-Worker runs `python manage.py rqworker default` (the `worker` compose service).
-
-## S3 / MinIO
-
-In local dev, the `minio` service is the S3-compatible target. Create the
-bucket once after first `docker compose up`:
-
-```sh
-docker compose exec minio mc alias set local http://localhost:9000 minioadmin minioadmin
-docker compose exec minio mc mb local/media-vault
-```
-
-Or open the MinIO console at <http://localhost:9001> (user/pass: `minioadmin`).
-
-Set `AWS_STORAGE_BUCKET_NAME=media-vault` in `.env` to activate S3 storage.
-
-## Lint and type-check
-
-```sh
-uv run ruff check .
-uv run ruff format .
-uv run pyright
-```
-
-## Tests
-
-```sh
-docker compose exec web uv run manage.py test
-```
-
-## Adding a dependency
-
-```sh
-uv add somepkg
-docker compose build
-docker compose up -d
+result = process_upload.enqueue("some-uid")
 ```
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

@@ -4,10 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}09-ssh-deploy{% endblock %}</title>
-  {% block extra_head %}{% endblock %}
+  {% block extra_css %}{% endblock %}
 </head>
 <body>
   {% block content %}{% endblock %}
   {% include "_analytics.html" %}
+  {% block extra_js %}{% endblock %}
 </body>
 </html>

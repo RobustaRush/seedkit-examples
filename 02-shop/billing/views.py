@@ -6,10 +6,8 @@ from django.shortcuts import redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from users.models import User
 
-
-def _get_or_create_customer(user: User) -> str:
+def get_or_create_customer(user):
     if user.stripe_customer_id:
         return user.stripe_customer_id
     customer = stripe.Customer.create(
@@ -23,7 +21,7 @@ def _get_or_create_customer(user: User) -> str:
 
 @login_required
 def create_checkout_session(request):
-    customer_id = _get_or_create_customer(request.user)  # type: ignore[arg-type]
+    customer_id = get_or_create_customer(request.user)
     session = stripe.checkout.Session.create(
         customer=customer_id,
         payment_method_types=["card"],
@@ -38,9 +36,8 @@ def create_checkout_session(request):
 
 @login_required
 def customer_portal(request):
-    user: User = request.user  # type: ignore[assignment]
     session = stripe.billing_portal.Session.create(
-        customer=user.stripe_customer_id,
+        customer=request.user.stripe_customer_id,
         return_url=request.build_absolute_uri("/billing/"),
     )
     assert session.url
@@ -66,6 +63,8 @@ def stripe_webhook(request):
 
 
 def _handle_subscription_created(subscription):
+    from users.models import User
+
     try:
         user = User.objects.get(stripe_customer_id=subscription["customer"])
     except User.DoesNotExist:
@@ -75,6 +74,8 @@ def _handle_subscription_created(subscription):
 
 
 def _handle_subscription_deleted(subscription):
+    from users.models import User
+
     try:
         user = User.objects.get(stripe_customer_id=subscription["customer"])
     except User.DoesNotExist:

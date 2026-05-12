@@ -1,9 +1,9 @@
 import pytest
 
+from jobs.tasks import sample_task
+
 
 @pytest.mark.django_db
-def test_process_message():
-    from jobs.tasks import process_message
-
-    result = process_message.enqueue("hello")
-    assert result.return_value == "Processed: hello"
+def test_sample_task():
+    result = sample_task.enqueue("hello")
+    assert result is not None

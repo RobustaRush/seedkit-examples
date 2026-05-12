@@ -1,0 +1,45 @@
+[tools]
+python = "3.12"
+
+[tasks.install]
+run = "uv sync"
+
+[tasks.dev]
+run = "uv run manage.py runserver"
+
+[tasks.migrate]
+run = "uv run manage.py migrate"
+
+[tasks.makemigrations]
+run = "uv run manage.py makemigrations"
+
+[tasks.shell]
+run = "uv run manage.py shell"
+
+[tasks.superuser]
+run = "uv run manage.py createsuperuser"
+
+[tasks.test]
+run = "uv run pytest"
+
+[tasks.lint]
+run = "uv run ruff check ."
+
+[tasks.fmt]
+run = "uv run ruff format ."
+
+[tasks.typecheck]
+run = "uv run pyright"
+
+[tasks.collectstatic]
+run = "uv run manage.py collectstatic --noinput"
+
+[tasks.worker]
+run = "uv run manage.py db_worker"
+
+[tasks.deploy-migrate]
+run = "docker compose -f deploy/docker-compose.prod.yml run --rm web python manage.py migrate"
+
+[tasks.deploy]
+depends = ["deploy-migrate"]
+run = "docker compose -f deploy/docker-compose.prod.yml up -d"

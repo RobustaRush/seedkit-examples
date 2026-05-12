@@ -9,8 +9,8 @@ if env.bool("DJANGO_BEHIND_PROXY", default=False):
 
 # Cookies
 SESSION_COOKIE_SECURE = True
-SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = "Lax"
 
 # HSTS
 SECURE_HSTS_SECONDS = 31536000
@@ -26,26 +26,23 @@ CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 # CSP
 MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 
+_umami_hosts = [ANALYTICS_HOST] if ANALYTICS_HOST else []
+
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'",),
-        "script-src": ("'self'",),
+        "script-src": ("'self'", *_umami_hosts),
         "style-src": ("'self'", "'unsafe-inline'"),
         "img-src": ("'self'", "data:"),
         "font-src": ("'self'",),
-        "connect-src": ("'self'",),
+        "connect-src": ("'self'", *_umami_hosts),
         "frame-ancestors": ("'none'",),
         "base-uri": ("'self'",),
         "form-action": ("'self'",),
     },
 }
 
-# Add Umami analytics host to CSP when configured
-if ANALYTICS_HOST:
-    CONTENT_SECURITY_POLICY["DIRECTIVES"]["script-src"] += (ANALYTICS_HOST,)
-    CONTENT_SECURITY_POLICY["DIRECTIVES"]["connect-src"] += (ANALYTICS_HOST,)
-
-# Error reporting (Bugsink / Sentry-compatible DSN)
+# Error reporting (Bugsink / Sentry-compatible)
 SENTRY_DSN = env("SENTRY_DSN", default="")
 if SENTRY_DSN:
     import sentry_sdk
@@ -66,8 +63,7 @@ if SENTRY_DSN:
         release=env("SENTRY_RELEASE", default=None),
     )
 
-# Database backups — only in prod (collectstatic runs with DEBUG=True; dbbackup
-# evaluates AWS_ACCESS_KEY_ID without a default and would crash the build)
+# Database backups (S3-compatible target)
 if not DEBUG:
     INSTALLED_APPS += ["dbbackup"]
 

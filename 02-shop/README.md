@@ -30,7 +30,7 @@ Add-ons:
   - `robots.txt`: yes.
   - `django-extensions`: no.
 
-Production setup: skip.
+Production setup: VPS (Docker + Caddy). Dockerfile structure: simple (separate `Dockerfile.dev` + production `Dockerfile`). Use single-stage prod Dockerfile.
 
 Assume Postgres is already running locally on port 5432 with user `postgres` / password `postgres`. Create database `shop_db` if missing (Postgres identifiers can't start with a digit, so use a clean name). Run the foundation + boot check, then run `python manage.py tailwind build` once so the CSS asset exists, and verify the index page returns the Tailwind-styled HTML.
 ```
@@ -39,103 +39,75 @@ Assume Postgres is already running locally on port 5432 with user `postgres` / p
 
 # 02-shop
 
-Small e-commerce site with Django admin and SMTP transactional email.
+Small e-commerce site with admin and SMTP transactional email.
 
 ## Stack
 
-| Layer | Package |
-|---|---|
-| Framework | Django 6.x |
-| Database | PostgreSQL (`psycopg[binary]`) |
-| Auth | `django-allauth` — email login, mandatory email verification |
-| Auth hardening | `django-axes` — brute-force lockout |
-| Static files | WhiteNoise |
-| Frontend | `django-tailwind-cli` + DaisyUI |
-| Billing | `stripe` raw SDK |
-| Settings | `django-environ`, split `base/local/production` |
-| Linting | Ruff |
-| Tests | pytest + pytest-django |
-| Types | pyright + django-stubs |
-| Tasks | mise |
+- **Django** (split settings: base / local / production)
+- **PostgreSQL** via psycopg
+- **django-allauth** — email login, mandatory email verification in production
+- **django-axes** — brute-force lockout
+- **WhiteNoise** — static file serving in production
+- **Tailwind CSS** (standalone CLI) + **DaisyUI** — no Node.js
+- **Stripe** raw SDK — checkout, customer portal, webhook
+- **Ruff** — lint + format
+- **pytest** + pytest-django — test runner
+- **pyright** + django-stubs — type checking
+- **mise** — task runner
 
-## Local setup
+## Setup
 
 ```sh
-# 1. Create the database
-createdb shop_db
-
-# 2. Install dependencies
-mise run install   # or: uv sync
-
-# 3. Copy env and set a real secret key
 cp .env.example .env
-# edit .env — DATABASE_URL is already set for local postgres
-
-# 4. Migrate
+# Edit .env: set a real DJANGO_SECRET_KEY and database credentials
+createdb shop_db
+mise run install
 mise run migrate
-
-# 5. Create a superuser (interactive)
 mise run superuser
-
-# 6. Build CSS
-mise run tailwind
-
-# 7. Start dev server (with Tailwind watcher)
-mise run dev
 ```
 
-Open <http://127.0.0.1:8000/> to see the index page.  
-Open <http://127.0.0.1:8000/admin/> to access the admin.
-
-## Common tasks
+## Commands
 
 | Task | Command |
-|---|---|
-| Dev server + watcher | `mise run dev` |
-| Run migrations | `mise run migrate` |
+|------|---------|
+| Dev server | `mise run dev` |
+| Migrate | `mise run migrate` |
 | Make migrations | `mise run makemigrations` |
-| Run tests | `mise run test` |
+| Shell | `mise run shell` |
+| Create superuser | `mise run superuser` |
+| Tests | `mise run test` |
 | Lint | `mise run lint` |
 | Format | `mise run fmt` |
 | Type check | `mise run typecheck` |
-| Django shell | `mise run shell` |
 | Collect static | `mise run collectstatic` |
 
-Without mise: `uv run manage.py <command>` / `uv run pytest` / `uv run ruff check .`
-
-## Key endpoints
-
-| Path | Description |
-|---|---|
-| `/` | Index page |
-| `/admin/` | Django admin |
-| `/accounts/login/` | Allauth login |
-| `/accounts/signup/` | Allauth signup |
-| `/billing/checkout/` | Stripe Checkout (POST, login required) |
-| `/billing/portal/` | Stripe Customer Portal (login required) |
-| `/billing/webhook/` | Stripe webhook receiver |
-| `/healthz` | Liveness probe |
-| `/readyz` | Readiness probe (checks DB) |
-| `/robots.txt` | Robots file |
-
-## Stripe
-
-For local webhook testing:
-
-```sh
-stripe listen --forward-to localhost:8000/billing/webhook/
-# paste the printed whsec_... into .env as STRIPE_WEBHOOK_SECRET
-```
+Without mise: `uv run manage.py <command>` or `uv run pytest` / `uv run ruff check .`.
 
 ## Environment variables
 
-See `.env.example` for the full list. Key vars:
+See `.env.example` for the full list. Key variables:
 
 - `DJANGO_SECRET_KEY` — required in production
 - `DJANGO_DEBUG` — `True` in dev, unset in production
-- `DJANGO_ALLOWED_HOSTS` — comma-separated hostnames
+- `DJANGO_ALLOWED_HOSTS` — comma-separated list
 - `DATABASE_URL` — postgres connection string
-- `EMAIL_URL` — `consolemail://` (dev) or `smtp+tls://...` (prod)
-- `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+- `EMAIL_URL` — `consolemail://` in dev, `smtp+tls://user:pass@host:587` in production
+- `DEFAULT_FROM_EMAIL` — sender address
+- `STRIPE_PUBLISHABLE_KEY` / `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`
+
+## Stripe
+
+Local webhook forwarding:
+
+```sh
+stripe listen --forward-to localhost:8000/billing/webhook/
+```
+
+Use the printed `whsec_...` as `STRIPE_WEBHOOK_SECRET` in `.env`.
+
+## Health checks
+
+- `GET /healthz` — liveness (process alive)
+- `GET /readyz` — readiness (DB reachable)
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

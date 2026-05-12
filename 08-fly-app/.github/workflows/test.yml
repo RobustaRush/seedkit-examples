@@ -42,9 +42,10 @@ jobs:
       REDIS_URL: redis://localhost:6379
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
-      AWS_STORAGE_BUCKET_NAME: test-bucket
-      POSTMARK_SERVER_TOKEN: test
-      ANYMAIL_WEBHOOK_SECRET: test
+      AWS_STORAGE_BUCKET_NAME: ""
+      POSTMARK_SERVER_TOKEN: ""
+      ANYMAIL_WEBHOOK_SECRET: ""
+      SENTRY_DSN: ""
 
     steps:
       - uses: actions/checkout@v4
@@ -56,6 +57,9 @@ jobs:
       - run: uv sync --frozen
 
       - run: uv run ruff check .
+
       - run: uv run ruff format --check .
+
       - run: uv run pyright
+
       - run: uv run pytest

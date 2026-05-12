@@ -1,14 +1,8 @@
-from .base import *
-from .base import (
-    AWS_S3_CUSTOM_DOMAIN,
-    AWS_S3_ENDPOINT_URL,
-    AWS_S3_REGION_NAME,
-    AWS_S3_URL_PROTOCOL,
-    AWS_STORAGE_BUCKET_NAME,
-    MIDDLEWARE,
-    STORAGES,
-    env,
-)
+from .base import *  # noqa: F401, F403
+from .base import AWS_S3_CUSTOM_DOMAIN, AWS_S3_ENDPOINT_URL, AWS_S3_REGION_NAME, AWS_S3_URL_PROTOCOL, AWS_STORAGE_BUCKET_NAME, MIDDLEWARE, STORAGES, env
+
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 
 # HTTPS
 SECURE_SSL_REDIRECT = True
@@ -24,12 +18,30 @@ SESSION_COOKIE_SAMESITE = "Lax"
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
+
 SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
-# Static files on S3
+# CSP
+MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
+
+CONTENT_SECURITY_POLICY = {
+    "DIRECTIVES": {
+        "default-src": ("'self'",),
+        "script-src": ("'self'", "https://www.googletagmanager.com"),
+        "style-src": ("'self'", "'unsafe-inline'"),
+        "img-src": ("'self'", "data:", "https://www.google-analytics.com"),
+        "font-src": ("'self'",),
+        "connect-src": ("'self'", "https://www.google-analytics.com", "https://www.googletagmanager.com"),
+        "frame-ancestors": ("'none'",),
+        "base-uri": ("'self'",),
+        "form-action": ("'self'",),
+    },
+}
+
+# Static on S3 in production
 STORAGES = {
     **STORAGES,
     "staticfiles": {
@@ -46,34 +58,10 @@ else:
     _region = "" if AWS_S3_REGION_NAME == "us-east-1" else f".{AWS_S3_REGION_NAME}"
     STATIC_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3{_region}.amazonaws.com/static/"
 
-# CSP
-MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
-
-CONTENT_SECURITY_POLICY = {
-    "DIRECTIVES": {
-        "default-src": ("'self'",),
-        "script-src": ("'self'", "https://www.googletagmanager.com"),
-        "style-src": ("'self'", "'unsafe-inline'"),
-        "img-src": ("'self'", "data:", "https://www.google-analytics.com"),
-        "font-src": ("'self'",),
-        "connect-src": (
-            "'self'",
-            "https://www.google-analytics.com",
-            "https://www.googletagmanager.com",
-        ),
-        "frame-ancestors": ("'none'",),
-        "base-uri": ("'self'",),
-        "form-action": ("'self'",),
-    },
-}
-
-# GlitchTip / Sentry error reporting
+# Error reporting — GlitchTip via sentry-sdk
 SENTRY_DSN = env("SENTRY_DSN", default="")
 if SENTRY_DSN:
-    import sentry_sdk
-    from sentry_sdk.integrations.django import DjangoIntegration
-
-    def _scrub(event, hint):
+    def _scrub(event: dict, hint: dict) -> dict:
         request = event.get("request") or {}
         headers = request.get("headers") or {}
         for h in ("Authorization", "Cookie"):
@@ -83,7 +71,7 @@ if SENTRY_DSN:
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration()],
-        release=env("SENTRY_RELEASE", default=None),
         send_default_pii=False,
         before_send=_scrub,
+        release=env("SENTRY_RELEASE", default=None),
     )

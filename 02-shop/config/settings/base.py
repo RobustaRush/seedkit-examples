@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import environ
+import stripe as _stripe
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -26,12 +27,12 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
-    # third-party
+    # Third-party
     "allauth",
     "allauth.account",
     "axes",
     "django_tailwind_cli",
-    # local
+    # Local
     "users",
     "pages",
     "billing",
@@ -87,10 +88,9 @@ STATICFILES_DIRS = [BASE_DIR / "assets"]
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# Custom user model
+# Auth
 AUTH_USER_MODEL = "users.User"
 
-# Allauth
 AUTHENTICATION_BACKENDS = [
     "axes.backends.AxesBackend",
     "django.contrib.auth.backends.ModelBackend",
@@ -106,7 +106,7 @@ ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "optional"
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 
-# Axes
+# django-axes
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1
 AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
@@ -131,8 +131,6 @@ TAILWIND_CLI_VERSION = "4.1.3"
 TAILWIND_CLI_SRC_CSS = "assets/css/source.css"
 
 # Stripe
-import stripe as _stripe  # noqa: E402
-
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY", default="")
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")

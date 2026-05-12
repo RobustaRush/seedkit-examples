@@ -6,6 +6,6 @@ logger = logging.getLogger(__name__)
 
 
 @task()
-def example_task(message: str) -> None:
-    """Sample background task — enqueue with example_task.enqueue("hello")."""
-    logger.info("example_task running", extra={"message": message})
+def send_welcome_email(user_id: int) -> None:
+    """Sample background task — replace with real work."""
+    logger.info("send_welcome_email", extra={"user_id": user_id})

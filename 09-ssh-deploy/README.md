@@ -18,7 +18,7 @@ Internationalisation (i18n): no.
 Custom user model: no.
 Auth add-on: none.
 Structured logging: yes (`structlog`, JSON in prod / pretty in dev, request-scoped `request_id`).
-Task runner: none.
+Task runner: mise.
 Add-ons:
   - redis
   - tasks: Django Tasks with the Redis Queue backend (`django-tasks-rq`). Also `uv run manage.py startapp jobs`, register `jobs` in `INSTALLED_APPS`, wire `jobs/apps.py` `ready()` to import `tasks`, and add a sample `@task` to `jobs/tasks.py`.
@@ -54,86 +54,87 @@ Production Django app deployed to a remote host over SSH from GitHub Actions, us
 
 ## Stack
 
-| Layer | Choice |
-|---|---|
-| Framework | Django 6 |
-| Database | PostgreSQL 17 |
-| Cache / broker | Redis 7 |
-| Background tasks | django-tasks-rq (RQ backend) |
-| Logging | structlog (JSON in prod / pretty in dev) |
-| Analytics | Umami (self-hosted) |
-| Error reporting | Bugsink (self-hosted, Sentry-compatible DSN) |
-| Database backups | django-dbbackup → S3-compatible storage |
-| Lint | Ruff |
-| Tests | pytest + pytest-django |
-| Local dev | docker-compose (web + worker + db + redis) |
-| Production | GitHub Actions SSH deploy → VPS with Docker + Caddy |
+- **Django 6** + PostgreSQL + Redis
+- **Background tasks**: `django-tasks-rq` (Redis Queue backend)
+- **Logging**: `structlog` — pretty console in dev, JSON in prod
+- **Analytics**: Umami (self-hosted, cookieless)
+- **Error reporting**: Bugsink (self-hosted, Sentry-protocol)
+- **CI**: GitHub Actions — lint, test, deploy check
+- **Deploy**: GitHub Actions → SSH → `docker compose` on VPS
+- **Backups**: `django-dbbackup` to S3-compatible storage
 
 ## Local development
 
 ```sh
-cp .env.example .env        # edit DJANGO_SECRET_KEY at minimum
-docker compose up -d --build
-docker compose exec web python manage.py migrate
-docker compose exec web python manage.py createsuperuser
+cp .env.example .env          # edit DATABASE_URL / REDIS_URL if not using docker-compose
+mise trust && mise install    # or: uv sync
+
+# Start the full stack (web + worker + db + redis):
+docker compose up -d --wait
+
+# Migrate and create a superuser:
+mise run migrate
+mise run superuser
+
+# Open http://localhost:8000
 ```
 
-Open http://localhost:8000/admin/
+## Task runner (mise)
 
-## Commands
+| Task | Command |
+|------|---------|
+| `mise run dev` | Django dev server |
+| `mise run migrate` | Apply migrations |
+| `mise run makemigrations` | Create migrations |
+| `mise run test` | Run pytest |
+| `mise run lint` | Ruff check |
+| `mise run fmt` | Ruff format |
+| `mise run worker` | Start RQ worker |
+| `mise run superuser` | Create superuser |
+| `mise run collectstatic` | Collect static files |
+
+Fallback without mise: `uv run manage.py <command>`
+
+## Testing
 
 ```sh
-# Run tests
-docker compose exec web python -m pytest
-
-# Lint
-docker compose exec web ruff check .
-docker compose exec web ruff format --check .
-
-# Background worker (already running via docker compose)
-docker compose logs -f worker
-
-# Health checks
-curl http://localhost:8000/healthz    # → ok
-curl http://localhost:8000/readyz     # → ready
-
-# GDPR
-docker compose exec web python manage.py export_user_data <id>
-docker compose exec web python manage.py delete_user <id> --yes
+mise run test
+# or:
+uv run pytest
+uv run pytest --cov
 ```
 
-## Adding a dependency
+## Deploy
+
+Copy `deploy/.env.prod.example` to `deploy/.env.prod` on the server and fill in all values.
+
+Set these secrets in GitHub repo settings:
+- `SSH_HOST` — VPS hostname or IP
+- `SSH_USER` — SSH username
+- `SSH_KEY` — private SSH key (the server must have the public key)
+- `GHCR_TOKEN` — GitHub PAT with `read:packages` scope (for the server to pull images)
+
+Push to `main` to trigger the deploy workflow. It builds and pushes the image to GHCR, then SSHs into the server and runs:
 
 ```sh
-uv add somepkg
-docker compose build
-docker compose up -d
+docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml pull
+docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml run --rm web uv run manage.py migrate
+docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml up -d
 ```
-
-## Production deploy
-
-Set the following GitHub secrets in repo settings:
-- `SSH_HOST` — VPS IP or hostname
-- `SSH_USER` — SSH login user
-- `SSH_KEY` — private key (the VPS must have the matching public key in `authorized_keys`)
-- `GHCR_TOKEN` — PAT with `read:packages` (the VPS needs this to pull the image)
-
-On the VPS, create `/srv/09-ssh-deploy/deploy/` and copy `deploy/.env.prod.example` → `deploy/.env.prod`, filling in all values.
-
-Push to `main` to trigger a deploy.
 
 ## Database backups
 
-Backups land in an S3-compatible bucket (set `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `DBBACKUP_BUCKET` in `.env.prod`).
+Backups run daily on the server via cron. Add to `/etc/cron.d/dbbackup`:
 
-```sh
-# Run manually from the VPS
-docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml exec web python manage.py dbbackup --clean
-```
-
-Add a cron on the VPS:
 ```cron
 17 3 * * * root cd /srv/09-ssh-deploy && docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml exec -T web python manage.py dbbackup --clean
 ```
+
+Requires `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `DBBACKUP_BUCKET` in `deploy/.env.prod`.
+
+## Health checks
+
+- `/healthz` — liveness (process alive, no external checks)
+- `/readyz` — readiness (DB reachable)
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

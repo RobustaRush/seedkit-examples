@@ -1,13 +1,12 @@
-import structlog
+import logging
+
 from django.tasks import task
 
-logger = structlog.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
-@task()
-def process_message(message: str) -> str:
-    """Sample background task — enqueue with process_message.enqueue("hello")."""
-    logger.info("processing_message", message=message)
-    result = f"Processed: {message}"
-    logger.info("message_processed", result=result)
-    return result
+@task
+def sample_task(message: str) -> str:
+    """Sample background task. Replace with real work."""
+    logger.info("sample_task running", extra={"message": message})
+    return f"processed: {message}"

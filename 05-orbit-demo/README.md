@@ -40,54 +40,75 @@ Scratch project to exercise django-orbit and verify outbound mail flows are capt
 
 ## Stack
 
-| Component | Choice |
-|-----------|--------|
-| Framework | Django 6.x |
-| Database | SQLite |
-| Settings | Single file (`config/settings.py`) |
-| Dev mode | uv on host |
-| Debug dashboard | django-orbit (`/orbit/`) |
-| Email (dev) | Mailpit via Docker (`localhost:8025`) |
+| Layer | Choice |
+|---|---|
+| Runtime | Python ≥ 3.12, uv |
+| Framework | Django 6 |
+| Database | SQLite (dev + default) |
+| Request handling | WSGI (gunicorn in prod) |
+| Observability | django-orbit dashboard + MCP |
+| Email (dev) | Mailpit via Docker SMTP on `localhost:1025` |
+| Email (fallback) | console backend |
 | Health checks | `/healthz`, `/readyz` |
 | Lint | Ruff |
-| Tests | `manage.py test` |
 
-## Setup
+## Install
 
 ```sh
 cp .env.example .env
-# Edit .env — set a real DJANGO_SECRET_KEY for production
+# Edit DJANGO_SECRET_KEY in .env
+uv sync
 uv run manage.py migrate
-uv run manage.py createsuperuser
 ```
 
 ## Run
 
 ```sh
-# Start Mailpit (captures outbound mail)
-docker compose up -d --wait mailpit
+# Start Mailpit (captures outbound mail at http://localhost:8025)
+docker compose up -d --wait
 
 # Start Django
 uv run manage.py runserver
 ```
 
-- Admin: http://localhost:8000/admin/
-- Orbit dashboard: http://localhost:8000/orbit/
-- Mailpit UI: http://localhost:8025/
+## Useful URLs (dev)
+
+| URL | Purpose |
+|---|---|
+| http://localhost:8000/admin/ | Django admin |
+| http://localhost:8000/orbit/ | Orbit observability dashboard |
+| http://localhost:8025/ | Mailpit web UI |
+| http://localhost:8000/healthz | Liveness probe |
+| http://localhost:8000/readyz | Readiness probe |
 
 ## Email
 
-`EMAIL_URL=smtp://localhost:1025` in `.env` routes all outbound mail through Mailpit.
-Every sent message appears instantly in the Mailpit web UI at `:8025`.
+Django is pointed at Mailpit's SMTP port (`localhost:1025`) via `EMAIL_URL=smtp://localhost:1025` in `.env`.
+All outbound mail is captured in the Mailpit UI — no real email is sent.
 
-For production, replace with a real SMTP URL in `.env`:
+To send a test mail:
 
 ```sh
-EMAIL_URL=smtp+tls://user:pass@smtp.example.com:587
-DEFAULT_FROM_EMAIL=no-reply@example.com
+uv run manage.py shell -c "
+from django.core.mail import send_mail
+send_mail('hello', 'body', 'from@example.com', ['to@example.com'])
+"
 ```
 
-## django-orbit MCP (AI assistant integration)
+## Lint
+
+```sh
+uv run ruff check .
+uv run ruff format .
+```
+
+## Test
+
+```sh
+uv run manage.py test
+```
+
+## django-orbit MCP (optional)
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -102,29 +123,6 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
     }
   }
 }
-```
-
-## Commands
-
-```sh
-# Lint
-uv run ruff check .
-uv run ruff format .
-
-# Tests
-uv run manage.py test
-
-# Migrate
-uv run manage.py migrate
-
-# Shell
-uv run manage.py shell
-
-# Send a test mail (Mailpit must be running)
-uv run manage.py shell -c "
-from django.core.mail import send_mail
-send_mail('hello', 'body', 'from@example.com', ['to@example.com'])
-"
 ```
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

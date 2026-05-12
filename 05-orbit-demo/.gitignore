@@ -5,7 +5,8 @@ staticfiles/
 media/
 .ruff_cache/
 __pycache__/
-*.py[cod]
-*.egg-info/
-dist/
+*.pyc
+*.pyo
 .DS_Store
+dist/
+*.egg-info/

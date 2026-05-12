@@ -5,6 +5,7 @@ services:
     volumes:
       - .:/app
       - /app/.venv
+    command: python manage.py runserver 0.0.0.0:8000
 
   worker:
     build:
@@ -12,7 +13,6 @@ services:
     volumes:
       - .:/app
       - /app/.venv
-    command: celery -A config worker -l info
 
   db:
     ports:

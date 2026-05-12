@@ -1,0 +1,44 @@
+[tools]
+python = "3.12"
+
+[tasks.install]
+run = "uv sync"
+
+[tasks.dev]
+run = "uv run manage.py runserver"
+
+[tasks.migrate]
+run = "uv run manage.py migrate"
+
+[tasks.makemigrations]
+run = "uv run manage.py makemigrations"
+
+[tasks.shell]
+run = "uv run manage.py shell"
+
+[tasks.superuser]
+run = "uv run manage.py createsuperuser"
+
+[tasks.test]
+run = "uv run pytest"
+
+[tasks.lint]
+run = "uv run ruff check ."
+
+[tasks.fmt]
+run = "uv run ruff format ."
+
+[tasks.typecheck]
+run = "uv run pyright"
+
+[tasks.collectstatic]
+run = "uv run manage.py collectstatic --noinput"
+
+[tasks.worker]
+run = "uv run celery -A config worker -l info"
+
+[tasks.bolt]
+run = "DJANGO_SETTINGS_MODULE=config.settings.bolt uv run manage.py runbolt --dev"
+
+[tasks.deploy]
+run = "fly deploy"

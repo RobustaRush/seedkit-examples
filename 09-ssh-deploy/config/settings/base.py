@@ -26,9 +26,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "django_structlog",
     "django_rq",
     "django_tasks_rq",
+    "django_structlog",
     "pages",
     "jobs",
 ]
@@ -90,7 +90,7 @@ CACHES = {
     }
 }
 
-# Django Tasks (RQ backend)
+# django-tasks-rq
 TASKS = {
     "default": {
         "BACKEND": "django_tasks_rq.RQBackend",
@@ -104,7 +104,7 @@ RQ_QUEUES = {
 
 RQ = {"JOB_CLASS": "django_tasks_rq.Job"}
 
-# Analytics (Umami)
+# Analytics (Umami self-hosted)
 ANALYTICS_ID = env("ANALYTICS_ID", default="")
 ANALYTICS_HOST = env("ANALYTICS_HOST", default="")
 

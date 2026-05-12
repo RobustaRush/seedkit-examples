@@ -1,10 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.contrib.auth.forms import (
-    ReadOnlyPasswordHashField,
-    UserChangeForm,
-    UserCreationForm,
-)
+from django.contrib.auth.forms import ReadOnlyPasswordHashField, UserChangeForm, UserCreationForm
 
 from .models import User
 
@@ -33,15 +29,7 @@ class UserAdmin(BaseUserAdmin):
         (None, {"fields": ("email", "password")}),
         (
             "Permissions",
-            {
-                "fields": (
-                    "is_active",
-                    "is_staff",
-                    "is_superuser",
-                    "groups",
-                    "user_permissions",
-                )
-            },
+            {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")},
         ),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )

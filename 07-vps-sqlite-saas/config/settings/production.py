@@ -1,6 +1,8 @@
-from .base import *  # noqa: F401, F403
+from .base import *
 
-_SQLITE_OPTIONS = {
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+
+DATABASES["default"]["OPTIONS"] = {
     "transaction_mode": "IMMEDIATE",
     "timeout": 5,
     "init_command": (
@@ -12,32 +14,23 @@ _SQLITE_OPTIONS = {
     ),
 }
 
-# SQLite production tuning
-DATABASES["default"]["OPTIONS"] = _SQLITE_OPTIONS  # noqa: F405
-DATABASES["cache"]["OPTIONS"] = _SQLITE_OPTIONS  # noqa: F405
+DATABASES["cache"]["OPTIONS"] = DATABASES["default"]["OPTIONS"]
 
-# allauth: mandatory email verification in prod
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+sec_idx = MIDDLEWARE.index("django.middleware.security.SecurityMiddleware")
+MIDDLEWARE.insert(sec_idx + 1, "whitenoise.middleware.WhiteNoiseMiddleware")
 
-# allauth MFA
-ACCOUNT_REAUTHENTICATION_REQUIRED = True
-
-# WhiteNoise
-sec_idx = MIDDLEWARE.index("django.middleware.security.SecurityMiddleware")  # noqa: F405
-MIDDLEWARE.insert(sec_idx + 1, "whitenoise.middleware.WhiteNoiseMiddleware")  # noqa: F405
+MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
-    },
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
-# HTTPS / security
+# HTTPS
 SECURE_SSL_REDIRECT = True
 SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
 
-if env.bool("DJANGO_BEHIND_PROXY", default=False):  # noqa: F405
+if env.bool("DJANGO_BEHIND_PROXY", default=False):
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 SESSION_COOKIE_SECURE = True
@@ -50,10 +43,7 @@ SECURE_HSTS_PRELOAD = False
 SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
-CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])  # noqa: F405
-
-# CSP
-MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]  # noqa: F405
+CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
@@ -69,8 +59,7 @@ CONTENT_SECURITY_POLICY = {
     },
 }
 
-# Sentry
-SENTRY_DSN = env("SENTRY_DSN", default="")  # noqa: F405
+SENTRY_DSN = env("SENTRY_DSN", default="")
 if SENTRY_DSN:
     import sentry_sdk
     from sentry_sdk.integrations.django import DjangoIntegration
@@ -78,5 +67,5 @@ if SENTRY_DSN:
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration()],
-        release=env("SENTRY_RELEASE", default=None),  # noqa: F405
+        release=env("SENTRY_RELEASE", default=None),
     )

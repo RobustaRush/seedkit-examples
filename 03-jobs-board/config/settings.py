@@ -11,7 +11,9 @@ environ.Env.read_env(BASE_DIR / ".env")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
-DATABASES = {"default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET)}
+DATABASES = {
+    "default": env.db("DATABASE_URL", default="postgres://postgres:postgres@localhost:5432/postgres" if DEBUG else env.NOTSET)
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -24,10 +26,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # third-party
+    # Third-party
     "mailauth",
     "mailauth.contrib.user",
-    # local
+    # Local
     "pages",
     "jobs",
 ]
@@ -71,14 +73,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
-]
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Internationalisation
+# i18n
 LANGUAGE_CODE = "en"
 USE_I18N = True
 USE_TZ = True
@@ -90,35 +88,6 @@ LANGUAGES = [
 
 LOCALE_PATHS = [BASE_DIR / "locale"]
 
-# Static files
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
-
-# Redis
-REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
-
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"{REDIS_URL}/0",
-        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
-    }
-}
-
-# Celery
-from celery.schedules import crontab  # noqa: E402
-
-CELERY_BROKER_URL = f"{REDIS_URL}/1"
-CELERY_RESULT_BACKEND = f"{REDIS_URL}/2"
-CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-
-CELERY_BEAT_SCHEDULE = {
-    "daily-digest": {
-        "task": "jobs.tasks.send_daily_digest",
-        "schedule": crontab(hour=8, minute=0),
-    },
-}
-
 # Email
 globals().update(env.email_url(
     "EMAIL_URL",
@@ -129,3 +98,27 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="webmaster@localhost" if 
 SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
+
+# Redis + Celery
+REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"{REDIS_URL}/0",
+        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+    }
+}
+
+CELERY_BROKER_URL = f"{REDIS_URL}/1"
+CELERY_RESULT_BACKEND = f"{REDIS_URL}/2"
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+from celery.schedules import crontab  # noqa: E402
+
+CELERY_BEAT_SCHEDULE = {
+    "daily-digest": {
+        "task": "jobs.tasks.send_daily_digest",
+        "schedule": crontab(hour=8, minute=0),
+    },
+}

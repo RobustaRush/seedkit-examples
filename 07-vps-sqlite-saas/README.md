@@ -18,7 +18,7 @@ Internationalisation (i18n): no.
 Custom user model: yes (custom `users.User` extending `AbstractUser`).
 Auth add-on: `django-allauth` (email login + mandatory verification).
 Structured logging: yes (`structlog`, JSON in prod / pretty in dev, request-scoped `request_id`).
-Task runner: none.
+Task runner: mise.
 Add-ons:
   - cache backend: sqlite (separate `cache.sqlite3` + `CacheRouter` + `DatabaseCache`)
   - tasks: Django Tasks with the Database backend (`django-tasks-db`). Also `uv run manage.py startapp jobs`, register `jobs` in `INSTALLED_APPS`, wire `jobs/apps.py` `ready()` to import `tasks`, and add a sample `@task` to `jobs/tasks.py`.
@@ -54,143 +54,98 @@ Production-ready SaaS skeleton deployed to a single VPS via docker-compose + Cad
 
 ## Stack
 
-| Layer | Choice |
-|---|---|
-| Framework | Django 6 |
-| Database | SQLite (WAL mode, `/data/site.sqlite3`) |
-| Cache | SQLite (`/data/cache.sqlite3` + `CacheRouter`) |
-| Background tasks | `django-tasks-db` (DB backend, `db_worker`) |
-| Auth | `django-allauth` (email login, mandatory verification in prod) |
-| 2FA | `allauth.mfa` (TOTP + recovery codes) |
-| Brute-force protection | `django-axes` |
-| Static files | WhiteNoise (manifest storage in prod) |
-| Media files | Docker volume, served by Caddy |
-| Structured logging | `structlog` + `django-structlog` (JSON in prod, pretty in dev) |
-| Error reporting | Sentry SDK |
-| CSP | `django-csp` (production only) |
-| DB replication | Litestream → S3-compatible storage |
-| Server | gunicorn |
-| Reverse proxy | Caddy 2 |
+- **Django 6** · split settings (base / local / production / test)
+- **Auth** · django-allauth (email login + mandatory verification in prod) · django-axes (brute-force lockout) · allauth.mfa (TOTP 2FA)
+- **Database** · SQLite on a persistent Docker volume · WAL mode in production
+- **Cache** · `cache.sqlite3` (separate file) + `DatabaseCache` + `CacheRouter`
+- **Tasks** · Django Tasks with `django-tasks-db` backend · `jobs` app with sample `@task`
+- **Static** · WhiteNoise (compressed + hashed filenames in prod) · media served via Caddy
+- **Email** · console backend in dev · SMTP (Postmark) in prod
+- **Logging** · structlog · pretty console in dev / JSON in prod · `request_id` via `django-structlog`
+- **Error reporting** · Sentry SaaS (set `SENTRY_DSN`)
+- **Security** · HSTS, secure cookies, CSP (`django-csp`), `X-Frame-Options`
+- **Backups** · Litestream replicates every WAL frame to S3-compatible storage
+- **CI** · GitHub Actions (ruff, pyright, pytest)
+- **Deploy** · VPS with Docker + Caddy · `deploy/docker-compose.prod.yml`
 
-## Local development (Docker)
+## Quick start
 
 ```sh
 cp .env.example .env
-# Edit .env — set DJANGO_SECRET_KEY to something random
+# edit .env: set DJANGO_SECRET_KEY to a real random value
 
-docker compose up -d --wait
-docker compose exec -T web python manage.py migrate
-docker compose exec -T web python manage.py createcachetable --database cache
-docker compose exec web python manage.py createsuperuser
+mise run dev        # or: uv run manage.py runserver
 ```
 
-Open <http://localhost:8000/admin/>.
-
-### Adding a dependency
+### Docker (local)
 
 ```sh
-uv add somepkg
-docker compose build web
-docker compose up -d
+docker compose up -d --build
+docker compose exec web uv run manage.py migrate
+docker compose exec web uv run manage.py createcachetable --database cache
+docker compose exec web uv run manage.py createsuperuser
+# open http://localhost:8000/admin/
 ```
 
-## Testing
+## Task runner (mise)
+
+```sh
+mise run install          # uv sync
+mise run dev              # runserver
+mise run migrate          # manage.py migrate
+mise run makemigrations   # manage.py makemigrations
+mise run test             # pytest
+mise run lint             # ruff check .
+mise run fmt              # ruff format .
+mise run typecheck        # pyright
+mise run worker           # manage.py db_worker
+mise run collectstatic    # manage.py collectstatic --noinput
+```
+
+First-time: `mise trust && mise install`
+
+Fallback without mise: `uv run manage.py <cmd>`
+
+## Tests
 
 ```sh
 uv run pytest
-uv run pytest --cov
+uv run pytest --cov       # with coverage
 ```
 
-## Lint / format
+## Deploy (VPS)
+
+Requires `.env.prod` on the server. Litestream restores the DB from S3 on first boot.
 
 ```sh
-uv run ruff check .
-uv run ruff format .
+ssh user@vps
+cd /srv/07-vps-sqlite-saas
+git pull
+docker compose -f deploy/docker-compose.prod.yml pull
+docker compose -f deploy/docker-compose.prod.yml up -d
 ```
 
-## Type check
+The `entrypoint.sh` inside the image handles restore → migrate → `createcachetable` → `litestream replicate -exec gunicorn`.
 
-```sh
-uv run pyright
-```
+## Production env vars
 
-## Pre-commit hooks
-
-```sh
-uv run pre-commit install
-```
-
-## Health checks
-
-- `GET /healthz` → `ok` (liveness — process alive)
-- `GET /readyz` → `ready` (readiness — DB reachable)
-
-## Background tasks
-
-```python
-from jobs.tasks import example_task
-example_task.enqueue("hello")
-```
-
-Run a worker:
-
-```sh
-docker compose exec web python manage.py db_worker
-```
-
-## Production deploy (VPS)
-
-1. Build and push the image:
-   ```sh
-   docker build -t ghcr.io/robustarush/07-vps-sqlite-saas:latest .
-   docker push ghcr.io/robustarush/07-vps-sqlite-saas:latest
-   ```
-
-2. On the VPS, create `.env.prod` from `.env.example` and fill in production values:
-   ```sh
-   DJANGO_DEBUG=False
-   DJANGO_SECRET_KEY=<strong-random-key>
-   DJANGO_ALLOWED_HOSTS=example.com
-   DATABASE_URL=sqlite:////data/site.sqlite3
-   EMAIL_URL=smtp+tls://<token>:<token>@smtp.postmarkapp.com:587
-   DEFAULT_FROM_EMAIL=no-reply@example.com
-   DJANGO_BEHIND_PROXY=True
-   DJANGO_CSRF_TRUSTED_ORIGINS=https://example.com
-   SENTRY_DSN=<dsn>
-   S3_ENDPOINT=https://...
-   S3_BUCKET=myproject
-   S3_ACCESS_KEY_ID=...
-   S3_SECRET_ACCESS_KEY=...
-   ```
-
-3. Edit `Caddyfile` — replace `example.com` with your domain.
-
-4. Start:
-   ```sh
-   docker compose -f docker-compose.prod.yml up -d
-   ```
-
-> **Note**: NTP must be configured on the server — TOTP 2FA fails if clock skew exceeds 30 s.
-
-## Environment variables reference
-
-| Variable | Default (dev) | Required in prod |
+| Variable | Required | Description |
 |---|---|---|
-| `DJANGO_SECRET_KEY` | insecure default | yes |
-| `DJANGO_DEBUG` | `True` | no (omit or `False`) |
-| `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | yes |
-| `DATABASE_URL` | `sqlite:///BASE_DIR/db.sqlite3` | yes |
-| `EMAIL_URL` | `consolemail://` | yes |
-| `DEFAULT_FROM_EMAIL` | `webmaster@localhost` | yes |
-| `SERVER_EMAIL` | same as `DEFAULT_FROM_EMAIL` | no |
-| `DJANGO_ADMINS` | empty | no |
-| `DJANGO_SITE_DOMAIN` | `example.com` | yes (for TOTP issuer) |
-| `DJANGO_BEHIND_PROXY` | `False` | yes (behind Caddy) |
-| `DJANGO_CSRF_TRUSTED_ORIGINS` | empty | yes |
-| `SENTRY_DSN` | empty | no |
-| `S3_ENDPOINT` | — | yes (Litestream) |
-| `S3_BUCKET` | — | yes (Litestream) |
-| `S3_ACCESS_KEY_ID` | — | yes (Litestream) |
-| `S3_SECRET_ACCESS_KEY` | — | yes (Litestream) |
+| `DJANGO_SECRET_KEY` | yes | 50-char random string |
+| `DJANGO_ALLOWED_HOSTS` | yes | comma-separated domains |
+| `DATABASE_URL` | yes | `sqlite:////data/site.sqlite3` |
+| `CACHE_DB_PATH` | yes | `/data/cache.sqlite3` |
+| `EMAIL_URL` | yes | `smtp+tls://<token>:<token>@smtp.postmarkapp.com:587` |
+| `DEFAULT_FROM_EMAIL` | yes | sender address |
+| `DJANGO_CSRF_TRUSTED_ORIGINS` | yes | `https://example.com` |
+| `DJANGO_BEHIND_PROXY` | yes | `True` (Caddy terminates TLS) |
+| `DJANGO_SITE_DOMAIN` | yes | shown in TOTP QR code |
+| `S3_ENDPOINT` / `S3_BUCKET` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | yes | Litestream replication target |
+| `SENTRY_DSN` | optional | error reporting |
+
+## Health endpoints
+
+- `GET /healthz` → `ok` (process alive)
+- `GET /readyz` → `ready` (DB reachable) or `db down` (503)
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

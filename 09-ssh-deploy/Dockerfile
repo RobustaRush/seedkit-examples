@@ -18,6 +18,7 @@ CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
 
 FROM base AS prod
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
@@ -28,8 +29,11 @@ RUN chown -R django:django /app
 ARG GIT_SHA=unknown
 ENV GIT_SHA=${GIT_SHA}
 
+# DJANGO_DEBUG=True lets collectstatic boot without real SECRET_KEY / DATABASE_URL.
+# DJANGO_SETTINGS_MODULE=production so STORAGES (manifest static storage) applies.
 RUN DJANGO_SETTINGS_MODULE=config.settings.production DJANGO_DEBUG=True \
     python manage.py collectstatic --noinput
 
 USER django
+
 CMD ["gunicorn", "config.wsgi", "--bind", "0.0.0.0:8000"]

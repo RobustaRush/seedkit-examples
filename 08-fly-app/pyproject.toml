@@ -45,7 +45,7 @@ ignore = ["E501", "S101", "RUF012"]
 "**/settings/*.py" = ["F405", "F403", "S105", "S106"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["api", "pages", "config"]
+known-first-party = ["config", "pages", "api"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -53,6 +53,21 @@ quote-style = "double"
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.test"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "**/migrations/**",
+    "**/tests/**",
+    "**/test_*.py",
+    "config/wsgi.py",
+    "config/asgi.py",
+    "manage.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
 
 [tool.pyright]
 include = ["."]

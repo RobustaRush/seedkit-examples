@@ -42,42 +42,47 @@ A tiny blog to verify the skill works end-to-end.
 
 ## Stack
 
-- Django 6 · SQLite · uv on host
-- Email: console backend (stdout)
-- Auth: vanilla `django.contrib.auth`
+| Layer | Choice |
+|---|---|
+| Runtime | Python ≥ 3.12 via uv |
+| Framework | Django 6.x |
+| Settings | Single `config/settings.py` with `django-environ` |
+| Database | SQLite (`db.sqlite3`) |
+| Email | Console backend (`consolemail://`) |
+| Auth | Vanilla `django.contrib.auth` |
 
 ## Setup
 
 ```sh
 cp .env.example .env
-# Edit .env and set DJANGO_SECRET_KEY to a real value for production.
+# Edit .env and set a real DJANGO_SECRET_KEY for production
 uv run manage.py migrate
 uv run manage.py createsuperuser
 uv run manage.py runserver
 ```
 
-Open <http://127.0.0.1:8000/admin/> and sign in with the superuser credentials.
-
-## Commands
-
-| Task | Command |
-|------|---------|
-| Install deps | `uv sync` |
-| Migrate | `uv run manage.py migrate` |
-| Run dev server | `uv run manage.py runserver` |
-| Run tests | `uv run manage.py test` |
-| Collect static | `uv run manage.py collectstatic --noinput` |
+Open <http://127.0.0.1:8000/admin/> and sign in.
 
 ## Environment variables
 
 See `.env.example` for the full list. Key variables:
 
-| Variable | Description |
-|----------|-------------|
-| `DJANGO_SECRET_KEY` | Django secret key (required in production) |
-| `DJANGO_DEBUG` | `True` for dev, unset or `False` in production |
-| `DJANGO_ALLOWED_HOSTS` | Comma-separated list of allowed hosts |
-| `DATABASE_URL` | DB URL (defaults to `db.sqlite3` when `DEBUG=True`) |
-| `EMAIL_URL` | Email backend URL (defaults to `consolemail://` in dev) |
+| Variable | Default | Notes |
+|---|---|---|
+| `DJANGO_DEBUG` | `False` | Set `True` in dev |
+| `DJANGO_SECRET_KEY` | *(required in prod)* | Use `secrets.token_urlsafe(50)` |
+| `DJANGO_ALLOWED_HOSTS` | `[]` | Comma-separated; DEBUG skips this check |
+| `DATABASE_URL` | `sqlite:///db.sqlite3` in DEBUG | 4-slash absolute path |
+| `EMAIL_URL` | `consolemail://` in DEBUG | Prints to stdout |
+
+## Commands
+
+```sh
+uv run manage.py migrate          # apply migrations
+uv run manage.py createsuperuser  # create admin user
+uv run manage.py runserver        # local dev server
+uv run manage.py test             # run tests
+uv run manage.py collectstatic --noinput  # collect static files
+```
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

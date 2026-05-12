@@ -4,7 +4,7 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     PATH="/app/.venv/bin:$PATH"
 
-# Install Litestream (architecture-aware — works on amd64 and arm64)
+# Install Litestream
 RUN apt-get update && apt-get install -y --no-install-recommends wget \
  && ARCH=$(dpkg --print-architecture) \
  && wget -q "https://github.com/benbjohnson/litestream/releases/download/v0.3.13/litestream-v0.3.13-linux-${ARCH}.deb" \
@@ -25,8 +25,8 @@ RUN uv sync --frozen --no-dev
 # Pre-create media dir with correct ownership before USER switch
 RUN mkdir -p /app/media && chown django:django /app/media
 
-# collectstatic: DJANGO_DEBUG=True unlocks dev defaults so manage.py boots
-# without real SECRET_KEY/DATABASE_URL; production.py applies manifest storage.
+# collectstatic — DJANGO_DEBUG=True unlocks dev defaults so it boots
+# without real SECRET_KEY / DATABASE_URL at build time.
 RUN DJANGO_SETTINGS_MODULE=config.settings.production DJANGO_DEBUG=True \
     python manage.py collectstatic --noinput
 

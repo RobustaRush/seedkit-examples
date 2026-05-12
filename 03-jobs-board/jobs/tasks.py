@@ -3,6 +3,6 @@ from celery import shared_task
 
 @shared_task
 def send_daily_digest():
-    """Send the daily job board digest email to subscribers."""
-    # TODO: query jobs posted since yesterday and email subscribers
-    return "digest sent"
+    """Send a daily digest email to all subscribers. Called by Celery Beat at 08:00 UTC."""
+    # TODO: query Job model, render email, send via Django mail
+    pass

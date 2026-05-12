@@ -44,30 +44,29 @@ Run the foundation, the boot check, start `manage.py db_worker` in a second term
 
 # 06-silk-lab
 
-Profile request paths with django-silk and run background tasks on the DB backend.
+Profile a few request paths with django-silk and run a simple background email task on the DB backend.
 
 ## Stack
 
-| Layer | Package |
+| Layer | Choice |
 |---|---|
-| Framework | Django 6.0 |
-| Database | PostgreSQL (`psycopg[binary]`) |
-| Settings | Split (`base` / `local` / `production` / `test`) |
-| Profiling | django-silk — dashboard at `/silk/`, `@silk_profile` decorator |
-| Background tasks | django-tasks-db (`db_worker`) |
-| Email (dev) | Console backend |
-| Analytics | GoatCounter (env-driven, disabled in dev) |
-| Health checks | `/healthz` (liveness), `/readyz` (DB ping) |
+| Framework | Django 6 |
+| Database | PostgreSQL |
+| Tasks | django-tasks-db (DB backend) |
+| Profiling | django-silk |
+| Email | Console (dev) |
+| Analytics | GoatCounter (env-driven, self-hosted) |
 | Lint | Ruff |
 | Tests | pytest + pytest-django |
-| Dev extras | django-extensions, django-zeal, django-migration-linter, django-test-migrations |
+| DB safety | django-zeal, django-migration-linter, django-test-migrations |
+| Dev extras | django-extensions |
 
 ## Setup
 
 ```sh
 createdb silk_db
-cp .env.example .env   # set DJANGO_SECRET_KEY to a real value
-uv sync
+cp .env.example .env
+# edit .env — set DJANGO_SECRET_KEY and DATABASE_URL if needed
 uv run manage.py migrate
 uv run manage.py createsuperuser
 ```
@@ -78,43 +77,42 @@ uv run manage.py createsuperuser
 # Web server
 uv run manage.py runserver
 
-# Task worker (separate terminal)
+# Background task worker (second terminal)
 uv run manage.py db_worker
 ```
 
-## Enqueue an example task
-
-```sh
-uv run manage.py shell_plus
-# In the shell:
-from jobs.tasks import send_welcome_email
-send_welcome_email.enqueue("you@example.com")
-```
-
-## Profiling with Silk
-
-Visit `http://localhost:8000/silk/` after making some requests. Silk records every request automatically.
-
-To profile a specific code block, use the context manager inside a task:
+## Enqueue a task (Django shell)
 
 ```python
-from silk.profiling.profiler import silk_profile
-
-with silk_profile(name="my operation"):
-    ...
+from jobs.tasks import send_welcome_email
+result = send_welcome_email.enqueue("you@example.com")
+print(result.id)
 ```
 
-Clear accumulated data when the table grows large:
+The worker terminal will print the email (console backend).
 
-```sh
-uv run manage.py silk_clear_request_log
+## Profiling
+
+Visit any page, then open <http://localhost:8000/silk/> to see the request profile.
+
+To profile a specific function, use the context-manager form inside a task or view:
+
+```python
+from django.conf import settings
+
+if settings.DEBUG:
+    from silk.profiling.profiler import silk_profile
+else:
+    def silk_profile(*_a, **_kw):
+        def deco(fn): return fn
+        return deco
 ```
 
 ## Lint
 
 ```sh
 uv run ruff check .
-uv run ruff format --check .
+uv run ruff format .
 ```
 
 ## Test
@@ -123,21 +121,21 @@ uv run ruff format --check .
 uv run pytest
 ```
 
-## Migration safety
+## Migration lint
 
 ```sh
 uv run manage.py lintmigrations
 ```
 
-## GoatCounter analytics
+## Analytics (GoatCounter)
 
-Set env vars to enable (empty `ANALYTICS_ID` disables tracking — safe in dev):
+Set in `.env`:
 
 ```sh
-ANALYTICS_HOST=https://stats.example.com
-ANALYTICS_ID=mysite
+ANALYTICS_HOST=https://<code>.goatcounter.com
+ANALYTICS_ID=<code>
 ```
 
-Include `{% include "_analytics.html" %}` before `</body>` in your base template.
+The snippet is suppressed when `DEBUG=True` — no beacons in dev.
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

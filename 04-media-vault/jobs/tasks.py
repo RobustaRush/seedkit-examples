@@ -1,9 +1,9 @@
 import structlog
-from django.tasks import task
+from django_tasks import task
 
-log = structlog.get_logger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 @task()
-def process_upload(filename: str, size: int) -> None:
-    log.info("processing_upload", filename=filename, size=size)
+def process_upload(file_uid: str) -> None:
+    logger.info("processing_upload", file_uid=file_uid)
