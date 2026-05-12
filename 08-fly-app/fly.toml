@@ -8,29 +8,25 @@ primary_region = "iad"
   PORT = "8000"
   DJANGO_BEHIND_PROXY = "True"
 
-# Required secrets — set with `fly secrets set`:
+# Required secrets (set via `fly secrets set`):
 #   DJANGO_SECRET_KEY
-#   DJANGO_ALLOWED_HOSTS     (e.g. "08-fly-app.fly.dev,example.com")
-#   DJANGO_CSRF_TRUSTED_ORIGINS  (e.g. "https://08-fly-app.fly.dev")
-#   DATABASE_URL             (auto-set by `fly postgres attach`)
-#   REDIS_URL                (auto-set by `fly redis attach`)
+#   DJANGO_ALLOWED_HOSTS     — <appname>.fly.dev plus any custom domain
+#   DJANGO_CSRF_TRUSTED_ORIGINS — https://<host>
+#   DATABASE_URL             — auto-set by `fly postgres attach`
+#   REDIS_URL                — auto-set by `fly redis attach`
+#   EMAIL_URL or POSTMARK_SERVER_TOKEN
 #   DEFAULT_FROM_EMAIL
-#   POSTMARK_SERVER_TOKEN
-#   ANYMAIL_WEBHOOK_SECRET
-#   AWS_ACCESS_KEY_ID
-#   AWS_SECRET_ACCESS_KEY
-#   AWS_STORAGE_BUCKET_NAME
-#   SENTRY_DSN
+#   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME
+#   SENTRY_DSN               — if GlitchTip error reporting is enabled
+
+[deploy]
+  # `python` not `uv run` — the prod stage (python:3.12-slim-bookworm) has no uv.
+  release_command = "python manage.py migrate && python manage.py collectstatic --noinput"
 
 [processes]
   web    = "gunicorn config.wsgi --bind 0.0.0.0:8000"
   worker = "celery -A config worker -l info"
   bolt   = "env DJANGO_SETTINGS_MODULE=config.settings.bolt python manage.py runbolt --port 8002"
-
-[deploy]
-  # python not uv run — runtime stage has no uv binary, only the venv on PATH.
-  # collectstatic uploads to S3 with real credentials from fly secrets.
-  release_command = "python manage.py migrate && python manage.py collectstatic --noinput"
 
 [[services]]
   internal_port = 8000
@@ -46,10 +42,18 @@ primary_region = "iad"
     port = 443
     handlers = ["tls", "http"]
 
-  [[services.http_checks]]
-    path = "/readyz"
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+  [[services.checks]]
+    grace_period = "10s"
     interval = "10s"
-    timeout = "2s"
+    method = "GET"
+    path = "/readyz"
+    protocol = "http"
+    timeout = "5s"
 
 [[services]]
   internal_port = 8002
@@ -57,5 +61,5 @@ primary_region = "iad"
   processes = ["bolt"]
 
   [[services.ports]]
-    port = 8443
-    handlers = ["tls", "http"]
+    port = 8002
+    handlers = ["http"]

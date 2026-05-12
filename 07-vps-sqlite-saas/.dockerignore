@@ -1,14 +1,12 @@
 .venv/
+.git/
 .env
 *.sqlite3
 staticfiles/
 media/
+.ruff_cache/
 __pycache__/
 *.pyc
-*.pyo
-.pytest_cache/
 htmlcov/
 .coverage
-.git/
-.github/
-.ruff_cache/
+.pytest_cache/

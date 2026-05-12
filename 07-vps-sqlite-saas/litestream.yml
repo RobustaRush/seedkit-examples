@@ -7,11 +7,3 @@ dbs:
         path: site/site.sqlite3
         access-key-id: ${S3_ACCESS_KEY_ID}
         secret-access-key: ${S3_SECRET_ACCESS_KEY}
-  - path: /data/cache.sqlite3
-    replicas:
-      - type: s3
-        endpoint: ${S3_ENDPOINT}
-        bucket: ${S3_BUCKET}
-        path: site/cache.sqlite3
-        access-key-id: ${S3_ACCESS_KEY_ID}
-        secret-access-key: ${S3_SECRET_ACCESS_KEY}

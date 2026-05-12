@@ -1,6 +1,7 @@
 """
 Django settings for 05-orbit-demo.
-Scratch project to exercise django-orbit and verify outbound mail flows.
+
+Scratch project to exercise django-orbit and verify outbound mail flows are captured.
 """
 
 from pathlib import Path
@@ -17,12 +18,26 @@ SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DE
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 DATABASES = {
     "default": env.db(
-        "DATABASE_URL",
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET,
+        "DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET
     )
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+if not DEBUG:
+    DATABASES["default"]["OPTIONS"] = {
+        "transaction_mode": "IMMEDIATE",
+        "timeout": 5,
+        "init_command": (
+            "PRAGMA journal_mode=WAL;"
+            "PRAGMA synchronous=NORMAL;"
+            "PRAGMA mmap_size=134217728;"
+            "PRAGMA journal_size_limit=27103364;"
+            "PRAGMA cache_size=2000;"
+        ),
+    }
+
+# Application definition
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -44,6 +59,17 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+if DEBUG:
+    INSTALLED_APPS += ["orbit"]
+    MIDDLEWARE.insert(1, "orbit.middleware.OrbitMiddleware")
+
+    ORBIT_CONFIG = {
+        "IGNORE_PATHS": ["/orbit/", "/static/", "/media/"],
+        "HIDE_REQUEST_HEADERS": ["Authorization", "Cookie", "X-API-Key"],
+        "HIDE_REQUEST_BODY_KEYS": ["password", "token", "api_key", "secret"],
+        "SLOW_QUERY_THRESHOLD_MS": 100,
+    }
+
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
@@ -63,6 +89,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
+# Password validation
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -70,32 +98,46 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+# Internationalisation
+
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
+# Static files
+
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Email — consolemail by default in dev; set EMAIL_URL in prod
-globals().update(env.email_url(
-    "EMAIL_URL",
-    default="consolemail://" if DEBUG else env.NOTSET,
-))
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET)
+# Email
+
+globals().update(
+    env.email_url(
+        "EMAIL_URL",
+        default="consolemail://" if DEBUG else env.NOTSET,
+    )
+)
+
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET
+)
 SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
-ADMINS = [(e.split("@")[0], e) for e in env.list("DJANGO_ADMINS", default=[])]
+ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
-# django-orbit observability dashboard (dev-only)
-if DEBUG:
-    INSTALLED_APPS += ["orbit"]
-    MIDDLEWARE.insert(1, "orbit.middleware.OrbitMiddleware")
+# Logging
 
-    ORBIT_CONFIG = {
-        "IGNORE_PATHS": ["/orbit/", "/static/", "/media/"],
-        "HIDE_REQUEST_HEADERS": ["Authorization", "Cookie", "X-API-Key"],
-        "HIDE_REQUEST_BODY_KEYS": ["password", "token", "api_key", "secret"],
-        "SLOW_QUERY_THRESHOLD_MS": 100,
-    }
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {"class": "logging.StreamHandler"},
+    },
+    "root": {"handlers": ["console"], "level": "INFO"},
+}
+
+if DEBUG:
+    LOGGING["handlers"]["orbit"] = {"()": "orbit.handlers.OrbitLogHandler"}
+    LOGGING["root"]["handlers"].append("orbit")
+    LOGGING["root"]["level"] = "DEBUG"

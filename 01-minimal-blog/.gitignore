@@ -11,23 +11,30 @@ build/
 
 # Virtual environment
 .venv/
-
-# Environment variables
-.env
+venv/
+env/
 
 # Django
 *.sqlite3
 staticfiles/
 media/
+.env
 
-# Editor / OS
-.DS_Store
+# uv
+.python-version
+
+# Editors
 .idea/
 .vscode/
 *.swp
 *.swo
 
-# Cache
+# macOS
+.DS_Store
+
+# Ruff
 .ruff_cache/
-.mypy_cache/
-.pytest_cache/
+
+# Coverage
+.coverage
+htmlcov/

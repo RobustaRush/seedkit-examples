@@ -2,8 +2,8 @@ services:
   mailpit:
     image: axllent/mailpit:latest
     ports:
-      - "127.0.0.1:8025:8025"  # web UI
-      - "127.0.0.1:1025:1025"  # SMTP
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
     environment:
       MP_MAX_MESSAGES: 5000
       MP_SMTP_AUTH_ACCEPT_ANY: 1

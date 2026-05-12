@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import environ
-import stripe as _stripe
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -44,10 +43,16 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "allauth.account.middleware.AccountMiddleware",
     "axes.middleware.AxesMiddleware",
+]
+
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesBackend",
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -78,7 +83,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
-USE_I18N = True
+USE_I18N = False
 USE_TZ = True
 
 STATIC_URL = "/static/"
@@ -88,14 +93,7 @@ STATICFILES_DIRS = [BASE_DIR / "assets"]
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# Auth
 AUTH_USER_MODEL = "users.User"
-
-AUTHENTICATION_BACKENDS = [
-    "axes.backends.AxesBackend",
-    "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
-]
 
 SITE_ID = 1
 LOGIN_REDIRECT_URL = "/"
@@ -106,19 +104,21 @@ ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "optional"
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 
-# django-axes
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1
 AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
 AXES_RESET_ON_SUCCESS = True
 
-# Email
+TAILWIND_CLI_VERSION = "4.1.3"
+TAILWIND_CLI_SRC_CSS = "tailwind-src/css/source.css"
+
 globals().update(
     env.email_url(
         "EMAIL_URL",
         default="consolemail://" if DEBUG else env.NOTSET,
     )
 )
+
 DEFAULT_FROM_EMAIL = env(
     "DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET
 )
@@ -126,11 +126,8 @@ SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
-# Tailwind
-TAILWIND_CLI_VERSION = "4.1.3"
-TAILWIND_CLI_SRC_CSS = "assets/css/source.css"
+import stripe as _stripe  # noqa: E402
 
-# Stripe
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY", default="")
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", default="")
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", default="")

@@ -2,7 +2,8 @@ FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS base
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
-    PATH="/app/.venv/bin:$PATH"
+    UV_PROJECT_ENVIRONMENT=/opt/venv \
+    PATH="/opt/venv/bin:$PATH"
 
 WORKDIR /app
 
@@ -26,14 +27,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN groupadd --system django && useradd --system --gid django django
 RUN chown -R django:django /app
 
-ARG GIT_SHA=unknown
-ENV GIT_SHA=${GIT_SHA}
-
-# DJANGO_DEBUG=True lets collectstatic boot without real SECRET_KEY / DATABASE_URL.
-# DJANGO_SETTINGS_MODULE=production so STORAGES (manifest static storage) applies.
 RUN DJANGO_SETTINGS_MODULE=config.settings.production DJANGO_DEBUG=True \
     python manage.py collectstatic --noinput
 
 USER django
-
 CMD ["gunicorn", "config.wsgi", "--bind", "0.0.0.0:8000"]

@@ -1,6 +1,6 @@
 services:
   web:
-    image: ghcr.io/your-org/07-vps-sqlite-saas:latest
+    image: ghcr.io/yourgithubuser/07-vps-sqlite-saas:latest
     restart: unless-stopped
     env_file: .env.prod
     volumes:
@@ -12,17 +12,6 @@ services:
       timeout: 3s
       retries: 5
       start_period: 30s
-
-  worker:
-    image: ghcr.io/your-org/07-vps-sqlite-saas:latest
-    restart: unless-stopped
-    command: python manage.py db_worker
-    env_file: .env.prod
-    volumes:
-      - sqlite_data:/data
-    depends_on:
-      web:
-        condition: service_healthy
 
   caddy:
     image: caddy:2-alpine

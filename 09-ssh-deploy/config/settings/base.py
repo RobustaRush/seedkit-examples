@@ -29,7 +29,6 @@ INSTALLED_APPS = [
     "django_rq",
     "django_tasks_rq",
     "django_structlog",
-    "pages",
     "jobs",
 ]
 
@@ -73,7 +72,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
-USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
@@ -90,7 +88,7 @@ CACHES = {
     }
 }
 
-# django-tasks-rq
+# Django Tasks — RQ backend
 TASKS = {
     "default": {
         "BACKEND": "django_tasks_rq.RQBackend",
@@ -104,7 +102,7 @@ RQ_QUEUES = {
 
 RQ = {"JOB_CLASS": "django_tasks_rq.Job"}
 
-# Analytics (Umami self-hosted)
+# Analytics (Umami — self-hosted)
 ANALYTICS_ID = env("ANALYTICS_ID", default="")
 ANALYTICS_HOST = env("ANALYTICS_HOST", default="")
 

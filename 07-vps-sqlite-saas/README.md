@@ -54,68 +54,58 @@ Production-ready SaaS skeleton deployed to a single VPS via docker-compose + Cad
 
 ## Stack
 
-- **Django 6** · split settings (base / local / production / test)
-- **Auth** · django-allauth (email login + mandatory verification in prod) · django-axes (brute-force lockout) · allauth.mfa (TOTP 2FA)
-- **Database** · SQLite on a persistent Docker volume · WAL mode in production
-- **Cache** · `cache.sqlite3` (separate file) + `DatabaseCache` + `CacheRouter`
-- **Tasks** · Django Tasks with `django-tasks-db` backend · `jobs` app with sample `@task`
-- **Static** · WhiteNoise (compressed + hashed filenames in prod) · media served via Caddy
-- **Email** · console backend in dev · SMTP (Postmark) in prod
-- **Logging** · structlog · pretty console in dev / JSON in prod · `request_id` via `django-structlog`
-- **Error reporting** · Sentry SaaS (set `SENTRY_DSN`)
-- **Security** · HSTS, secure cookies, CSP (`django-csp`), `X-Frame-Options`
-- **Backups** · Litestream replicates every WAL frame to S3-compatible storage
-- **CI** · GitHub Actions (ruff, pyright, pytest)
-- **Deploy** · VPS with Docker + Caddy · `deploy/docker-compose.prod.yml`
+| Layer | Choice |
+|---|---|
+| Framework | Django 6 |
+| Database | SQLite (WAL, IMMEDIATE, mmap) |
+| Cache | SQLite (`cache.sqlite3`) via `DatabaseCache` |
+| Auth | django-allauth (email), django-axes, allauth.mfa (TOTP 2FA) |
+| Tasks | django-tasks-db (DB backend) |
+| Static files | WhiteNoise |
+| Logging | structlog (JSON prod / pretty dev) |
+| Error reporting | Sentry SaaS |
+| Replication | Litestream → S3-compatible |
+| Reverse proxy | Caddy (TLS + media) |
+| Task runner | mise |
 
-## Quick start
+## Setup
 
 ```sh
 cp .env.example .env
-# edit .env: set DJANGO_SECRET_KEY to a real random value
+# edit .env — set DJANGO_SECRET_KEY to a random value
 
-mise run dev        # or: uv run manage.py runserver
+mise run install   # uv sync
+mise run migrate
+mise run superuser
+mise run dev       # http://127.0.0.1:8000
 ```
 
-### Docker (local)
+Or with Docker (local dev):
 
 ```sh
+cp .env.example .env
 docker compose up -d --build
 docker compose exec web uv run manage.py migrate
 docker compose exec web uv run manage.py createcachetable --database cache
-docker compose exec web uv run manage.py createsuperuser
-# open http://localhost:8000/admin/
+# http://localhost:8000
 ```
 
-## Task runner (mise)
+## Tasks
 
-```sh
-mise run install          # uv sync
-mise run dev              # runserver
-mise run migrate          # manage.py migrate
-mise run makemigrations   # manage.py makemigrations
-mise run test             # pytest
-mise run lint             # ruff check .
-mise run fmt              # ruff format .
-mise run typecheck        # pyright
-mise run worker           # manage.py db_worker
-mise run collectstatic    # manage.py collectstatic --noinput
-```
-
-First-time: `mise trust && mise install`
-
-Fallback without mise: `uv run manage.py <cmd>`
-
-## Tests
-
-```sh
-uv run pytest
-uv run pytest --cov       # with coverage
-```
+| Task | Command |
+|---|---|
+| `mise run dev` | `uv run manage.py runserver` |
+| `mise run migrate` | `uv run manage.py migrate` |
+| `mise run test` | `uv run pytest` |
+| `mise run lint` | `uv run ruff check .` |
+| `mise run fmt` | `uv run ruff format .` |
+| `mise run typecheck` | `uv run pyright` |
+| `mise run worker` | `uv run manage.py db_worker` |
+| `mise run collectstatic` | `uv run manage.py collectstatic --noinput` |
 
 ## Deploy (VPS)
 
-Requires `.env.prod` on the server. Litestream restores the DB from S3 on first boot.
+On the VPS, create `/srv/07-vps-sqlite-saas/.env.prod` with real values, then:
 
 ```sh
 ssh user@vps
@@ -125,27 +115,18 @@ docker compose -f deploy/docker-compose.prod.yml pull
 docker compose -f deploy/docker-compose.prod.yml up -d
 ```
 
-The `entrypoint.sh` inside the image handles restore → migrate → `createcachetable` → `litestream replicate -exec gunicorn`.
+Litestream restores the SQLite DB from S3 on boot (if the volume is empty), runs migrations, then starts `gunicorn` under `litestream replicate`.
 
-## Production env vars
+Edit `deploy/Caddyfile` to replace `example.com` with your real domain before first deploy.
 
-| Variable | Required | Description |
-|---|---|---|
-| `DJANGO_SECRET_KEY` | yes | 50-char random string |
-| `DJANGO_ALLOWED_HOSTS` | yes | comma-separated domains |
-| `DATABASE_URL` | yes | `sqlite:////data/site.sqlite3` |
-| `CACHE_DB_PATH` | yes | `/data/cache.sqlite3` |
-| `EMAIL_URL` | yes | `smtp+tls://<token>:<token>@smtp.postmarkapp.com:587` |
-| `DEFAULT_FROM_EMAIL` | yes | sender address |
-| `DJANGO_CSRF_TRUSTED_ORIGINS` | yes | `https://example.com` |
-| `DJANGO_BEHIND_PROXY` | yes | `True` (Caddy terminates TLS) |
-| `DJANGO_SITE_DOMAIN` | yes | shown in TOTP QR code |
-| `S3_ENDPOINT` / `S3_BUCKET` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | yes | Litestream replication target |
-| `SENTRY_DSN` | optional | error reporting |
+## Pre-commit
 
-## Health endpoints
+```sh
+uv run pre-commit install
+```
 
-- `GET /healthz` → `ok` (process alive)
-- `GET /readyz` → `ready` (DB reachable) or `db down` (503)
+Hooks: trailing whitespace, YAML check, Ruff lint+format, pyright.
+
+> NB: TOTP 2FA requires accurate server time (NTP). Clock skew > 30s causes auth failures.
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

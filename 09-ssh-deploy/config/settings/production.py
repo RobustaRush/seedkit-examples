@@ -1,23 +1,25 @@
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
 from .base import *
 
 # HTTPS
-SECURE_SSL_REDIRECT = True
+SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
 SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
 
 if env.bool("DJANGO_BEHIND_PROXY", default=False):
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# Cookies
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SAMESITE = "Lax"
 
-# HSTS
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
 
-# Other browser hardening
+SILENCED_SYSTEM_CHECKS = ["security.W005", "security.W021"]
+
 SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
@@ -26,27 +28,23 @@ CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 # CSP
 MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 
-_umami_hosts = [ANALYTICS_HOST] if ANALYTICS_HOST else []
-
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'",),
-        "script-src": ("'self'", *_umami_hosts),
+        "script-src": ("'self'",),
         "style-src": ("'self'", "'unsafe-inline'"),
         "img-src": ("'self'", "data:"),
         "font-src": ("'self'",),
-        "connect-src": ("'self'", *_umami_hosts),
+        "connect-src": ("'self'",),
         "frame-ancestors": ("'none'",),
         "base-uri": ("'self'",),
         "form-action": ("'self'",),
     },
 }
 
-# Error reporting (Bugsink / Sentry-compatible)
+# Error reporting (Bugsink / Sentry protocol via sentry-sdk)
 SENTRY_DSN = env("SENTRY_DSN", default="")
 if SENTRY_DSN:
-    import sentry_sdk
-    from sentry_sdk.integrations.django import DjangoIntegration
 
     def _scrub(event, hint):
         request = event.get("request") or {}
@@ -63,7 +61,8 @@ if SENTRY_DSN:
         release=env("SENTRY_RELEASE", default=None),
     )
 
-# Database backups (S3-compatible target)
+# Database backups — wrapped in `if not DEBUG` so the Dockerfile collectstatic
+# step (which runs with DJANGO_DEBUG=True) doesn't evaluate env("AWS_ACCESS_KEY_ID").
 if not DEBUG:
     INSTALLED_APPS += ["dbbackup"]
 

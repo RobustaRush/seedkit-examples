@@ -22,11 +22,11 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY --chown=django:django . .
 RUN uv sync --frozen --no-dev
 
-# Pre-create media dir with correct ownership before USER switch
-RUN mkdir -p /app/media && chown django:django /app/media
+# Pre-create /data and /app/media with correct ownership before USER switch.
+# Named volumes mount as root:root so the django user can't write otherwise.
+RUN mkdir -p /data /app/media && chown django:django /data /app/media
 
-# collectstatic — DJANGO_DEBUG=True unlocks dev defaults so it boots
-# without real SECRET_KEY / DATABASE_URL at build time.
+# collectstatic — uses DJANGO_DEBUG=True so settings load without real env vars
 RUN DJANGO_SETTINGS_MODULE=config.settings.production DJANGO_DEBUG=True \
     python manage.py collectstatic --noinput
 
@@ -37,3 +37,4 @@ RUN chmod +x /entrypoint.sh
 USER django
 
 ENTRYPOINT ["/entrypoint.sh"]
+CMD []

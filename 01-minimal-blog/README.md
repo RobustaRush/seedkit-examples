@@ -38,51 +38,57 @@ Run the foundation, the boot check (migrate + createsuperuser), and confirm /adm
 
 # 01-minimal-blog
 
-A tiny blog to verify the skill works end-to-end.
+A tiny Django blog — minimal scaffold to verify the seedkit skill works end-to-end.
 
 ## Stack
 
 | Layer | Choice |
 |---|---|
-| Runtime | Python ≥ 3.12 via uv |
+| Runtime | Python ≥ 3.12, managed by uv |
 | Framework | Django 6.x |
-| Settings | Single `config/settings.py` with `django-environ` |
-| Database | SQLite (`db.sqlite3`) |
-| Email | Console backend (`consolemail://`) |
-| Auth | Vanilla `django.contrib.auth` |
+| Settings | `config/settings.py` (single file, django-environ) |
+| Database | SQLite (default: `db.sqlite3` in project root) |
+| Email | Console backend (prints to stdout) |
+| Static files | `STATIC_ROOT = staticfiles/` |
+
+## Prerequisites
+
+- [uv](https://docs.astral.sh/uv/) installed on the host
 
 ## Setup
 
 ```sh
 cp .env.example .env
-# Edit .env and set a real DJANGO_SECRET_KEY for production
+# Edit .env — set a real DJANGO_SECRET_KEY before running in production
 uv run manage.py migrate
 uv run manage.py createsuperuser
+```
+
+## Run
+
+```sh
 uv run manage.py runserver
 ```
 
-Open <http://127.0.0.1:8000/admin/> and sign in.
+Open <http://127.0.0.1:8000/admin/> and sign in with the superuser you created.
+
+## Test
+
+```sh
+uv run manage.py test
+```
 
 ## Environment variables
 
 See `.env.example` for the full list. Key variables:
 
-| Variable | Default | Notes |
+| Variable | Default (dev) | Required in prod |
 |---|---|---|
-| `DJANGO_DEBUG` | `False` | Set `True` in dev |
-| `DJANGO_SECRET_KEY` | *(required in prod)* | Use `secrets.token_urlsafe(50)` |
-| `DJANGO_ALLOWED_HOSTS` | `[]` | Comma-separated; DEBUG skips this check |
-| `DATABASE_URL` | `sqlite:///db.sqlite3` in DEBUG | 4-slash absolute path |
-| `EMAIL_URL` | `consolemail://` in DEBUG | Prints to stdout |
-
-## Commands
-
-```sh
-uv run manage.py migrate          # apply migrations
-uv run manage.py createsuperuser  # create admin user
-uv run manage.py runserver        # local dev server
-uv run manage.py test             # run tests
-uv run manage.py collectstatic --noinput  # collect static files
-```
+| `DJANGO_SECRET_KEY` | `django-insecure-build-only` | Yes |
+| `DJANGO_DEBUG` | `False` | Set to `False` |
+| `DJANGO_ALLOWED_HOSTS` | `[]` | Yes |
+| `DATABASE_URL` | `sqlite:///db.sqlite3` | Yes |
+| `EMAIL_URL` | `consolemail://` | Yes |
+| `DEFAULT_FROM_EMAIL` | `webmaster@localhost` | Yes |
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

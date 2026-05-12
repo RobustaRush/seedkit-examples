@@ -31,9 +31,6 @@ run = "uv run ruff format ."
 [tasks.worker]
 run = "uv run manage.py rqworker default"
 
-[tasks.collectstatic]
-run = "uv run manage.py collectstatic --noinput"
-
 [tasks.deploy-migrate]
 run = "docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml run --rm web uv run manage.py migrate"
 

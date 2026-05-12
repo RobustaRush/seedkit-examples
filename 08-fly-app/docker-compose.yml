@@ -11,19 +11,13 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')\""]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
 
   worker:
     build:
       context: .
       target: prod
-    command: celery -A config worker -l info
     env_file: .env
+    command: celery -A config worker -l info
     depends_on:
       db:
         condition: service_healthy
@@ -54,8 +48,8 @@ services:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID}
-      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY}
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:-minioadmin}
     ports:
       - "9000:9000"
       - "9001:9001"

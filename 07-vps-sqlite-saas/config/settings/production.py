@@ -1,7 +1,10 @@
+import environ
+
 from .base import *
 
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+env = environ.Env()
 
+# SQLite production pragmas
 DATABASES["default"]["OPTIONS"] = {
     "transaction_mode": "IMMEDIATE",
     "timeout": 5,
@@ -13,20 +16,24 @@ DATABASES["default"]["OPTIONS"] = {
         "PRAGMA cache_size=2000;"
     ),
 }
-
 DATABASES["cache"]["OPTIONS"] = DATABASES["default"]["OPTIONS"]
 
+# Email verification mandatory in prod
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+
+# MFA
+ACCOUNT_REAUTHENTICATION_REQUIRED = True
+
+# WhiteNoise
 sec_idx = MIDDLEWARE.index("django.middleware.security.SecurityMiddleware")
 MIDDLEWARE.insert(sec_idx + 1, "whitenoise.middleware.WhiteNoiseMiddleware")
-
-MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
-# HTTPS
+# HTTPS / security
 SECURE_SSL_REDIRECT = True
 SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
 
@@ -35,15 +42,16 @@ if env.bool("DJANGO_BEHIND_PROXY", default=False):
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
-
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
-
 SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
+
+# CSP
+MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
@@ -59,6 +67,7 @@ CONTENT_SECURITY_POLICY = {
     },
 }
 
+# Sentry
 SENTRY_DSN = env("SENTRY_DSN", default="")
 if SENTRY_DSN:
     import sentry_sdk

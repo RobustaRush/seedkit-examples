@@ -3,12 +3,10 @@
 *.sqlite3
 staticfiles/
 media/
-.ruff_cache/
 __pycache__/
 *.py[cod]
 *.egg-info/
 dist/
-.pytest_cache/
-.mypy_cache/
-*.mo
+.ruff_cache/
 celerybeat-schedule*
+locale/*/LC_MESSAGES/*.mo

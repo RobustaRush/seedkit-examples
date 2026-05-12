@@ -1,38 +1,44 @@
-# Builder: full uv image + build tools (needed for django-bolt Rust extension
-# which has no aarch64-linux wheel — compiles from source on Apple Silicon).
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm AS builder
+# syntax=docker/dockerfile:1
+
+# ── base: shared dep install (uv available here) ───────────────────────────
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS base
 
 ENV UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential pkg-config \
-    && rm -rf /var/lib/apt/lists/*
+    UV_LINK_MODE=copy \
+    PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev --no-install-project
+# BuildKit cache mount keeps the uv wheel cache across stages so packages
+# that build native extensions (e.g. django-bolt via maturin) are compiled
+# once and reused by the builder stage.
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-install-project
 
 COPY . .
-RUN uv sync --frozen --no-dev
-
-# collectstatic is skipped here — S3 storage needs real credentials at
-# deploy time. Run via fly.toml [deploy] release_command instead.
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen
 
 
-# Dev target: full toolchain, bind-mounts for live reload.
-FROM builder AS dev
-
-ENV PATH="/app/.venv/bin:$PATH"
-
+# ── dev target: runserver, bind-mounted source ──────────────────────────────
+FROM base AS dev
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
 
-# Slim runtime: no uv binary, ~100-200 MB lighter than the builder.
-FROM python:3.12-slim-bookworm AS runtime
+# ── builder: prod deps only (no dev group) ──────────────────────────────────
+FROM base AS builder
+# Reuses the uv cache populated by the base stage — no Rust recompilation.
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
 
-ENV PATH="/app/.venv/bin:$PATH"
+
+# ── prod target: slim runtime, no uv binary ─────────────────────────────────
+FROM python:3.12-slim-bookworm AS prod
+
+ARG GIT_SHA=unknown
+ENV PATH="/app/.venv/bin:$PATH" \
+    GIT_SHA=${GIT_SHA}
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
@@ -43,10 +49,9 @@ RUN groupadd --system django && useradd --system --gid django django
 WORKDIR /app
 COPY --from=builder --chown=django:django /app /app
 
+# S3 storage: collectstatic runs at deploy time (fly.toml release_command),
+# not at build time — bucket credentials must not enter the build context.
+
 USER django
-
-
-# Prod target: slim runtime with gunicorn.
-FROM runtime AS prod
 
 CMD ["gunicorn", "config.wsgi", "--bind", "0.0.0.0:8000"]

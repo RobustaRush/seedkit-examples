@@ -4,8 +4,7 @@ services:
       target: dev
     volumes:
       - .:/app
-      - /app/.venv
-    command: python manage.py runserver 0.0.0.0:8000
+      - /app/.venv      # anonymous volume shadows any host .venv from the bind mount
 
   worker:
     build:
@@ -13,6 +12,7 @@ services:
     volumes:
       - .:/app
       - /app/.venv
+    command: celery -A config worker -l info
 
   db:
     ports:
@@ -20,4 +20,4 @@ services:
 
   redis:
     ports:
-      - "127.0.0.1:6379:6379"
+      - "127.0.0.1:6380:6379"

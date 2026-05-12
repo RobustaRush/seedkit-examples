@@ -3,20 +3,18 @@ services:
     build:
       target: dev
     volumes:
-      - .:/app
-      - /app/.venv
+      - .:/app          # source live-reload — venv lives at /opt/venv, untouched
 
   worker:
     build:
       target: dev
     volumes:
       - .:/app
-      - /app/.venv
+    command: python manage.py rqworker default
 
   db:
-    ports:
-      - "127.0.0.1:5433:5432"
+    # No host port mapping. `web` reaches `db` over the compose network.
+    # Add "127.0.0.1:5433:5432" only when a host GUI needs to connect.
 
   redis:
-    ports:
-      - "127.0.0.1:6379:6379"
+    # No host port mapping needed for local dev via compose network.

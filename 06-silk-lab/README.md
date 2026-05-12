@@ -44,29 +44,36 @@ Run the foundation, the boot check, start `manage.py db_worker` in a second term
 
 # 06-silk-lab
 
-Profile a few request paths with django-silk and run a simple background email task on the DB backend.
+Profile request paths with django-silk and run background email tasks on the database backend.
 
 ## Stack
 
 | Layer | Choice |
 |---|---|
-| Framework | Django 6 |
-| Database | PostgreSQL |
-| Tasks | django-tasks-db (DB backend) |
-| Profiling | django-silk |
-| Email | Console (dev) |
-| Analytics | GoatCounter (env-driven, self-hosted) |
+| Framework | Django 6.0 |
+| Database | PostgreSQL (psycopg v3) |
+| Background tasks | django-tasks-db (DB backend, no broker) |
+| Profiling | django-silk (`/silk/`) |
+| Analytics | GoatCounter (self-hosted, env-driven) |
+| Email (local) | console backend |
+| Health checks | `/healthz`, `/readyz` |
+| Dev tools | django-extensions, django-zeal, django-migration-linter, django-test-migrations |
 | Lint | Ruff |
 | Tests | pytest + pytest-django |
-| DB safety | django-zeal, django-migration-linter, django-test-migrations |
-| Dev extras | django-extensions |
+
+## Prerequisites
+
+- Python ≥ 3.12
+- uv
+- PostgreSQL running locally
 
 ## Setup
 
 ```sh
 createdb silk_db
 cp .env.example .env
-# edit .env — set DJANGO_SECRET_KEY and DATABASE_URL if needed
+# edit .env — at minimum set DJANGO_SECRET_KEY (or leave the generated one)
+uv sync
 uv run manage.py migrate
 uv run manage.py createsuperuser
 ```
@@ -77,25 +84,14 @@ uv run manage.py createsuperuser
 # Web server
 uv run manage.py runserver
 
-# Background task worker (second terminal)
+# Background task worker (separate terminal)
 uv run manage.py db_worker
 ```
 
-## Enqueue a task (Django shell)
-
-```python
-from jobs.tasks import send_welcome_email
-result = send_welcome_email.enqueue("you@example.com")
-print(result.id)
-```
-
-The worker terminal will print the email (console backend).
-
 ## Profiling
 
-Visit any page, then open <http://localhost:8000/silk/> to see the request profile.
-
-To profile a specific function, use the context-manager form inside a task or view:
+Open `http://localhost:8000/silk/` while `DEBUG=True`. Every request is
+recorded automatically. To profile a specific code block:
 
 ```python
 from django.conf import settings
@@ -106,25 +102,36 @@ else:
     def silk_profile(*_a, **_kw):
         def deco(fn): return fn
         return deco
+
+@silk_profile(name="my expensive operation")
+def expensive_operation():
+    ...
 ```
 
-## Lint
+Clear accumulated data:
 
 ```sh
-uv run ruff check .
-uv run ruff format .
+uv run manage.py silk_clear_request_log
 ```
 
-## Test
+## Background tasks
+
+Enqueue the sample task from the shell:
 
 ```sh
-uv run pytest
+uv run manage.py shell_plus
+>>> from jobs.tasks import send_welcome_email
+>>> send_welcome_email.enqueue("you@example.com")
 ```
 
-## Migration lint
+Add your own tasks to `jobs/tasks.py`:
 
-```sh
-uv run manage.py lintmigrations
+```python
+from django.tasks import task
+
+@task()
+def my_task(arg: str) -> None:
+    ...
 ```
 
 ## Analytics (GoatCounter)
@@ -132,10 +139,38 @@ uv run manage.py lintmigrations
 Set in `.env`:
 
 ```sh
-ANALYTICS_HOST=https://<code>.goatcounter.com
-ANALYTICS_ID=<code>
+ANALYTICS_ID=mysite
+ANALYTICS_HOST=https://mysite.goatcounter.com
 ```
 
-The snippet is suppressed when `DEBUG=True` — no beacons in dev.
+The snippet fires only when `ANALYTICS_ID` and `ANALYTICS_HOST` are both set and `DEBUG=False`.
+
+## Health checks
+
+```sh
+curl http://localhost:8000/healthz   # → ok
+curl http://localhost:8000/readyz    # → ready  (or 503 if DB unreachable)
+```
+
+## Lint & format
+
+```sh
+uv run ruff check .
+uv run ruff format .
+```
+
+## Migration safety
+
+```sh
+uv run manage.py lintmigrations
+```
+
+## Tests
+
+```sh
+uv run pytest
+```
+
+`django-test-migrations` is installed — import the `migrator` fixture in any test file to write migration forward/rollback tests.
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

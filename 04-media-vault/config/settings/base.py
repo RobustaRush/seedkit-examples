@@ -10,9 +10,7 @@ environ.Env.read_env(BASE_DIR / ".env")
 
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)
-ALLOWED_HOSTS = env.list(
-    "DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"] if DEBUG else env.NOTSET
-)
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"] if DEBUG else env.NOTSET)
 DATABASES = {
     "default": env.db(
         "DATABASE_URL",
@@ -30,21 +28,20 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "channels",
     "django_rq",
     "django_tasks_rq",
     "corsheaders",
-    "django_structlog",
-    "jobs",
-    "api",
+    "channels",
     "chat",
+    "jobs",
     "pages",
+    "api",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -70,7 +67,6 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -89,7 +85,7 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # --- Redis ---
-REDIS_URL = env("REDIS_URL", default="redis://redis:6379").rstrip("/")
+REDIS_URL = env("REDIS_URL", default="redis://redis:6379" if DEBUG else env.NOTSET).rstrip("/")
 
 CACHES = {
     "default": {
@@ -103,40 +99,9 @@ CACHES = {
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [env("REDIS_URL", default="redis://redis:6379")]},
+        "CONFIG": {"hosts": [f"{REDIS_URL}/1"]},
     },
 }
-
-# --- S3 / MinIO ---
-AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID", default="" if DEBUG else env.NOTSET)
-AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY", default="" if DEBUG else env.NOTSET)
-AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="" if DEBUG else env.NOTSET)
-AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="us-east-1")
-AWS_S3_ENDPOINT_URL = env("AWS_S3_ENDPOINT_URL", default="")
-AWS_S3_CUSTOM_DOMAIN = env("AWS_S3_CUSTOM_DOMAIN", default="")
-AWS_S3_URL_PROTOCOL = env("AWS_S3_URL_PROTOCOL", default="https:")
-
-if AWS_STORAGE_BUCKET_NAME:
-    _default_storage = {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-        "OPTIONS": {"location": "media"},
-    }
-else:
-    _default_storage = {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    }
-
-STORAGES = {
-    "default": _default_storage,
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
-}
-
-if AWS_S3_CUSTOM_DOMAIN:
-    MEDIA_URL = f"{AWS_S3_URL_PROTOCOL}//{AWS_S3_CUSTOM_DOMAIN}/media/"
-else:
-    MEDIA_URL = "/media/"
 
 # --- Tasks (django-tasks-rq) ---
 TASKS = {
@@ -152,19 +117,40 @@ RQ_QUEUES = {
 
 RQ = {"JOB_CLASS": "django_tasks_rq.Job"}
 
+# --- S3 / MinIO storage ---
+AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID", default="" if DEBUG else env.NOTSET)
+AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY", default="" if DEBUG else env.NOTSET)
+AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="" if DEBUG else env.NOTSET)
+AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME", default="us-east-1")
+AWS_S3_ENDPOINT_URL = env("AWS_S3_ENDPOINT_URL", default="")
+AWS_S3_CUSTOM_DOMAIN = env("AWS_S3_CUSTOM_DOMAIN", default="")
+AWS_S3_URL_PROTOCOL = env("AWS_S3_URL_PROTOCOL", default="https:")
+
+if AWS_STORAGE_BUCKET_NAME:
+    _default_storage: dict = {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "OPTIONS": {"location": "media"},
+    }
+else:
+    _default_storage = {"BACKEND": "django.core.files.storage.FileSystemStorage"}
+
+STORAGES = {
+    "default": _default_storage,
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
+
+if AWS_S3_CUSTOM_DOMAIN:
+    MEDIA_URL = f"{AWS_S3_URL_PROTOCOL}//{AWS_S3_CUSTOM_DOMAIN}/media/"
+else:
+    MEDIA_URL = "/media/"
+
 # --- Email ---
 globals().update(
-    env.email_url(
-        "EMAIL_URL",
-        default="consolemail://" if DEBUG else env.NOTSET,
-    )
+    env.email_url("EMAIL_URL", default="consolemail://" if DEBUG else env.NOTSET)
 )
-
-DEFAULT_FROM_EMAIL = env(
-    "DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET
-)
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET)
 SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
-ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
+ADMINS = [(e.split("@")[0], e) for e in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
 # --- CORS ---
@@ -174,7 +160,7 @@ CORS_ALLOWED_ORIGINS = env.list(
 )
 CORS_ALLOW_CREDENTIALS = True
 
-# --- Logging (structlog) ---
+# --- Structlog ---
 PRE_CHAIN = [
     structlog.contextvars.merge_contextvars,
     structlog.stdlib.add_log_level,

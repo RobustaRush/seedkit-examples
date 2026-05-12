@@ -10,25 +10,21 @@ environ.Env.read_env(BASE_DIR / ".env")
 
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)
-ALLOWED_HOSTS = env.list(
-    "DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"] if DEBUG else env.NOTSET
-)
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 DATABASES = {
     "default": env.db(
-        "DATABASE_URL",
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET,
-    )
+        "DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET
+    ),
 }
-
 DATABASES["cache"] = {
     "ENGINE": "django.db.backends.sqlite3",
     "NAME": env("CACHE_DB_PATH", default=str(BASE_DIR / "cache.sqlite3")),
 }
 
-DATABASE_ROUTERS = ["config.routers.CacheRouter"]
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+AUTH_USER_MODEL = "users.User"
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -38,16 +34,16 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
-    # third-party
+    # Third-party
     "allauth",
     "allauth.account",
     "allauth.mfa",
     "axes",
-    "django_tasks_db",
     "django_structlog",
-    # project
+    "django_tasks",
+    "django_tasks_db",
+    # Local
     "users",
-    "pages",
     "jobs",
 ]
 
@@ -83,7 +79,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-AUTH_USER_MODEL = "users.User"
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
 
 AUTHENTICATION_BACKENDS = [
     "axes.backends.AxesBackend",
@@ -100,25 +101,17 @@ ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "optional"
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 
-MFA_TOTP_ISSUER = env("DJANGO_SITE_DOMAIN", default="localhost")
 MFA_SUPPORTED_TYPES = ["totp", "recovery_codes"]
-ACCOUNT_REAUTHENTICATION_REQUIRED = True
+MFA_TOTP_ISSUER = env("DJANGO_SITE_DOMAIN", default="example.com")
 
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1
 AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
 AXES_RESET_ON_SUCCESS = True
 
-AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
-]
-
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
-USE_I18N = True
+USE_I18N = False
 USE_TZ = True
 
 STATIC_URL = "/static/"
@@ -134,7 +127,13 @@ CACHES = {
     },
 }
 
-TASKS = {"default": {"BACKEND": "django_tasks_db.DatabaseBackend"}}
+DATABASE_ROUTERS = ["config.routers.CacheRouter"]
+
+TASKS = {
+    "default": {
+        "BACKEND": "django_tasks_db.DatabaseBackend",
+    }
+}
 
 globals().update(
     env.email_url(
@@ -150,6 +149,7 @@ SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
+# structlog
 PRE_CHAIN = [
     structlog.contextvars.merge_contextvars,
     structlog.stdlib.add_log_level,

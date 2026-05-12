@@ -43,71 +43,105 @@ Small e-commerce site with admin and SMTP transactional email.
 
 ## Stack
 
-- **Django** (split settings: base / local / production)
-- **PostgreSQL** via psycopg
-- **django-allauth** — email login, mandatory email verification in production
-- **django-axes** — brute-force lockout
-- **WhiteNoise** — static file serving in production
-- **Tailwind CSS** (standalone CLI) + **DaisyUI** — no Node.js
-- **Stripe** raw SDK — checkout, customer portal, webhook
-- **Ruff** — lint + format
-- **pytest** + pytest-django — test runner
-- **pyright** + django-stubs — type checking
-- **mise** — task runner
+| Component | Package |
+|---|---|
+| Framework | Django 6 |
+| Database | PostgreSQL (`psycopg[binary]`) |
+| Auth | `django-allauth` (email login, mandatory email verification) |
+| Auth hardening | `django-axes` brute-force lockout |
+| Static files | WhiteNoise |
+| Frontend | Tailwind CSS 4 via `django-tailwind-cli` + DaisyUI |
+| Billing | Stripe SDK |
+| Email | SMTP (console in dev, SMTP in production) |
+| Task runner | mise |
+| Linting | Ruff |
+| Tests | pytest + pytest-django |
+| Type checking | pyright + django-stubs |
+| Production server | gunicorn |
+| Deploy | VPS, Docker + Caddy |
 
-## Setup
+## Quick start
 
 ```sh
 cp .env.example .env
-# Edit .env: set a real DJANGO_SECRET_KEY and database credentials
+# Edit .env: set DJANGO_SECRET_KEY and DATABASE_URL
 createdb shop_db
-mise run install
 mise run migrate
-mise run superuser
+mise run dev
 ```
 
 ## Commands
 
 | Task | Command |
-|------|---------|
-| Dev server | `mise run dev` |
+|---|---|
+| Install deps | `mise run install` |
+| Dev server (Tailwind watch included) | `mise run dev` |
 | Migrate | `mise run migrate` |
 | Make migrations | `mise run makemigrations` |
 | Shell | `mise run shell` |
 | Create superuser | `mise run superuser` |
-| Tests | `mise run test` |
+| Run tests | `mise run test` |
 | Lint | `mise run lint` |
 | Format | `mise run fmt` |
 | Type check | `mise run typecheck` |
 | Collect static | `mise run collectstatic` |
+| Build Tailwind CSS | `mise run tailwind` |
 
-Without mise: `uv run manage.py <command>` or `uv run pytest` / `uv run ruff check .`.
+Fallback (no mise): `uv run manage.py <cmd>`.
 
 ## Environment variables
 
-See `.env.example` for the full list. Key variables:
+Copy `.env.example` to `.env` and fill in:
 
-- `DJANGO_SECRET_KEY` — required in production
-- `DJANGO_DEBUG` — `True` in dev, unset in production
-- `DJANGO_ALLOWED_HOSTS` — comma-separated list
-- `DATABASE_URL` — postgres connection string
-- `EMAIL_URL` — `consolemail://` in dev, `smtp+tls://user:pass@host:587` in production
-- `DEFAULT_FROM_EMAIL` — sender address
-- `STRIPE_PUBLISHABLE_KEY` / `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET`
+- `DJANGO_SECRET_KEY` — 50+ random chars
+- `DATABASE_URL` — `postgres://postgres:postgres@localhost:5432/shop_db`
+- `EMAIL_URL` — `consolemail://` for dev, `smtp+tls://user:pass@host:587` for prod
+- `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
 
-## Stripe
+## Production
 
-Local webhook forwarding:
+### Build and push image
+
+```sh
+docker build -t ghcr.io/yourgithubuser/02-shop:latest -f Dockerfile .
+docker push ghcr.io/yourgithubuser/02-shop:latest
+```
+
+### Deploy to VPS
+
+```sh
+ssh user@vps
+cd /srv/02-shop
+git pull
+docker compose -f deploy/docker-compose.prod.yml pull
+docker compose -f deploy/docker-compose.prod.yml run --rm web python manage.py migrate --noinput
+docker compose -f deploy/docker-compose.prod.yml up -d
+```
+
+Update `deploy/docker-compose.prod.yml` image name and `deploy/Caddyfile` domain before first deploy.
+
+### Required prod env vars (`.env.prod` on VPS)
+
+```
+DJANGO_SECRET_KEY=<50+ char random key>
+DJANGO_DEBUG=False
+DJANGO_ALLOWED_HOSTS=yourdomain.com
+DJANGO_BEHIND_PROXY=True
+DJANGO_CSRF_TRUSTED_ORIGINS=https://yourdomain.com
+DATABASE_URL=postgres://postgres:<POSTGRES_PASSWORD>@db:5432/shop_db
+POSTGRES_PASSWORD=<secure password>
+EMAIL_URL=smtp+tls://user:pass@smtp.provider.com:587
+DEFAULT_FROM_EMAIL=no-reply@yourdomain.com
+STRIPE_PUBLISHABLE_KEY=pk_live_...
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+## Stripe webhook (local dev)
 
 ```sh
 stripe listen --forward-to localhost:8000/billing/webhook/
+# Use the printed whsec_... as STRIPE_WEBHOOK_SECRET in .env
 ```
-
-Use the printed `whsec_...` as `STRIPE_WEBHOOK_SECRET` in `.env`.
-
-## Health checks
-
-- `GET /healthz` — liveness (process alive)
-- `GET /readyz` — readiness (DB reachable)
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

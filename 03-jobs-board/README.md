@@ -44,26 +44,18 @@ Job board with background email notifications and a daily digest.
 
 ## Stack
 
-- **Django** (single-file settings, PostgreSQL, i18n)
-- **Auth** — `django-mail-auth` passwordless magic-link (`mailauth.contrib.user`)
-- **Cache** — Redis via `django-redis`
-- **Background tasks** — Celery + Celery Beat (daily digest at 08:00 UTC)
-- **Email** — console backend in dev; set `EMAIL_URL` for production
-- **Health checks** — `/healthz` (liveness) and `/readyz` (readiness + DB)
-- **Task runner** — `just`
+- Django 6 · PostgreSQL · Celery + Beat · Redis
+- Auth: `django-mail-auth` (passwordless magic-link)
+- Health checks: `/healthz`, `/readyz`
+- i18n: gettext / LocaleMiddleware
+- Task runner: just
 
-## Requirements
-
-- Python 3.12+
-- [uv](https://docs.astral.sh/uv/)
-- [just](https://github.com/casey/just)
-- Docker (for Postgres + Redis)
-
-## Quick start
+## Setup
 
 ```sh
-cp .env.example .env        # fill in DJANGO_SECRET_KEY
-docker compose up -d --wait # start Postgres + Redis
+cp .env.example .env   # edit DJANGO_SECRET_KEY
+just install
+docker compose up -d --wait
 just migrate
 just superuser
 just dev
@@ -71,39 +63,33 @@ just dev
 
 Open <http://localhost:8000/admin/>.
 
-## Commands
+## Tasks
 
-| Command | Action |
-|---|---|
+| Task | Command |
+|------|---------|
 | `just install` | `uv sync` |
-| `just dev` | Run dev server |
-| `just migrate` | Apply migrations |
-| `just makemigrations` | Create new migrations |
-| `just shell` | Django shell |
-| `just superuser` | Create superuser |
-| `just test` | Run test suite |
-| `just worker` | Start Celery worker |
-| `just beat` | Start Celery Beat scheduler |
+| `just dev` | `uv run manage.py runserver` |
+| `just migrate` | `uv run manage.py migrate` |
+| `just makemigrations` | `uv run manage.py makemigrations` |
+| `just shell` | `uv run manage.py shell` |
+| `just superuser` | `uv run manage.py createsuperuser` |
+| `just test` | `uv run manage.py test` |
+| `just worker` | `uv run celery -A config worker -l info` |
+| `just beat` | `uv run celery -A config beat -l info` |
 
 ## Environment variables
 
-See `.env.example` for all variables. Key ones:
+See `.env.example` for all supported env vars.
 
-| Variable | Default (dev) | Required in prod |
-|---|---|---|
-| `DJANGO_SECRET_KEY` | — | yes |
-| `DJANGO_DEBUG` | `True` | set to `False` |
-| `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | yes |
-| `DATABASE_URL` | `postgres://postgres:postgres@localhost:5432/postgres` | yes |
-| `REDIS_URL` | `redis://127.0.0.1:6379` | yes |
-| `EMAIL_URL` | `consolemail://` | yes (real SMTP) |
-| `DEFAULT_FROM_EMAIL` | `webmaster@localhost` | yes |
+## Services
+
+The `docker-compose.yml` runs `db` (PostgreSQL 17) and `redis` (Redis 7) only.
+Django runs on the host with `just dev`.
 
 ## Celery
 
-The `jobs` app contains the Celery tasks. `CELERY_BEAT_SCHEDULE` in `settings.py`
-registers `jobs.tasks.send_daily_digest` to run daily at 08:00 UTC.
+Autodiscovery scans all `INSTALLED_APPS`. Add `@shared_task` functions to any app's `tasks.py`.
 
-Add new tasks by creating `@shared_task` functions in any registered app's `tasks.py`.
+`CELERY_BEAT_SCHEDULE` in `config/settings.py` schedules `jobs.tasks.send_daily_digest` daily at 08:00.
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

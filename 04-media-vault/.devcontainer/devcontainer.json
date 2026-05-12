@@ -4,6 +4,7 @@
   "service": "web",
   "workspaceFolder": "/app",
   "shutdownAction": "stopCompose",
+  "forwardPorts": [8000],
   "postAttachCommand": "uv run manage.py migrate",
   "customizations": {
     "vscode": {

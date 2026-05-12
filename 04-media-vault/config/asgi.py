@@ -11,7 +11,7 @@ django.setup()
 
 django_asgi_app = get_asgi_application()
 
-from config.routing import websocket_urlpatterns  # noqa: E402 — must come after django.setup()
+from config.routing import websocket_urlpatterns  # noqa: E402 — after django.setup()
 
 application = ProtocolTypeRouter(
     {
