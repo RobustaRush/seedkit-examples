@@ -1,10 +1,6 @@
-import environ
-
 from .base import *
 
-env = environ.Env()
-
-# Security
+# HTTPS
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
 SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
 
@@ -66,7 +62,7 @@ if SENTRY_DSN:
         release=env("SENTRY_RELEASE", default=None),
     )
 
-# DB backups (S3-compatible)
+# Database backups (django-dbbackup)
 if not DEBUG:
     INSTALLED_APPS += ["dbbackup"]
 

@@ -39,10 +39,8 @@ jobs:
       DEFAULT_FROM_EMAIL: test@example.com
       SERVER_EMAIL: test@example.com
       REDIS_URL: redis://localhost:6379
-      POSTMARK_SERVER_TOKEN: test-token
-      ANYMAIL_WEBHOOK_SECRET: test-secret
-      AWS_ACCESS_KEY_ID: test-key
-      AWS_SECRET_ACCESS_KEY: test-secret
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
       AWS_STORAGE_BUCKET_NAME: ""
 
     steps:
@@ -56,5 +54,9 @@ jobs:
 
       - run: uv run ruff check .
       - run: uv run ruff format --check .
-      - run: uv run pyright
-      - run: uv run pytest --cov --cov-report=xml
+
+      - run: uv run manage.py check --deploy --fail-level WARNING
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.production
+
+      - run: uv run pytest

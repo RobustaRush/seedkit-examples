@@ -7,9 +7,6 @@ run = "uv sync"
 [tasks.dev]
 run = "uv run manage.py runserver"
 
-[tasks.bolt]
-run = "env DJANGO_SETTINGS_MODULE=config.settings.bolt uv run manage.py runbolt --dev"
-
 [tasks.migrate]
 run = "uv run manage.py migrate"
 
@@ -36,6 +33,9 @@ run = "uv run pyright"
 
 [tasks.worker]
 run = "uv run celery -A config worker -l info"
+
+[tasks.bolt]
+run = "DJANGO_SETTINGS_MODULE=config.settings.bolt uv run manage.py runbolt --dev"
 
 [tasks.deploy]
 run = "fly deploy"

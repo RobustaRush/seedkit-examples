@@ -1,20 +1,7 @@
-import environ
+from .base import *  # noqa: F401, F403
+from .base import INSTALLED_APPS, MIDDLEWARE, STORAGES, AWS_STORAGE_BUCKET_NAME, AWS_S3_CUSTOM_DOMAIN, AWS_S3_ENDPOINT_URL, AWS_S3_REGION_NAME, AWS_S3_URL_PROTOCOL, env
 
-from .base import *
-from .base import (
-    AWS_S3_CUSTOM_DOMAIN,
-    AWS_S3_ENDPOINT_URL,
-    AWS_S3_REGION_NAME,
-    AWS_S3_URL_PROTOCOL,
-    AWS_STORAGE_BUCKET_NAME,
-    MIDDLEWARE,
-    STORAGES,
-)
-
-env = environ.Env()
-
-# --- HTTPS / proxy ---
-
+# ── HTTPS / proxy ─────────────────────────────────────────────────────────────
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
 SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
 
@@ -35,8 +22,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
-# --- CSP (GA4 sources added) ---
-
+# ── CSP ───────────────────────────────────────────────────────────────────────
 MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 
 CONTENT_SECURITY_POLICY = {
@@ -66,8 +52,7 @@ CONTENT_SECURITY_POLICY = {
     },
 }
 
-# --- S3 static in prod ---
-
+# ── S3 static in production ───────────────────────────────────────────────────
 if AWS_STORAGE_BUCKET_NAME:
     STORAGES = {
         **STORAGES,
@@ -85,8 +70,10 @@ if AWS_STORAGE_BUCKET_NAME:
         _region = "" if AWS_S3_REGION_NAME == "us-east-1" else f".{AWS_S3_REGION_NAME}"
         STATIC_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3{_region}.amazonaws.com/static/"
 
-# --- Error reporting (GlitchTip via sentry-sdk) ---
+# ── axes Redis cache handler ──────────────────────────────────────────────────
+AXES_HANDLER = "axes.handlers.cache.AxesCacheHandler"
 
+# ── Sentry / GlitchTip ────────────────────────────────────────────────────────
 SENTRY_DSN = env("SENTRY_DSN", default="")
 if SENTRY_DSN:
     import sentry_sdk

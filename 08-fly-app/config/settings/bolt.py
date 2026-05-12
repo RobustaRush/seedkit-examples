@@ -1,4 +1,4 @@
-from .base import *
+from .base import *  # noqa: F401, F403
 from .base import INSTALLED_APPS, MIDDLEWARE
 
 _DROP_MIDDLEWARE = {
@@ -15,7 +15,6 @@ _DROP_APPS = {
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "mailauth.contrib.admin",
 }
 INSTALLED_APPS = [a for a in INSTALLED_APPS if a not in _DROP_APPS]
 

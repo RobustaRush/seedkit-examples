@@ -7,27 +7,19 @@ dependencies = [
     "django-environ>=0.13.0",
 ]
 
+[dependency-groups]
+dev = [
+    "django-orbit[mcp]>=0.8.1",
+    "ruff>=0.15.12",
+]
+
 [tool.ruff]
 line-length = 100
 extend-exclude = ["migrations", "*/migrations/*"]
 
 [tool.ruff.lint]
-select = [
-    "E", "W",
-    "F",
-    "I",
-    "UP",
-    "B",
-    "DJ",
-    "S",
-    "SIM",
-    "RUF",
-]
-ignore = [
-    "E501",
-    "S101",
-    "RUF012",
-]
+select = ["E", "W", "F", "I", "UP", "B", "DJ", "S", "SIM", "RUF"]
+ignore = ["E501", "S101", "RUF012"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["S"]
@@ -40,9 +32,3 @@ known-first-party = ["config"]
 
 [tool.ruff.format]
 quote-style = "double"
-
-[dependency-groups]
-dev = [
-    "django-orbit[mcp]>=0.8.1",
-    "ruff>=0.15.12",
-]

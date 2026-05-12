@@ -1,3 +1,9 @@
+"""
+Django settings for 06-silk-lab.
+
+Profile request paths with django-silk; run background email tasks on the DB backend.
+"""
+
 from pathlib import Path
 
 import environ
@@ -73,8 +79,7 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-TASKS = {"default": {"BACKEND": "django_tasks_db.DatabaseBackend"}}
-
+# Email — django-environ parses EMAIL_URL into individual EMAIL_* settings
 globals().update(
     env.email_url(
         "EMAIL_URL",
@@ -88,5 +93,9 @@ SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
+# Django Tasks — database backend
+TASKS = {"default": {"BACKEND": "django_tasks_db.DatabaseBackend"}}
+
+# GoatCounter analytics
 ANALYTICS_ID = env("ANALYTICS_ID", default="")
 ANALYTICS_HOST = env("ANALYTICS_HOST", default="")

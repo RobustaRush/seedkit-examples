@@ -8,8 +8,7 @@ Purpose: production app deployed to Fly.io with a slim multi-stage runtime image
 
 Settings layout: split.
 Database: PostgreSQL.
-Local dev mode: docker-compose (web + db + redis + minio).
-Docker structure: override (one multi-stage `Dockerfile` with `dev`/`prod` targets, `docker-compose.yml` + `docker-compose.override.yml`).
+Postgres location: Postgres-in-Docker (`db` service alongside `redis` and `minio` in `docker-compose.yml`, port `127.0.0.1:5432` published).
 Lint with Ruff: yes.
 Test runner: pytest + pytest-django.
 Type check (pyright + django-stubs): yes.
@@ -50,114 +49,79 @@ Run the foundation + boot check locally. Generate `Dockerfile`, `fly.toml`, `.gi
 
 # 08-fly-app
 
-Production Django app deployed to Fly.io with multi-stage slim runtime image and S3-compatible object storage.
+Production Django app deployed to Fly.io with multi-stage Docker image and S3-compatible object storage.
 
 ## Stack
 
-| Component | Choice |
+| Layer | Choice |
 |---|---|
 | Framework | Django 6 |
-| Settings | Split (`base` / `local` / `production` / `test` / `bolt`) |
-| Database | PostgreSQL (`psycopg[binary]`) |
-| Cache | Redis (`django-redis`) |
-| Background tasks | Celery + Redis broker |
-| Storage | S3-compatible (`django-storages[s3]`); MinIO in dev |
-| Auth | `django-mail-auth` passwordless magic-link |
-| Auth hardening | `django-axes` brute-force lockout |
-| Email | `django-anymail[postmark]` (console in dev) |
-| REST API | `django-bolt` with fast-path settings (`config.settings.bolt`) |
+| Database | PostgreSQL (psycopg3) |
+| Cache / broker | Redis (django-redis + Celery) |
+| Storage | S3-compatible (MinIO locally, AWS S3 / R2 in prod) |
+| Auth | django-mail-auth (passwordless magic-link) + django-axes |
+| REST API | django-bolt (fast-path) |
+| Email | django-anymail (Postmark in prod, console in dev) |
 | Analytics | Google Analytics 4 |
-| Security | HTTPS headers, HSTS, `django-csp` |
-| Error reporting | GlitchTip via `sentry-sdk` |
-| GDPR | PII scrubbing in error reports; `export_user_data` / `delete_user_data` commands |
-| Lint | Ruff |
+| Error tracking | GlitchTip / sentry-sdk |
+| Linting | Ruff |
 | Tests | pytest + pytest-django |
-| Type check | pyright + django-stubs |
+| Type checking | pyright + django-stubs |
 | Task runner | mise |
-| Deploy | Fly.io (`fly.toml` with `web` + `worker` + `bolt` processes) |
-| CI | GitHub Actions (`test.yml`) |
+| Deploy | Fly.io |
 
-## Quick start
-
-```sh
-cp .env.example .env          # fill in real values
-mise trust && mise install    # installs Python 3.12 + uv sync
-```
-
-### docker-compose (recommended for local dev)
+## Setup
 
 ```sh
-docker compose up -d --build --wait
-docker compose exec web uv run manage.py migrate
-docker compose exec web uv run manage.py createsuperuser
+# copy env and start local services
+cp .env.example .env   # fill in DJANGO_SECRET_KEY
+docker compose up -d --wait
+
+# install deps and run migrations
+mise run install
+mise run migrate
+
+# create superuser and start servers
+mise run superuser
+mise run dev          # Django on :8000
+mise run worker       # Celery worker
+mise run bolt         # Bolt API on :8001 (separate terminal)
 ```
 
-Open <http://localhost:8000/admin/>.
+## Commands
 
-MinIO console: <http://localhost:9001> (user/pass from `.env` `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`).
-
-## Task runner commands
-
-| Task | What it does |
+| Command | What it does |
 |---|---|
+| `mise run install` | `uv sync` |
 | `mise run dev` | `uv run manage.py runserver` |
-| `mise run bolt` | Bolt API server on port 8001 (bolt settings) |
 | `mise run migrate` | `uv run manage.py migrate` |
-| `mise run makemigrations` | `uv run manage.py makemigrations` |
-| `mise run shell` | Django shell |
-| `mise run superuser` | `createsuperuser` |
+| `mise run superuser` | `uv run manage.py createsuperuser` |
 | `mise run test` | `uv run pytest` |
 | `mise run lint` | `uv run ruff check .` |
 | `mise run fmt` | `uv run ruff format .` |
 | `mise run typecheck` | `uv run pyright` |
-| `mise run worker` | Celery worker |
+| `mise run worker` | `uv run celery -A config worker -l info` |
+| `mise run bolt` | Bolt API server (`DJANGO_SETTINGS_MODULE=config.settings.bolt`) |
 | `mise run deploy` | `fly deploy` |
 
-Raw fallback (without mise): `uv run manage.py <cmd>`.
+Without mise: use the `uv run …` commands directly.
 
-## Health checks
+## Bolt API
 
-- `GET /healthz` → `ok` (liveness — no external deps)
-- `GET /readyz` → `ready` (readiness — DB probe)
+django-bolt runs a separate Rust-powered HTTP server. Routes:
 
-## django-bolt fast-path API
+- `GET /users/{user_id}` — returns `{"id": …, "username": "…"}` (msgspec)
 
-Two servers, two ports:
+Start with `mise run bolt` (port 8001 in dev). In production, the `bolt` process in `fly.toml` runs on port 8002.
 
-```sh
-# Full Django stack (admin, auth, classic views)
-mise run dev                  # port 8000
-
-# Bolt API (stripped settings, high-RPS path)
-mise run bolt                 # port 8001
-```
-
-Endpoint: `GET /users/{user_id}` → `{"id": ..., "username": "..."}`.
-
-## GDPR management commands
+## GDPR
 
 ```sh
-uv run manage.py export_user_data <user_id>   # JSON dump
-uv run manage.py delete_user_data <user_id>   # permanent delete
+uv run manage.py export_user_data <user_id>
+uv run manage.py delete_user_data <user_id>
 ```
 
-## Env vars
-
-Copy `.env.example` → `.env` and fill in:
-
-| Var | Notes |
-|---|---|
-| `DJANGO_SECRET_KEY` | Generate: `python -c "import secrets; print(secrets.token_urlsafe(50))"` |
-| `DATABASE_URL` | `postgres://user:pass@host:5432/db` |
-| `REDIS_URL` | `redis://host:6379` |
-| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_STORAGE_BUCKET_NAME` | S3 creds |
-| `AWS_S3_ENDPOINT_URL` | MinIO endpoint in dev (e.g. `http://minio:9000`) |
-| `POSTMARK_SERVER_TOKEN` | Anymail — Postmark API key (prod only) |
-| `ANYMAIL_WEBHOOK_SECRET` | Webhook auth secret |
-| `ANALYTICS_ID` | GA4 measurement ID (`G-XXXXXXX`) |
-| `SENTRY_DSN` | GlitchTip / Sentry DSN (optional) |
-
-## Deploy
+## Deploy to Fly.io
 
 ```sh
 fly launch --no-deploy
@@ -165,16 +129,13 @@ fly postgres create && fly postgres attach <db-name>
 fly redis create && fly redis attach <redis-name>
 fly secrets set \
     DJANGO_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(50))') \
-    DJANGO_ALLOWED_HOSTS=<your-app>.fly.dev \
-    DJANGO_CSRF_TRUSTED_ORIGINS=https://<your-app>.fly.dev \
-    POSTMARK_SERVER_TOKEN=<token> \
-    ANYMAIL_WEBHOOK_SECRET=<secret> \
-    AWS_ACCESS_KEY_ID=<key> \
-    AWS_SECRET_ACCESS_KEY=<secret> \
-    AWS_STORAGE_BUCKET_NAME=<bucket>
-fly deploy
+    DJANGO_ALLOWED_HOSTS=<your-fly-hostname> \
+    DJANGO_CSRF_TRUSTED_ORIGINS=https://<your-fly-hostname> \
+    EMAIL_URL=consolemail:// \
+    DEFAULT_FROM_EMAIL=no-reply@example.com
+mise run deploy
 ```
 
-Fly's release command runs `manage.py migrate && collectstatic` before traffic switches over. No manual migration step needed.
+`fly deploy` triggers the release command (`python manage.py migrate && python manage.py collectstatic --noinput`) before switching traffic.
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

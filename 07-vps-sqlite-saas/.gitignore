@@ -9,12 +9,8 @@ media/
 htmlcov/
 .coverage
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
+*.py[cod]
+*.egg-info/
 dist/
 build/
-*.egg-info/
-node_modules/
-.django_tailwind_cli/
+.DS_Store

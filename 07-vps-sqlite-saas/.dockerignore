@@ -8,8 +8,5 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 staticfiles/
-node_modules/
-.django_tailwind_cli/
-htmlcov/
-.coverage
 media/
+node_modules/

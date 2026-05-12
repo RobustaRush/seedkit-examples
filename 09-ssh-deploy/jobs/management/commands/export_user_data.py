@@ -6,7 +6,7 @@ from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
-    help = "Export all data for a user (GDPR Article 20)"
+    help = "Export all data for a user (GDPR data portability)"
 
     def add_arguments(self, parser):
         parser.add_argument("user_id", type=int)

@@ -8,7 +8,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 staticfiles/
+media/
 node_modules/
-.django_tailwind_cli/
 htmlcov/
 .coverage

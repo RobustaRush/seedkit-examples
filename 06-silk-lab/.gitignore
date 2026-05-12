@@ -5,10 +5,9 @@ staticfiles/
 media/
 .ruff_cache/
 __pycache__/
-*.py[cod]
-*.egg-info/
-dist/
-build/
-.coverage
-htmlcov/
+*.pyc
+*.pyo
 .pytest_cache/
+htmlcov/
+.coverage
+dist/

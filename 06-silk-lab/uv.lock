@@ -9,6 +9,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "django" },
     { name = "django-environ" },
+    { name = "django-tasks" },
     { name = "django-tasks-db" },
     { name = "psycopg", extra = ["binary"] },
 ]
@@ -29,6 +30,7 @@ dev = [
 requires-dist = [
     { name = "django", specifier = ">=6.0,<7.0" },
     { name = "django-environ", specifier = ">=0.13.0" },
+    { name = "django-tasks", specifier = ">=0.12.0" },
     { name = "django-tasks-db", specifier = ">=0.12.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.4" },
 ]

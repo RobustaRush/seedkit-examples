@@ -19,9 +19,6 @@ run = "uv run manage.py shell"
 [tasks.superuser]
 run = "uv run manage.py createsuperuser"
 
-[tasks.worker]
-run = "uv run manage.py rqworker default"
-
 [tasks.test]
 run = "uv run pytest"
 
@@ -31,15 +28,12 @@ run = "uv run ruff check ."
 [tasks.fmt]
 run = "uv run ruff format ."
 
-[tasks.fix]
-run = "uv run ruff check . --fix"
-
-[tasks.collectstatic]
-run = "uv run manage.py collectstatic --noinput"
+[tasks.worker]
+run = "uv run manage.py rqworker default"
 
 [tasks.deploy-migrate]
-run = "docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml run --rm web uv run manage.py migrate"
+run = "docker compose -f deploy/docker-compose.prod.yml run --rm web python manage.py migrate"
 
 [tasks.deploy]
 depends = ["deploy-migrate"]
-run = "docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml up -d"
+run = "docker compose -f deploy/docker-compose.prod.yml up -d"

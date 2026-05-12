@@ -8,7 +8,7 @@ Purpose: profile a few request paths with django-silk and run a simple backgroun
 
 Settings layout: split.
 Database: PostgreSQL.
-Local dev mode: uv on host. Postgres location: on the host (use `createdb silk_db`).
+Postgres location: on the host (use `createdb silk_db`).
 Lint with Ruff: yes.
 Test runner: pytest (required for django-test-migrations).
 Type check (pyright + django-stubs): no.
@@ -44,36 +44,45 @@ Run the foundation, the boot check, start `manage.py db_worker` in a second term
 
 # 06-silk-lab
 
-Profile request paths with **django-silk** and run background tasks via Django Tasks (DB backend).
+Profile request paths with django-silk and run background email tasks on the database backend.
 
 ## Stack
 
 | Layer | Choice |
 |---|---|
-| Framework | Django 6.0 |
+| Framework | Django 6 |
 | Database | PostgreSQL (`silk_db`) |
 | Settings | Split — `base` / `local` / `production` / `test` |
-| Request handling | WSGI |
-| Background tasks | `django-tasks-db` — worker: `manage.py db_worker` |
-| Profiling | django-silk (`/silk/`, `@silk_profile`) |
-| Email | Console backend in local |
-| Analytics | GoatCounter (self-hosted, env-driven) |
-| Health checks | `/healthz` (liveness), `/readyz` (DB check) |
+| Profiling | django-silk (`/silk/`) |
+| Tasks | Django Tasks — database backend (`db_worker`) |
+| Email | Console backend in dev (`EMAIL_URL=consolemail://`) |
+| Analytics | GoatCounter (env-driven, dev-suppressed) |
+| Health | `/healthz` (liveness) · `/readyz` (readiness) |
 | Lint | Ruff |
 | Tests | pytest + pytest-django |
-| Dev extras | django-extensions, django-zeal, django-migration-linter, django-test-migrations |
+| Dev extras | django-extensions · django-zeal · django-migration-linter · django-test-migrations |
 
 ## Setup
 
 ```sh
+# 1. Create the database
 createdb silk_db
-cp .env.example .env   # edit DATABASE_URL if your Postgres user/password differ
+
+# 2. Copy env and set a real secret key
+cp .env.example .env
+# Edit .env and set DJANGO_SECRET_KEY, DATABASE_URL
+
+# 3. Install dependencies
 uv sync
+
+# 4. Apply migrations
 uv run manage.py migrate
+
+# 5. Create a superuser
 uv run manage.py createsuperuser
 ```
 
-## Run
+## Running
 
 ```sh
 # Dev server
@@ -85,56 +94,59 @@ uv run manage.py db_worker
 
 ## Enqueue a task
 
-```sh
-uv run manage.py shell_plus
-```
-
 ```python
+# In shell_plus or a view:
 from jobs.tasks import send_welcome_email
-result = send_welcome_email.enqueue("you@example.com")
-print(result.status)
+result = send_welcome_email.enqueue("user@example.com")
 ```
 
-## Profiling
+The worker picks it up and prints the email to stdout (console backend).
 
-- **All requests**: visit `http://localhost:8000/silk/` after any page load.
-- **Function-level**: `send_welcome_email` wraps its body in `silk_profile(name="send_welcome_email")` — check `/silk/` after enqueueing.
-- Clear accumulated data: `uv run manage.py silk_clear_request_log`
+## Profiling with Silk
 
-## Lint & test
+Hit any view while the dev server is running, then open:
+
+```
+http://localhost:8000/silk/
+```
+
+Request and SQL timings appear immediately. The `send_welcome_email` task also wraps its body in a `silk_profile` context manager — run the worker to see the profile row.
+
+## Lint
 
 ```sh
 uv run ruff check .
-uv run ruff format .
+uv run ruff format --check .
+```
+
+## Tests
+
+```sh
 uv run pytest
+```
+
+`django-test-migrations` is installed — add migration tests to `jobs/tests.py` using the `migrator` fixture.
+
+## Migration safety
+
+```sh
 uv run manage.py lintmigrations
 ```
 
+Exits non-zero on dangerous operations (NOT NULL without default, missing rollback, etc.).
+
 ## Health checks
 
-```sh
-curl http://localhost:8000/healthz   # → ok
-curl http://localhost:8000/readyz    # → ready
-```
+- `GET /healthz` → `ok` (liveness — no DB hit)
+- `GET /readyz` → `ready` (readiness — requires DB)
 
-## Analytics (GoatCounter)
+## Key URLs
 
-Set in `.env`:
-
-```sh
-ANALYTICS_HOST=https://<yoursite>.goatcounter.com
-ANALYTICS_ID=<yoursite>
-```
-
-The snippet fires only when `DEBUG=False` and both vars are set.
-
-## Key URLs (local)
-
-| URL | Purpose |
+| URL | Description |
 |---|---|
-| `http://localhost:8000/admin/` | Django admin |
-| `http://localhost:8000/silk/` | Silk profiling dashboard |
-| `http://localhost:8000/healthz` | Liveness probe |
-| `http://localhost:8000/readyz` | Readiness probe |
+| `/admin/` | Django admin |
+| `/silk/` | Silk profiling dashboard (DEBUG only) |
+| `/healthz` | Liveness probe |
+| `/readyz` | Readiness probe |
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

@@ -1,1 +1,1 @@
-# Views for the jobs app — add task-triggering or status endpoints here.
+from django.shortcuts import render  # noqa: F401

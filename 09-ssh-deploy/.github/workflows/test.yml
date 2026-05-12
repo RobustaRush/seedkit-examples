@@ -31,7 +31,6 @@ jobs:
           --health-retries 5
 
     env:
-      DJANGO_SETTINGS_MODULE: config.settings.test
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
       DJANGO_SECRET_KEY: test-key
       DJANGO_DEBUG: "False"
@@ -49,5 +48,14 @@ jobs:
 
       - run: uv run ruff check .
       - run: uv run ruff format --check .
+
+      - run: uv run manage.py check --deploy --fail-level WARNING
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.production
+          DJANGO_SECURE_SSL_REDIRECT: "False"
+          SENTRY_DSN: ""
+          AWS_ACCESS_KEY_ID: "placeholder"
+          AWS_SECRET_ACCESS_KEY: "placeholder"
+          DBBACKUP_BUCKET: "placeholder"
 
       - run: uv run pytest

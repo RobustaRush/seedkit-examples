@@ -1,6 +1,6 @@
 from .base import *
 
-# SQLite production tuning (WAL mode, avoid SQLITE_BUSY under concurrent writers)
+# SQLite production tuning
 DATABASES["default"]["OPTIONS"] = {
     "transaction_mode": "IMMEDIATE",
     "timeout": 5,
@@ -12,28 +12,12 @@ DATABASES["default"]["OPTIONS"] = {
         "PRAGMA cache_size=2000;"
     ),
 }
-# Reuse the same WAL pragmas for the cache DB
 DATABASES["cache"]["OPTIONS"] = DATABASES["default"]["OPTIONS"]
 
-# Mandatory email verification in production
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
-
-# 2FA issuer name shown in authenticator apps
-MFA_TOTP_ISSUER = env("DJANGO_SITE_DOMAIN", default="example.com")
-
-# WhiteNoise manifest static storage
-
-sec_idx = MIDDLEWARE.index("django.middleware.security.SecurityMiddleware")
-MIDDLEWARE.insert(sec_idx + 1, "whitenoise.middleware.WhiteNoiseMiddleware")
-
-STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
-}
-
-# HTTPS / security headers
+# HTTPS
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
 SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
+
 if env.bool("DJANGO_BEHIND_PROXY", default=False):
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
@@ -43,6 +27,7 @@ CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
+
 SILENCED_SYSTEM_CHECKS = ["security.W005", "security.W021"]
 
 SECURE_REFERRER_POLICY = "same-origin"
@@ -50,7 +35,23 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
-# Content Security Policy
+# allauth — mandatory email verification in production
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+
+# allauth.mfa
+MFA_TOTP_ISSUER = env("DJANGO_SITE_DOMAIN", default="example.com")
+ACCOUNT_REAUTHENTICATION_REQUIRED = True
+
+# WhiteNoise
+sec_idx = MIDDLEWARE.index("django.middleware.security.SecurityMiddleware")
+MIDDLEWARE.insert(sec_idx + 1, "whitenoise.middleware.WhiteNoiseMiddleware")
+
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
+
+# CSP
 MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 
 CONTENT_SECURITY_POLICY = {
@@ -67,7 +68,7 @@ CONTENT_SECURITY_POLICY = {
     },
 }
 
-# Sentry error reporting
+# Sentry
 SENTRY_DSN = env("SENTRY_DSN", default="")
 if SENTRY_DSN:
     import sentry_sdk

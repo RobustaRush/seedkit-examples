@@ -1,39 +1,10 @@
 services:
-  web:
-    build:
-      context: .
-      target: runtime
-    env_file: .env
-    ports:
-      - "8000:8000"
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')\""]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  worker:
-    build:
-      context: .
-      target: runtime
-    command: celery -A config worker -l info
-    env_file: .env
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
   db:
     image: postgres:17
     environment:
       POSTGRES_PASSWORD: postgres
+    ports:
+      - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -44,6 +15,8 @@ services:
 
   redis:
     image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s

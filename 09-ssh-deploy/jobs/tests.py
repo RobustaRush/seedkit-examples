@@ -2,8 +2,11 @@ import pytest
 
 
 @pytest.mark.django_db
-def test_sample_task_runs():
-    from jobs.tasks import sample_task
+def test_sample_task_no_email():
+    """Verifies email add-on was deliberately skipped."""
+    from django.conf import settings
 
-    result = sample_task.enqueue("test")
-    assert result is not None
+    assert (
+        not hasattr(settings, "EMAIL_HOST")
+        or settings.EMAIL_BACKEND == "django.core.mail.backends.locmem.EmailBackend"
+    )

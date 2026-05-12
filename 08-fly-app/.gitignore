@@ -11,7 +11,9 @@ __pycache__/
 *.pyo
 htmlcov/
 .coverage
-coverage.xml
 celerybeat-schedule*
+node_modules/
+.django_tailwind_cli/
 dist/
+build/
 *.egg-info/

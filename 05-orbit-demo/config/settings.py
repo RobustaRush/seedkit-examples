@@ -70,13 +70,8 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Email — gated: console in dev, must be set in prod
-globals().update(
-    env.email_url(
-        "EMAIL_URL",
-        default="consolemail://" if DEBUG else env.NOTSET,
-    )
-)
+# Email — consolemail:// in dev unless .env overrides to smtp://localhost:1025 (Mailpit).
+globals().update(env.email_url("EMAIL_URL", default="consolemail://" if DEBUG else env.NOTSET))
 DEFAULT_FROM_EMAIL = env(
     "DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET
 )
@@ -84,7 +79,7 @@ SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
-# Logging — baseline always loaded; orbit handler appended below when DEBUG
+# Logging baseline — orbit handler appended below when DEBUG.
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -97,12 +92,14 @@ LOGGING = {
 if DEBUG:
     INSTALLED_APPS += ["orbit"]
     MIDDLEWARE.insert(1, "orbit.middleware.OrbitMiddleware")
+
     ORBIT_CONFIG = {
         "IGNORE_PATHS": ["/orbit/", "/static/", "/media/"],
         "HIDE_REQUEST_HEADERS": ["Authorization", "Cookie", "X-API-Key"],
         "HIDE_REQUEST_BODY_KEYS": ["password", "token", "api_key", "secret"],
         "SLOW_QUERY_THRESHOLD_MS": 100,
     }
+
     LOGGING["handlers"]["orbit"] = {"()": "orbit.handlers.OrbitLogHandler"}
     LOGGING["root"]["handlers"].append("orbit")
     LOGGING["root"]["level"] = "DEBUG"

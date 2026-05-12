@@ -9,6 +9,7 @@ dependencies = [
     "django-csp>=4.0",
     "django-environ>=0.13.0",
     "django-structlog>=10.0.0",
+    "django-tasks>=0.12.0",
     "django-tasks-db>=0.12.0",
     "gunicorn>=26.0.0",
     "sentry-sdk>=2.59.0",
@@ -33,20 +34,20 @@ extend-exclude = ["migrations", "*/migrations/*"]
 
 [tool.ruff.lint]
 select = [
-    "E", "W",   # pycodestyle
-    "F",        # pyflakes
-    "I",        # isort
-    "UP",       # pyupgrade
-    "B",        # flake8-bugbear
-    "DJ",       # flake8-django
-    "S",        # flake8-bandit
-    "SIM",      # flake8-simplify
+    "E", "W",
+    "F",
+    "I",
+    "UP",
+    "B",
+    "DJ",
+    "S",
+    "SIM",
     "RUF",
 ]
 ignore = [
-    "E501",     # line length — formatter handles it
-    "S101",     # assert — fine in tests
-    "RUF012",   # mutable class attrs — Django idiom
+    "E501",
+    "S101",
+    "RUF012",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -56,7 +57,7 @@ ignore = [
 "**/settings/*.py" = ["F405", "F403", "S105", "S106"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["config", "users", "jobs"]
+known-first-party = ["users", "jobs", "config"]
 
 [tool.ruff.format]
 quote-style = "double"

@@ -26,11 +26,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # third-party
     "django_rq",
     "django_tasks_rq",
     "django_structlog",
-    # local
     "jobs",
 ]
 
@@ -145,6 +143,7 @@ LOGGING = {
         "django.request": {"level": "WARNING"},
         "urllib3": {"level": "WARNING"},
         "botocore": {"level": "WARNING"},
+        "celery": {"level": "INFO"},
     },
 }
 

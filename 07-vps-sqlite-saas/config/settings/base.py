@@ -19,6 +19,22 @@ DATABASES = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# SQLite cache — separate cache.sqlite3 file so vacuum/WAL on the main DB
+# doesn't block cache reads. CacheRouter routes the cache_table model there.
+DATABASES["cache"] = {
+    "ENGINE": "django.db.backends.sqlite3",
+    "NAME": env("CACHE_DB_PATH", default=str(BASE_DIR / "cache.sqlite3")),
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "cache_table",
+    },
+}
+
+DATABASE_ROUTERS = ["config.routers.CacheRouter"]
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -27,17 +43,15 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
-    # auth
+    # third-party
     "allauth",
     "allauth.account",
     "allauth.mfa",
-    # hardening
     "axes",
-    # structured logging
     "django_structlog",
-    # tasks (django-tasks-db database backend)
+    "django_tasks",
     "django_tasks_db",
-    # project apps
+    # project
     "users",
     "jobs",
 ]
@@ -52,13 +66,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
-    "axes.middleware.AxesMiddleware",  # must be last
-]
-
-AUTHENTICATION_BACKENDS = [
-    "axes.backends.AxesBackend",
-    "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
+    "axes.middleware.AxesMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -82,6 +90,12 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 AUTH_USER_MODEL = "users.User"
 
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesBackend",
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -99,66 +113,48 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# Sites framework (allauth uses SITE_ID for absolute URLs in emails)
-SITE_ID = 1
-
 # django-allauth
+SITE_ID = 1
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
+
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
-ACCOUNT_EMAIL_VERIFICATION = "optional"  # tightened to "mandatory" in production.py
-ACCOUNT_USER_MODEL_USERNAME_FIELD = None  # no username field on our User model
-
-# allauth.mfa (2FA via TOTP)
-MFA_SUPPORTED_TYPES = ["totp", "recovery_codes"]
-ACCOUNT_REAUTHENTICATION_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = "optional"
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 
 # django-axes
 AXES_FAILURE_LIMIT = 5
-AXES_COOLOFF_TIME = 1  # hours
+AXES_COOLOFF_TIME = 1
 AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
 AXES_RESET_ON_SUCCESS = True
 
-# Cache backed by a separate SQLite file
-DATABASES["cache"] = {
-    "ENGINE": "django.db.backends.sqlite3",
-    "NAME": env("CACHE_DB_PATH", default=str(BASE_DIR / "cache.sqlite3")),
-}
+# allauth.mfa
+MFA_SUPPORTED_TYPES = ["totp", "recovery_codes"]
 
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
-        "LOCATION": "cache_table",
-    },
-}
-
-DATABASE_ROUTERS = ["config.routers.CacheRouter"]
-
-# Django Tasks (database backend, no broker needed)
+# django-tasks
 TASKS = {
     "default": {
         "BACKEND": "django_tasks_db.DatabaseBackend",
     }
 }
 
-# Email — consolemail in dev, real SMTP in prod (set EMAIL_URL)
+# Email — consolemail in dev, real SMTP in prod (env.NOTSET forces the var in prod)
 globals().update(
     env.email_url(
         "EMAIL_URL",
         default="consolemail://" if DEBUG else env.NOTSET,
     )
 )
-
 DEFAULT_FROM_EMAIL = env(
     "DEFAULT_FROM_EMAIL",
     default="webmaster@localhost" if DEBUG else env.NOTSET,
 )
 SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
-ADMINS = [(e.split("@")[0], e) for e in env.list("DJANGO_ADMINS", default=[])]
+ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
-# Structured logging
+# structlog — JSON in prod, pretty in dev
 PRE_CHAIN = [
     structlog.contextvars.merge_contextvars,
     structlog.stdlib.add_log_level,
@@ -205,7 +201,6 @@ structlog.configure(
     cache_logger_on_first_use=True,
 )
 
-# django-stubs runtime companion (dev-only; prod image installs --no-dev)
 try:
     import django_stubs_ext
 except ImportError:

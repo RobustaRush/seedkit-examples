@@ -6,9 +6,13 @@ media/
 .ruff_cache/
 .pytest_cache/
 .mypy_cache/
-htmlcov/
-.coverage
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+htmlcov/
+.coverage
+node_modules/
+.django_tailwind_cli/
+dist/
+*.egg-info/
