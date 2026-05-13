@@ -1,0 +1,47 @@
+[tools]
+python = "3.12"
+node = "lts"
+
+[tasks.install]
+description = "Install Python + Node dependencies"
+run = ["uv sync", "npm install"]
+
+[tasks.dev]
+description = "Start dev server"
+run = "uv run python manage.py runserver"
+
+[tasks.migrate]
+description = "Apply database migrations"
+run = "uv run python manage.py migrate"
+
+[tasks.makemigrations]
+description = "Create new migrations"
+run = "uv run python manage.py makemigrations"
+
+[tasks.tailwind-build]
+description = "Build Tailwind CSS"
+run = "uv run python manage.py tailwind build"
+
+[tasks.tailwind-watch]
+description = "Watch and rebuild Tailwind CSS"
+run = "uv run python manage.py tailwind watch"
+
+[tasks.createsuperuser]
+description = "Create admin superuser"
+run = "uv run python manage.py createsuperuser"
+
+[tasks.test]
+description = "Run tests"
+run = "uv run pytest"
+
+[tasks.lint]
+description = "Run Ruff linter"
+run = "uv run ruff check ."
+
+[tasks.typecheck]
+description = "Run Pyright type checker"
+run = "uv run pyright"
+
+[tasks.collectstatic]
+description = "Collect static files"
+run = "uv run python manage.py collectstatic --noinput"

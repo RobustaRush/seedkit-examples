@@ -1,0 +1,40 @@
+set dotenv-load := true
+
+default:
+    @just --list
+
+install:
+    uv sync
+
+up:
+    docker compose up -d --wait
+
+down:
+    docker compose down -v --rmi local
+
+migrate:
+    uv run manage.py migrate
+
+createsuperuser:
+    uv run manage.py createsuperuser
+
+run:
+    uv run manage.py runserver
+
+shell:
+    uv run manage.py shell
+
+worker:
+    uv run celery -A config worker -l info
+
+beat:
+    uv run celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+makemessages:
+    uv run manage.py makemessages -l en
+
+compilemessages:
+    uv run manage.py compilemessages
+
+test:
+    uv run manage.py test

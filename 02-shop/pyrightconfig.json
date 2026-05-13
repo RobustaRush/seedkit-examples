@@ -1,0 +1,16 @@
+{
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "basic",
+  "venvPath": ".",
+  "venv": ".venv",
+  "include": [
+    "config",
+    "users",
+    "pages"
+  ],
+  "exclude": [
+    "config/settings",
+    "**/__pycache__",
+    "**/migrations"
+  ]
+}

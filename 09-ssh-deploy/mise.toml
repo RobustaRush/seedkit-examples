@@ -1,0 +1,38 @@
+[tools]
+python = "3.12"
+
+[tasks.dev]
+run = "uv run manage.py runserver"
+description = "Start development server"
+
+[tasks.worker]
+run = "uv run manage.py rqworker default"
+description = "Start RQ worker"
+
+[tasks.test]
+run = "uv run pytest"
+description = "Run test suite"
+
+[tasks.lint]
+run = "uv run ruff check ."
+description = "Lint with ruff"
+
+[tasks.fmt]
+run = "uv run ruff format ."
+description = "Format with ruff"
+
+[tasks.migrate]
+run = "uv run manage.py migrate"
+description = "Run database migrations"
+
+[tasks.shell]
+run = "uv run manage.py shell"
+description = "Django interactive shell"
+
+[tasks.backup]
+run = "uv run manage.py dbbackup"
+description = "Backup the database"
+
+[tasks.collectstatic]
+run = "uv run manage.py collectstatic --noinput"
+description = "Collect static files"

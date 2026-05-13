@@ -1,0 +1,71 @@
+
+════════ BUILD (claude / claude-sonnet-4-6) ════════
+
+All answers are in hand. Let me check uv and the workspace, then scaffold everything.Let me look at a prior example to understand the patterns used in this workspace.Good. Let me check if the target directory exists, then scaffold everything.Now creating all foundation files in parallel.Now creating the config package files in parallel.All files created. Now install dependencies and bring up Docker services.Installed `django-mail-auth==3.5.5`. Let me check its URL/app configuration before running smoke checks.The package is `mailauth` (not `mail_auth`). Let me inspect its structure.The app name is `mailauth` and backend is `mailauth.backends.MailAuthBackend`. Let me fix the settings and urls now.Now check if `mailauth` needs `django.contrib.sites` and verify its templates exist.Good, `mailauth` uses `django.contrib.sites` — that's already in `DJANGO_APPS`. Now let me do a quick Django check before bringing up Docker.Clean check. Now bring up Docker services with `--wait` (waits for healthchecks to pass).Port 5432 is already in use. Let me check what's occupying it.A native PostgreSQL is on 5432. I'll map the Docker PostgreSQL to port 5433 to avoid the conflict.Both containers healthy. Now migrate and start the dev server.The `jobs` migration is missing. Let me create it and apply it.Good. Now run the server and execute all smoke checks.`accounts/login/` fails. Let me check the server log.Missing `registration/login.html` template. Let me check what mailauth's LoginView expects.I need to create `registration/login.html`. Let me check if mailauth ships any built-in templates.No built-in templates — I need to create minimal ones.Now rerun all checks against the still-running server.All checks green. Now tear down cleanly.Clean teardown. Saving what I learned about this project.---
+
+## Smoke pipeline: all green
+
+| Check | Result |
+|---|---|
+| `docker compose up -d --wait` | Both `db` and `redis` containers healthy |
+| `docker compose ps` | Services running |
+| `manage.py migrate` | 35 migrations applied including `django_celery_beat` |
+| `admin/login/` | 200 |
+| `accounts/login/` | 200 |
+| `/healthz` → `ok` | Pass |
+| `/readyz` → `ready` | Pass |
+| `justfile` present | Pass |
+| Celery autodiscovery | `['jobs.tasks.notify_new_job', 'jobs.tasks.send_daily_digest']` |
+| Docker log scan (fatal/panic/traceback) | Clean |
+| `docker compose down -v --rmi local` | Clean teardown |
+
+---
+
+## What worked out of the box
+- `uv sync`, Django system check, migrate, runserver — all clean first run
+- Celery autodiscovery found both `@shared_task` functions immediately
+- `django_celery_beat` wired cleanly via `CELERY_BEAT_SCHEDULER`
+- `healthz`/`readyz` views with DB check worked with no library overhead
+- i18n middleware slotted in correctly
+- `docker compose up -d --wait` blocked reliably on healthchecks (no polling needed)
+
+## What broke / fixes applied
+
+| Problem | Fix |
+|---|---|
+| Host port 5432 already bound (native Postgres running) | Mapped Docker Postgres to 5433 in `docker-compose.yml`; updated `DATABASE_URL` |
+| `django-mail-auth` installs as `mailauth`, not `mail_auth` | Corrected INSTALLED_APPS, AUTHENTICATION_BACKENDS, and `include()` target |
+| `mailauth` ships **no templates** — `accounts/login/` returned 500 | Created `templates/registration/login.html` and `login_requested.html` |
+| `jobs` had no migration file | Ran `makemigrations jobs` (models.py had `JobPost` but no `0001_initial`) |
+
+## Suggested skill changes
+
+1. **`django-mail-auth` entry**: The questionnaire should note `mailauth` as the app label (not `mail_auth`) and flag that the package ships no templates — callers must scaffold `registration/login.html` and `registration/login_requested.html`.
+2. **Port conflict note**: When the spec says "Postgres in Docker at `127.0.0.1:5432`", add a fallback note: if 5432 is occupied (local Postgres), use 5433 and update `DATABASE_URL` accordingly — this is a common dev-machine pitfall.
+3. **`makemigrations` step**: After `startapp`, the skill should include `manage.py makemigrations <app>` as part of the foundation smoke — the app's models exist but the migration file does not, which silently leaves the table uncreated.
+════════ REVIEW (claude / claude-opus-4-7) ════════
+
+# Audit Report
+
+**Missing files**
+- No `.env.example` and no `.gitignore` in project root (verified via `ls -la`: only `.env` present).
+
+**`pyproject.toml`**
+- `django-redis` is not in dependencies. Lines 7–15 list `django`, `psycopg[binary]`, `dj-database-url`, `django-environ`, `django-mail-auth`, `celery[redis]`, `django-celery-beat` — no `django-redis`.
+
+**`.env`**
+- `DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5433/jobs_board` (line 4) — not the asserted `postgres://postgres:postgres@localhost:5432/postgres`.
+- No `REDIS_URL` set; instead line 5 is `CELERY_BROKER_URL=redis://127.0.0.1:6379/0` (includes `/0`, contradicting the "settings append db number" assertion).
+
+**`config/settings.py`**
+- `SECRET_KEY = env("DJANGO_SECRET_KEY")` (line 13) and `DATABASES = {"default": env.db("DATABASE_URL")}` (lines 71–73) — neither branches on prod with `env.NOTSET`.
+- `CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True` is not present (no match in file).
+- `CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0")` (line 104) — read directly, not derived from a `REDIS_URL`.
+- No `LANGUAGES` setting (file defines only `LANGUAGE_CODE`, `USE_I18N`, `LOCALE_PATHS`).
+- `INSTALLED_APPS` lists only `"mailauth"` (line 29); `"mailauth.contrib.admin"` is absent, and `django.contrib.admin` precedes mailauth (line 18 vs 29).
+
+**`config/urls.py`**
+- `path("accounts/", include("mailauth.urls"))` (line 21) — no `namespace="mailauth"` argument.
+- Health-check views are inline functions `healthz` / `readyz` in `config/urls.py` (lines 7–16), not `liveness` / `readiness` in `pages/views.py` (no `pages/` app exists).
+════════ DONE ════════
+[build_exit: 0, review_exit: 0, duration: 515s]

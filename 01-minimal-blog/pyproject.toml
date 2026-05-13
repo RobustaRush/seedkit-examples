@@ -1,0 +1,11 @@
+[project]
+name = "01-minimal-blog"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.1",
+    "django-environ>=0.11",
+]
+
+[tool.django]
+settings_module = "config.settings"

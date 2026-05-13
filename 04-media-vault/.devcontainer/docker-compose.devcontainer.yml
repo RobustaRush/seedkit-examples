@@ -1,0 +1,15 @@
+services:
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/python:3.13
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started

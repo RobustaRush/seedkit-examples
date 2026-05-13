@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}09-ssh-deploy{% endblock %}</title>
+  {% if UMAMI_HOST and UMAMI_WEBSITE_ID %}
+  <script defer src="{{ UMAMI_HOST }}/script.js" data-website-id="{{ UMAMI_WEBSITE_ID }}"></script>
+  {% endif %}
+  {% block head %}{% endblock %}
+</head>
+<body>
+  {% block content %}{% endblock %}
+</body>
+</html>

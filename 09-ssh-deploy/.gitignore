@@ -1,0 +1,26 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Django
+staticfiles/
+media/
+*.sqlite3
+
+# Secrets
+.env
+.env.prod
+
+# Backups
+backups/
+
+# Test & lint caches
+.pytest_cache/
+.ruff_cache/

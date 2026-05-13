@@ -1,0 +1,13 @@
+{
+  "name": "shop",
+  "private": true,
+  "scripts": {
+    "build": "tailwindcss -i frontend/input.css -o static/css/tailwind.css --minify",
+    "watch": "tailwindcss -i frontend/input.css -o static/css/tailwind.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1",
+    "tailwindcss": "^4.1",
+    "daisyui": "^5.0"
+  }
+}

@@ -1,0 +1,24 @@
+yourdomain.com {
+    reverse_proxy web:8000
+
+    # Serve static/media directly from Caddy if mounted
+    # Uncomment and adjust if you mount staticfiles as a volume:
+    # handle /static/* {
+    #     root * /srv
+    #     file_server
+    # }
+
+    encode gzip
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+
+    log {
+        output stdout
+        format json
+    }
+}
