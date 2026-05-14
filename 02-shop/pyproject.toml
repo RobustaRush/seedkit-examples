@@ -7,7 +7,7 @@ dependencies = [
     "django-allauth>=65.16.1",
     "django-axes>=8.3.1",
     "django-environ>=0.13.0",
-    "django-tailwind-cli>=4.6.1",
+    "django-tailwind-cli>=4.6.2",
     "gunicorn>=26.0.0",
     "psycopg[binary]>=3.3.4",
     "stripe>=15.1.0",
@@ -21,7 +21,7 @@ dev = [
     "pyright>=1.1.409",
     "pytest>=9.0.3",
     "pytest-django>=4.12.0",
-    "ruff>=0.15.12",
+    "ruff>=0.15.13",
 ]
 
 [tool.pytest.ini_options]
@@ -43,7 +43,7 @@ ignore = ["E501", "S101", "RUF012"]
 "**/settings/*.py" = ["F405", "F403", "S105", "S106"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["users", "pages", "billing"]
+known-first-party = ["users", "pages", "billing", "config"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -67,18 +67,3 @@ reportMissingTypeStubs = "none"
 reportGeneralTypeIssues = "warning"
 reportOptionalMemberAccess = "warning"
 strictListInference = true
-
-[tool.coverage.run]
-source = ["."]
-omit = [
-    "**/migrations/**",
-    "**/tests/**",
-    "**/test_*.py",
-    "config/wsgi.py",
-    "config/asgi.py",
-    "manage.py",
-]
-
-[tool.coverage.report]
-show_missing = true
-skip_covered = true

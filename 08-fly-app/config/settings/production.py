@@ -1,7 +1,15 @@
-from .base import *  # noqa: F401, F403
-from .base import INSTALLED_APPS, MIDDLEWARE, STORAGES, AWS_STORAGE_BUCKET_NAME, AWS_S3_CUSTOM_DOMAIN, AWS_S3_ENDPOINT_URL, AWS_S3_REGION_NAME, AWS_S3_URL_PROTOCOL, env
+from .base import *
+from .base import (
+    AWS_S3_CUSTOM_DOMAIN,
+    AWS_S3_ENDPOINT_URL,
+    AWS_S3_REGION_NAME,
+    AWS_S3_URL_PROTOCOL,
+    AWS_STORAGE_BUCKET_NAME,
+    MIDDLEWARE,
+    STORAGES,
+)
 
-# ── HTTPS / proxy ─────────────────────────────────────────────────────────────
+# Security
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
 SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
 
@@ -15,6 +23,7 @@ SESSION_COOKIE_SAMESITE = "Lax"
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
+
 SILENCED_SYSTEM_CHECKS = ["security.W005", "security.W021"]
 
 SECURE_REFERRER_POLICY = "same-origin"
@@ -22,7 +31,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
-# ── CSP ───────────────────────────────────────────────────────────────────────
+# CSP
 MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 
 CONTENT_SECURITY_POLICY = {
@@ -52,7 +61,7 @@ CONTENT_SECURITY_POLICY = {
     },
 }
 
-# ── S3 static in production ───────────────────────────────────────────────────
+# S3 static in production
 if AWS_STORAGE_BUCKET_NAME:
     STORAGES = {
         **STORAGES,
@@ -70,10 +79,10 @@ if AWS_STORAGE_BUCKET_NAME:
         _region = "" if AWS_S3_REGION_NAME == "us-east-1" else f".{AWS_S3_REGION_NAME}"
         STATIC_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3{_region}.amazonaws.com/static/"
 
-# ── axes Redis cache handler ──────────────────────────────────────────────────
+# axes: use Redis cache handler for hot path
 AXES_HANDLER = "axes.handlers.cache.AxesCacheHandler"
 
-# ── Sentry / GlitchTip ────────────────────────────────────────────────────────
+# Error reporting (GlitchTip via sentry-sdk)
 SENTRY_DSN = env("SENTRY_DSN", default="")
 if SENTRY_DSN:
     import sentry_sdk

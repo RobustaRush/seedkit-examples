@@ -9,4 +9,3 @@ __pycache__/
 .mypy_cache/
 staticfiles/
 media/
-node_modules/

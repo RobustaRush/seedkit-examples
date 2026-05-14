@@ -52,10 +52,9 @@ jobs:
       - run: uv run manage.py check --deploy --fail-level WARNING
         env:
           DJANGO_SETTINGS_MODULE: config.settings.production
-          DJANGO_SECURE_SSL_REDIRECT: "False"
-          SENTRY_DSN: ""
-          AWS_ACCESS_KEY_ID: "placeholder"
-          AWS_SECRET_ACCESS_KEY: "placeholder"
-          DBBACKUP_BUCKET: "placeholder"
+          DJANGO_CSRF_TRUSTED_ORIGINS: https://example.com
+          AWS_ACCESS_KEY_ID: ci-placeholder
+          AWS_SECRET_ACCESS_KEY: ci-placeholder
+          DBBACKUP_BUCKET: ci-placeholder
 
       - run: uv run pytest

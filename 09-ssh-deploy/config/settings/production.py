@@ -9,7 +9,6 @@ if env.bool("DJANGO_BEHIND_PROXY", default=False):
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SAMESITE = "Lax"
 
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
@@ -62,7 +61,7 @@ if SENTRY_DSN:
         release=env("SENTRY_RELEASE", default=None),
     )
 
-# Database backups (django-dbbackup)
+# Database backups (django-dbbackup to S3-compatible storage)
 if not DEBUG:
     INSTALLED_APPS += ["dbbackup"]
 

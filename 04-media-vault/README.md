@@ -23,7 +23,7 @@ Add-ons:
   - redis
   - storage: S3-compatible (use MinIO in local Compose; configure via env)
   - tasks: Django Tasks with the Redis Queue backend (`django-tasks-rq`). Also `uv run manage.py startapp jobs`, register `jobs` in `INSTALLED_APPS`, wire `jobs/apps.py` `ready()` to import `tasks`, and add a sample `@task` to `jobs/tasks.py`.
-  - real-time channel layer: `channels-redis` (reuse the same Redis service). Add an `EchoConsumer` (`AsyncJsonWebsocketConsumer`) that echoes received JSON back to the sender, routed at `/ws/echo/` in `config/routing.py`. Wire `config/asgi.py` with `ProtocolTypeRouter` + `AllowedHostsOriginValidator` + `AuthMiddlewareStack` per `references/realtime.md`.
+  - real-time channel layer: `channels-redis` (reuse the same Redis service). Add an `EchoConsumer` (`AsyncJsonWebsocketConsumer`) that echoes received JSON back to the sender, routed at `/ws/echo/` in `config/routing.py`. Wire `config/asgi.py` with `ProtocolTypeRouter` + `AllowedHostsOriginValidator` + `AuthMiddlewareStack`.
   - email: console backend in local (`EMAIL_URL=consolemail://`).
   - CORS: yes.
   - REST API: `django-modern-rest` with the `msgspec` + `openapi` extras (`uv add 'django-modern-rest[msgspec,openapi]'`). Create an `api` app (`uv run manage.py startapp api`) with a single `MediaController` exposing `POST /api/media/` that accepts `{ "filename": str, "size": int }` (msgspec.Struct) and returns `{ "uid": uuid, "filename": str }`. Wire the `Router` from `api/urls.py` into `config/urls.py` under the `api` namespace. Do NOT add `dmr` to `INSTALLED_APPS`.
@@ -48,85 +48,92 @@ Media-heavy app where uploads land in S3, processing runs as Redis-queued backgr
 
 | Layer | Choice |
 |---|---|
-| Framework | Django 6.0 |
-| Database | PostgreSQL 17 (Docker) |
+| Framework | Django 6 |
+| DB | PostgreSQL (Docker) |
 | Request handling | ASGI + channels (uvicorn) |
-| Task queue | django-tasks-rq (Redis) |
-| Channel layer | channels-redis |
-| Storage | S3-compatible (MinIO in dev) |
-| REST API | django-modern-rest (msgspec) |
-| Logging | structlog (pretty dev / JSON prod) |
+| Background tasks | Django Tasks + django-tasks-rq (RQ backend) |
+| Real-time | django-channels + channels-redis, `EchoConsumer` at `/ws/echo/` |
+| Storage | S3-compatible (MinIO locally via docker-compose) |
+| Cache | django-redis (`/0`) |
+| REST API | django-modern-rest (msgspec), `POST /api/media/` |
+| Email | console in dev |
+| CORS | django-cors-headers |
+| Logging | structlog — pretty in dev, JSON in prod |
+| Lint | Ruff |
+| Types | pyright + django-stubs |
 
-## Prerequisites
-
-- Python 3.12+
-- uv
-- Docker + Docker Compose
-
-## Setup
+## Local setup
 
 ```sh
 cp .env.example .env
-# Edit .env — set a real DJANGO_SECRET_KEY
-docker compose up -d --wait        # start db, redis, minio
+# Edit .env — set DJANGO_SECRET_KEY, adjust other values as needed
+
+docker compose up -d          # db (5433), redis (6379), minio (9000/9001)
+
 uv run manage.py migrate
 uv run manage.py createsuperuser
-```
 
-## Run
+# HTTP + WebSocket (one process in dev — manage.py runserver won't upgrade WS)
+uv run uvicorn config.asgi:application --reload --host 0.0.0.0
 
-```sh
-# Terminal 1 — HTTP + WebSocket server
-uv run uvicorn config.asgi:application --reload --host 0.0.0.0 --port 8000
-
-# Terminal 2 — background task worker
+# Background task worker (separate terminal)
 uv run manage.py rqworker default
 ```
 
 Open <http://localhost:8000/admin/> and sign in.
 
-## API
+## Key commands
 
-| Method | Path | Body | Returns |
-|---|---|---|---|
-| POST | `/api/media/` | `{"filename": str, "size": int}` | `{"uid": uuid, "filename": str}` |
-
-## WebSocket
-
-Connect to `ws://localhost:8000/ws/echo/` — sends back every JSON message unchanged.
-
-## Health checks
-
-| URL | Behaviour |
+| Command | Description |
 |---|---|
-| `/healthz` | Always 200 `ok` (liveness) |
-| `/readyz` | 200 `ready` when DB is reachable; 503 otherwise |
+| `uv run manage.py migrate` | Apply DB migrations |
+| `uv run manage.py createsuperuser` | Create admin user |
+| `uv run uvicorn config.asgi:application --reload` | Run dev server (HTTP + WS) |
+| `uv run manage.py rqworker default` | Run background task worker |
+| `uv run ruff check .` | Lint |
+| `uv run ruff format .` | Format |
+| `uv run pyright` | Type check |
+| `uv run manage.py test` | Run tests |
 
-## Services
+## Endpoints
 
-| Service | Local URL |
+| Path | Description |
 |---|---|
-| Django / uvicorn | <http://localhost:8000> |
-| MinIO API | <http://localhost:9000> |
-| MinIO Console | <http://localhost:9001> (user: minioadmin / minioadmin) |
+| `/admin/` | Django admin |
+| `/api/media/` | `POST {"filename": str, "size": int}` → `{"uid": uuid, "filename": str}` |
+| `/ws/echo/` | WebSocket echo (requires `Origin` header matching `ALLOWED_HOSTS`) |
+| `/healthz` | Liveness probe (returns `ok`) |
+| `/readyz` | Readiness probe — checks DB (returns `ready`) |
+| `/django-rq/` | RQ dashboard |
 
-## Test
+## MinIO (local S3)
 
-```sh
-uv run manage.py test
-```
+Console at <http://localhost:9001> (login: `minioadmin` / `minioadmin`).
 
-## Lint / format
-
-```sh
-uv run ruff check .
-uv run ruff format .
-```
-
-## Type check
+To enable S3 storage locally, set in `.env`:
 
 ```sh
-uv run pyright
+AWS_ACCESS_KEY_ID=minioadmin
+AWS_SECRET_ACCESS_KEY=minioadmin
+AWS_STORAGE_BUCKET_NAME=media-vault
+AWS_S3_ENDPOINT_URL=http://localhost:9000
+AWS_S3_URL_PROTOCOL=http:
 ```
+
+Create the bucket in the MinIO console first, or via `mc`:
+
+```sh
+mc alias set local http://localhost:9000 minioadmin minioadmin
+mc mb local/media-vault
+```
+
+## Settings
+
+| File | Used when |
+|---|---|
+| `config/settings/base.py` | Shared base |
+| `config/settings/local.py` | Dev (`manage.py` / uvicorn on host) |
+| `config/settings/production.py` | Prod (set `DJANGO_SETTINGS_MODULE=config.settings.production`) |
+| `config/settings/test.py` | Tests (`manage.py test`) |
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

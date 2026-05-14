@@ -37,8 +37,8 @@ Production setup:
   - error reporting: Sentry SaaS (sentry-sdk)
   - CI: GitHub Actions test workflow
   - deploy target: VPS (Docker + Caddy)
-  - database backups: Litestream replication to S3-compatible storage (the SQLite production path in `references/database.md`); do not use `django-dbbackup`
-  - production Dockerfile: multi-stage (per `references/docker.md`) with the Litestream `.deb` installed in the prod stage; ship `litestream.yml` + `entrypoint.sh` that restores the DB on boot, runs migrations, then execs `litestream replicate -exec "gunicorn ..."`
+  - database backups: Litestream replication to S3-compatible storage; do not use `django-dbbackup`
+  - production Dockerfile: multi-stage with the Litestream `.deb` installed in the prod stage; ship `litestream.yml` + `entrypoint.sh` that restores the DB on boot, runs migrations, then execs `litestream replicate -exec "gunicorn ..."`
 Skip GDPR for this case.
 
 Run the foundation + boot check locally. Generate `Dockerfile`, `docker-compose.prod.yml`, `Caddyfile`, `litestream.yml`, `entrypoint.sh`, `.github/workflows/test.yml`. Do not actually push to a remote VPS — just verify all artifacts are present and `docker build .` succeeds.
@@ -55,47 +55,49 @@ Production-ready SaaS skeleton deployed to a single VPS via docker-compose + Cad
 | Layer | Choice |
 |---|---|
 | Framework | Django 6 |
-| Database | SQLite (WAL + IMMEDIATE) via django-environ |
-| Cache | SQLite `cache.sqlite3` via DatabaseCache + CacheRouter |
-| Background tasks | django-tasks-db (Database backend) |
-| Auth | django-allauth (email-only, mandatory verification in prod) |
-| Auth hardening | django-axes (brute-force lockout) + allauth.mfa (TOTP 2FA) |
-| User model | Custom `users.User` (email as USERNAME_FIELD, no username) |
-| Static files | WhiteNoise (CompressedManifest in prod) |
-| Email | Console in dev · SMTP (Postmark) in prod |
-| Logging | structlog (pretty in dev, JSON in prod) via django-structlog |
-| Replication | Litestream → S3-compatible storage |
-| Reverse proxy | Caddy (TLS + media serving) |
-| Error reporting | Sentry SDK |
-| CSP | django-csp |
-| Lint | Ruff |
-| Tests | pytest + pytest-django |
-| Types | pyright + django-stubs |
-| Hooks | pre-commit |
-| Tasks | mise |
+| Database | SQLite (WAL + IMMEDIATE, `/data/site.sqlite3` on a persistent volume) |
+| Cache | SQLite (`/data/cache.sqlite3` via `CacheRouter`) |
+| Task queue | Django Tasks + `django-tasks-db` database backend |
+| Auth | `django-allauth` (email login, mandatory verification in prod) |
+| 2FA | `allauth.mfa` (TOTP + recovery codes) |
+| Brute-force | `django-axes` |
+| Static files | WhiteNoise (compressed manifest in prod) |
+| Media | Docker named volume, served by Caddy |
+| Logging | `structlog` — pretty console in dev, JSON in prod |
+| Server | Gunicorn under `litestream replicate` |
+| Reverse proxy | Caddy (TLS, media, health probe) |
+| DB backup | Litestream streaming replication to S3-compatible storage |
+| Error tracking | Sentry SaaS (`SENTRY_DSN` env var) |
+| CI | GitHub Actions (`pytest`, `ruff`, `pyright`) |
 
-## Setup
+## Local setup
 
 ```sh
 cp .env.example .env
-# Set DJANGO_SECRET_KEY in .env
+# Edit .env — set DJANGO_SECRET_KEY and DJANGO_DEBUG=True
 
-mise run install
+mise install           # or: uv sync
 mise run migrate
-uv run manage.py createcachetable --database cache
-mise run superuser
-mise run dev
+mise run dev           # http://localhost:8000
 ```
 
-## Commands
+Or without mise:
+
+```sh
+uv sync
+uv run manage.py migrate
+uv run manage.py createcachetable --database cache
+uv run manage.py runserver
+```
+
+## Common tasks
 
 | Task | Command |
 |---|---|
-| Install deps | `mise run install` |
 | Run dev server | `mise run dev` |
-| Migrate | `mise run migrate` |
+| Run migrations | `mise run migrate` |
 | Make migrations | `mise run makemigrations` |
-| Shell | `mise run shell` |
+| Open Django shell | `mise run shell` |
 | Create superuser | `mise run superuser` |
 | Run tests | `mise run test` |
 | Lint | `mise run lint` |
@@ -104,36 +106,14 @@ mise run dev
 | Collect static | `mise run collectstatic` |
 | Run task worker | `mise run worker` |
 
-Raw uv fallback: `uv run manage.py <cmd>`.
+## Health endpoints
 
-## Environment variables
-
-See `.env.example` for the full list. Key production variables:
-
-```sh
-DJANGO_SECRET_KEY=...
-DJANGO_DEBUG=False
-DJANGO_ALLOWED_HOSTS=example.com
-DATABASE_URL=sqlite:////data/site.sqlite3
-CACHE_DB_PATH=/data/cache.sqlite3
-EMAIL_URL=smtp+tls://<token>:<token>@smtp.postmarkapp.com:587
-DEFAULT_FROM_EMAIL=no-reply@example.com
-SERVER_EMAIL=django@example.com
-DJANGO_CSRF_TRUSTED_ORIGINS=https://example.com
-DJANGO_BEHIND_PROXY=True
-SENTRY_DSN=...
-S3_ENDPOINT=...
-S3_BUCKET=...
-S3_ACCESS_KEY_ID=...
-S3_SECRET_ACCESS_KEY=...
-```
-
-## Health checks
-
-- `GET /healthz` → `ok` (liveness — no external deps)
-- `GET /readyz` → `ready` (readiness — DB probe)
+- `GET /healthz` — liveness (always fast, no DB check)
+- `GET /readyz` — readiness (checks DB connectivity)
 
 ## Deploy
+
+Copy `.env.example` to `.env.prod` on the VPS and fill in all values. Then:
 
 ```sh
 ssh user@vps
@@ -143,8 +123,56 @@ docker compose -f deploy/docker-compose.prod.yml pull
 docker compose -f deploy/docker-compose.prod.yml up -d
 ```
 
-Litestream restores the DB from S3 on first boot, runs migrations, then wraps gunicorn under `litestream replicate`.
+Migrations and `createcachetable` run automatically inside `entrypoint.sh` on container start (after Litestream restores the DB from S3).
 
-Update `deploy/Caddyfile` with your real domain before first deploy.
+### Caddyfile
+
+Edit `deploy/Caddyfile` — replace `example.com` with your real domain.
+
+### Litestream
+
+Set the S3 vars in `.env.prod`:
+
+```sh
+S3_ENDPOINT=https://s3.example.com
+S3_BUCKET=my-bucket
+S3_ACCESS_KEY_ID=...
+S3_SECRET_ACCESS_KEY=...
+DATABASE_URL=sqlite:////data/site.sqlite3
+CACHE_DB_PATH=/data/cache.sqlite3
+DJANGO_BEHIND_PROXY=True
+DJANGO_CSRF_TRUSTED_ORIGINS=https://example.com
+```
+
+## Background tasks
+
+Add tasks to `jobs/tasks.py`:
+
+```python
+from django.tasks import task
+
+@task()
+def my_task(arg: str) -> None:
+    ...
+```
+
+Enqueue from anywhere:
+
+```python
+from jobs.tasks import my_task
+my_task.enqueue("hello")
+```
+
+Run the worker:
+
+```sh
+mise run worker     # uv run manage.py db_worker
+```
+
+## Pre-commit hooks
+
+```sh
+uv run pre-commit install
+```
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

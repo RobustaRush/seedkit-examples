@@ -14,12 +14,12 @@ dependencies = [
     "django-rq>=4.1.0",
     "django-storages[s3]>=1.14.6",
     "django-structlog>=10.0.0",
-    "django-tasks>=0.12.0",
     "django-tasks-rq>=0.12.0",
+    "gunicorn>=26.0.0",
     "psycopg[binary]>=3.3.4",
     "pyjwt>=2.12.1",
     "structlog>=25.5.0",
-    "uvicorn[standard]>=0.46.0",
+    "uvicorn[standard]>=0.47.0",
 ]
 
 [dependency-groups]
@@ -27,7 +27,7 @@ dev = [
     "django-stubs>=6.0.4",
     "django-stubs-ext>=6.0.4",
     "pyright>=1.1.409",
-    "ruff>=0.15.12",
+    "ruff>=0.15.13",
 ]
 
 [tool.ruff]
@@ -35,8 +35,22 @@ line-length = 100
 extend-exclude = ["migrations", "*/migrations/*"]
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "UP", "B", "DJ", "S", "SIM", "RUF"]
-ignore = ["E501", "S101", "RUF012"]
+select = [
+    "E", "W",
+    "F",
+    "I",
+    "UP",
+    "B",
+    "DJ",
+    "S",
+    "SIM",
+    "RUF",
+]
+ignore = [
+    "E501",
+    "S101",
+    "RUF012",
+]
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**"      = ["S"]
@@ -45,7 +59,7 @@ ignore = ["E501", "S101", "RUF012"]
 "**/settings/*.py" = ["F405", "F403", "S105", "S106"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["config", "api", "jobs"]
+known-first-party = ["api", "jobs", "config"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -69,3 +83,6 @@ reportMissingTypeStubs = "none"
 reportGeneralTypeIssues = "warning"
 reportOptionalMemberAccess = "warning"
 strictListInference = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.local"

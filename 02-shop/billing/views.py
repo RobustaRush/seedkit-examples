@@ -37,7 +37,7 @@ def create_checkout_session(request):
 @login_required
 def customer_portal(request):
     session = stripe.billing_portal.Session.create(
-        customer=request.user.stripe_customer_id,
+        customer=request.user.stripe_customer_id,  # type: ignore[union-attr]
         return_url=request.build_absolute_uri("/billing/"),
     )
     assert session.url

@@ -8,20 +8,19 @@ primary_region = "iad"
   PORT = "8000"
   DJANGO_BEHIND_PROXY = "True"
 
-# Set these via `fly secrets set`:
+# Required prod settings — set via `fly secrets set`:
 #   DJANGO_SECRET_KEY
-#   DJANGO_ALLOWED_HOSTS
+#   DJANGO_ALLOWED_HOSTS      (your fly.dev hostname + custom domain)
 #   DJANGO_CSRF_TRUSTED_ORIGINS
-#   DATABASE_URL             (auto-set by `fly postgres attach`)
-#   REDIS_URL                (auto-set by `fly redis attach`)
+#   DATABASE_URL              (auto-set by `fly postgres attach`)
+#   REDIS_URL                 (auto-set by `fly redis attach`)
 #   EMAIL_URL
-#   DEFAULT_FROM_EMAIL
 #   POSTMARK_SERVER_TOKEN
 #   ANYMAIL_WEBHOOK_SECRET
 #   AWS_ACCESS_KEY_ID
 #   AWS_SECRET_ACCESS_KEY
 #   AWS_STORAGE_BUCKET_NAME
-#   AWS_S3_ENDPOINT_URL
+#   AWS_S3_REGION_NAME
 #   SENTRY_DSN
 
 [deploy]
@@ -46,11 +45,8 @@ primary_region = "iad"
     port = 443
     handlers = ["tls", "http"]
 
-  [[services.checks]]
-    grace_period = "10s"
-    interval = "10s"
-    method = "get"
+  [[services.http_checks]]
     path = "/readyz"
-    protocol = "http"
+    interval = "10s"
     timeout = "5s"
-    type = "http"
+    grace_period = "30s"

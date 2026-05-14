@@ -8,6 +8,6 @@ class MediaCreate(msgspec.Struct):
     size: int
 
 
-class MediaResponse(msgspec.Struct):
+class Media(msgspec.Struct):
     uid: uuid.UUID
     filename: str

@@ -1,7 +1,11 @@
+"""
+Django settings for 03-jobs-board.
+"""
+
 from pathlib import Path
+
 import environ
 from django.utils.translation import gettext_lazy as _
-from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -15,6 +19,10 @@ DATABASES = {"default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / '
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Application definition
+# mailauth.contrib.admin MUST precede django.contrib.admin — Django resolves
+# admin templates in app order; reversing silently leaves the stock password
+# login intact.
 INSTALLED_APPS = [
     "mailauth.contrib.admin",
     "django.contrib.admin",
@@ -57,6 +65,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
+# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -64,6 +73,11 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+# Auth — django-mail-auth (passwordless magic-link)
+# Using stock auth.User: auth.User.email has no unique=True, so two users
+# sharing an address would both receive magic-link login. For a production
+# system enforce uniqueness via a data migration or switch to
+# mailauth.contrib.user.EmailUser.
 AUTHENTICATION_BACKENDS = [
     "mailauth.backends.MailAuthBackend",
     "django.contrib.auth.backends.ModelBackend",
@@ -72,6 +86,7 @@ AUTHENTICATION_BACKENDS = [
 LOGIN_URL = "mailauth:login"
 LOGIN_REDIRECT_URL = "/"
 
+# Internationalisation
 LANGUAGE_CODE = "en"
 USE_I18N = True
 USE_TZ = True
@@ -82,9 +97,22 @@ LANGUAGES = [
 
 LOCALE_PATHS = [BASE_DIR / "locale"]
 
+# Static files
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Redis cache
+REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"{REDIS_URL}/0",
+        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+    }
+}
+
+# Email
 globals().update(env.email_url(
     "EMAIL_URL",
     default="consolemail://" if DEBUG else env.NOTSET,
@@ -98,19 +126,12 @@ SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
-REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
-
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"{REDIS_URL}/0",
-        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
-    }
-}
-
+# Celery
 CELERY_BROKER_URL = f"{REDIS_URL}/1"
 CELERY_RESULT_BACKEND = f"{REDIS_URL}/2"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+from celery.schedules import crontab  # noqa: E402
 
 CELERY_BEAT_SCHEDULE = {
     "daily-digest": {

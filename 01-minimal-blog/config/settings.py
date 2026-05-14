@@ -21,7 +21,7 @@ environ.Env.read_env(BASE_DIR / ".env")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])  # DEBUG already accepts localhost / 127.0.0.1 / [::1]
-DATABASES = {"default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET)}  # 4 slashes = absolute, survives running manage.py from any cwd
+DATABASES = {"default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET)}  # 4 slashes = absolute
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -87,14 +87,16 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 LANGUAGE_CODE = 'en-us'
+
 TIME_ZONE = 'UTC'
+
 USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = "/static/"
+STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 

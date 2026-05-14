@@ -9,12 +9,17 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DJANGO_SECRET_KEY: test-key-not-used-in-prod
+      DATABASE_URL: sqlite:////tmp/ci.sqlite3
+      CACHE_DB_PATH: /tmp/ci-cache.sqlite3
+      DJANGO_SECRET_KEY: test-key-ci-only
       DJANGO_DEBUG: "False"
       DJANGO_ALLOWED_HOSTS: "*"
       EMAIL_URL: consolemail://
       DEFAULT_FROM_EMAIL: test@example.com
       SERVER_EMAIL: test@example.com
+      DJANGO_ADMINS: ""
+      DJANGO_SITE_DOMAIN: localhost
+      SENTRY_DSN: ""
 
     steps:
       - uses: actions/checkout@v4
@@ -28,12 +33,12 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
 
-      - run: uv run pyright
-
       - run: uv run manage.py check --deploy --fail-level WARNING
         env:
           DJANGO_SETTINGS_MODULE: config.settings.production
-          DJANGO_SECURE_SSL_REDIRECT: "False"
           DJANGO_CSRF_TRUSTED_ORIGINS: https://example.com
+          DJANGO_BEHIND_PROXY: "False"
+
+      - run: uv run pyright
 
       - run: uv run pytest

@@ -35,7 +35,7 @@ run = "uv run pyright"
 run = "uv run manage.py collectstatic --noinput"
 
 [tasks.tailwind]
-run = "uv run manage.py tailwind runserver"
+run = "uv run manage.py tailwind build"
 
 [tasks.deploy-migrate]
 run = "docker compose -f deploy/docker-compose.prod.yml run --rm web python manage.py migrate"

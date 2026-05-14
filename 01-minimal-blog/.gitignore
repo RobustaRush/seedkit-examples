@@ -4,12 +4,26 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
+*.egg
 *.egg-info/
 dist/
 build/
+eggs/
+parts/
+var/
+sdist/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+.installed.cfg
+lib/
+lib64/
 
-# Virtual environment
+# Virtual environments
 .venv/
+venv/
+ENV/
+env/
 
 # Environment
 .env
@@ -18,16 +32,17 @@ build/
 *.sqlite3
 staticfiles/
 media/
+local_settings.py
 
-# Editor
-.DS_Store
-.idea/
+# Editors
 .vscode/
+.idea/
 *.swp
 *.swo
+*~
+.DS_Store
 
-# Ruff
+# Cache
 .ruff_cache/
-
-# uv
-.python-version
+.mypy_cache/
+.pytest_cache/

@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm AS builder
 
-# django-bolt ships no aarch64-linux wheel — needs build tools to compile from source
+# Build tools needed for django-bolt Rust extension on linux/arm64
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential pkg-config \
     && rm -rf /var/lib/apt/lists/*
@@ -20,15 +20,15 @@ COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
-# collectstatic is skipped here — S3 storage needs real credentials at deploy,
-# not build time. Run `python manage.py collectstatic --noinput` in release_command.
+# collectstatic is intentionally omitted here — S3 storage requires real
+# AWS credentials at deploy time, not build time. Run it via release_command.
+
+ARG GIT_SHA=unknown
+ENV GIT_SHA=${GIT_SHA}
 
 
 FROM python:3.12-slim-bookworm AS prod
 ENV PATH="/opt/venv/bin:$PATH"
-
-ARG GIT_SHA=unknown
-ENV GIT_SHA=${GIT_SHA}
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \

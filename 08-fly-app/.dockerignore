@@ -9,6 +9,6 @@ __pycache__/
 .mypy_cache/
 staticfiles/
 media/
-node_modules/
 htmlcov/
 .coverage
+celerybeat-schedule*

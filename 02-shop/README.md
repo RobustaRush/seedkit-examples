@@ -30,7 +30,7 @@ Add-ons:
   - `robots.txt`: yes.
   - `django-extensions`: no.
 
-Production setup: VPS (Docker + Caddy). Use the multi-stage `Dockerfile` from `references/docker.md` (uv builder → `python:3.12-slim-bookworm` runtime).
+Production setup: VPS (Docker + Caddy). Use a multi-stage `Dockerfile` (uv builder → `python:3.12-slim-bookworm` runtime).
 
 Assume Postgres is already running locally on port 5432 with user `postgres` / password `postgres`. Create database `shop_db` if missing (Postgres identifiers can't start with a digit, so use a clean name). Run the foundation + boot check, then run `python manage.py tailwind build` once so the CSS asset exists, and verify the index page returns the Tailwind-styled HTML.
 ```
@@ -43,64 +43,54 @@ Small e-commerce site with admin and SMTP transactional email.
 
 ## Stack
 
-- **Django 6** + PostgreSQL
-- **Auth**: django-allauth (email login, email verification) + django-axes (brute-force protection)
-- **Frontend**: Tailwind CSS v4 + DaisyUI via django-tailwind-cli (no Node.js)
-- **Billing**: Stripe raw SDK
-- **Static files**: WhiteNoise (CompressedManifestStaticFilesStorage in production)
-- **Email**: console backend in dev, SMTP in production
-- **Health checks**: `/healthz` (liveness) + `/readyz` (readiness)
-- **Deploy**: VPS with Docker + Caddy
+- Django 6 + PostgreSQL + django-environ
+- Auth: django-allauth (email login, mandatory verification in prod) + django-axes (brute-force lockout)
+- Frontend: Tailwind CSS 4 + DaisyUI via django-tailwind-cli (no Node)
+- Static files: WhiteNoise (CompressedManifestStaticFilesStorage in prod)
+- Billing: Stripe raw SDK
+- Email: console in dev, SMTP in prod via `EMAIL_URL`
+- Type checking: pyright + django-stubs
+- Lint: Ruff
+- Tests: pytest + pytest-django
+- Task runner: mise
+- Deploy: VPS (Docker + Caddy)
 
-## Quick start
+## Setup
 
 ```sh
-# Install dependencies
-mise run install       # or: uv sync
-
-# Create DB (host Postgres)
+cp .env.example .env   # then fill in DJANGO_SECRET_KEY and DATABASE_URL
+mise install           # installs Python 3.12 via mise
+mise run install       # uv sync
 createdb shop_db
-
-# Copy and configure env
-cp .env.example .env  # then edit .env with real values
-
-# Migrate and create superuser
 mise run migrate
-mise run superuser
-
-# Build Tailwind CSS
-uv run manage.py tailwind build
-
-# Run dev server (with Tailwind watcher)
-mise run dev
 ```
 
-## Key commands
+## Dev
+
+```sh
+mise run dev           # runserver + tailwind watcher
+mise run superuser     # create admin user
+```
+
+## Tasks
 
 | Task | Command |
 |---|---|
-| Dev server | `mise run dev` |
-| Migrate | `mise run migrate` |
-| Make migrations | `mise run makemigrations` |
-| Run tests | `mise run test` |
-| Lint | `mise run lint` |
-| Format | `mise run fmt` |
-| Type check | `mise run typecheck` |
-| Collect static | `mise run collectstatic` |
-| Shell | `mise run shell` |
+| `mise run install` | `uv sync` |
+| `mise run dev` | `uv run manage.py tailwind runserver` |
+| `mise run migrate` | `uv run manage.py migrate` |
+| `mise run makemigrations` | `uv run manage.py makemigrations` |
+| `mise run shell` | `uv run manage.py shell` |
+| `mise run superuser` | `uv run manage.py createsuperuser` |
+| `mise run test` | `uv run pytest` |
+| `mise run lint` | `uv run ruff check .` |
+| `mise run fmt` | `uv run ruff format .` |
+| `mise run typecheck` | `uv run pyright` |
+| `mise run tailwind` | `uv run manage.py tailwind build` |
+| `mise run collectstatic` | `uv run manage.py collectstatic --noinput` |
+| `mise run deploy` | migrate + `docker compose … up -d` |
 
-Without mise: `uv run manage.py <command>`
-
-## Environment variables
-
-See `.env.example` for all variables. Key ones:
-
-- `DJANGO_SECRET_KEY` — required in production
-- `DATABASE_URL` — Postgres URL
-- `EMAIL_URL` — `consolemail://` in dev, `smtp+tls://...` in production
-- `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
-
-## Production deploy
+## Deploy
 
 ```sh
 ssh user@vps
@@ -111,6 +101,13 @@ docker compose -f deploy/docker-compose.prod.yml run --rm web python manage.py m
 docker compose -f deploy/docker-compose.prod.yml up -d
 ```
 
-Update `deploy/Caddyfile` with your real domain before first deploy.
+Copy `.env.example` to `.env.prod` on the VPS and fill in production values:
+- `DJANGO_SECRET_KEY` — generate with `python -c "import secrets; print(secrets.token_urlsafe(50))"`
+- `DATABASE_URL` — points at the `db` service: `postgres://postgres:<password>@db:5432/shop_db`
+- `EMAIL_URL` — SMTP URL, e.g. `smtp+tls://apikey:<key>@smtp.sendgrid.net:587`
+- `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+- `DJANGO_ALLOWED_HOSTS` — your domain name
+
+For local Stripe webhook testing: `stripe listen --forward-to localhost:8000/billing/webhook/`
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

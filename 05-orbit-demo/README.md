@@ -35,41 +35,47 @@ Run the foundation + boot check. Spin up Mailpit via a one-service `docker-compo
 
 # 05-orbit-demo
 
-Scratch project to exercise django-orbit and verify outbound mail flows are captured.
+Scratch project to exercise `django-orbit` (observability dashboard + MCP) and verify outbound mail flows are captured via Mailpit.
 
 ## Stack
 
-- Django 6 · SQLite · single-file settings · django-environ
-- django-orbit (observability dashboard + MCP) at `/orbit/`
-- Mailpit for local email inspection (Docker) at `http://localhost:8025`
-- Ruff (lint + format)
-- Health checks: `/healthz` (liveness) · `/readyz` (readiness)
+| Layer | Choice |
+|---|---|
+| Framework | Django 6.x |
+| Database | SQLite (dev) |
+| Request handling | WSGI (gunicorn in prod) |
+| Debug dashboard | `django-orbit` at `/orbit/` |
+| Email (dev) | SMTP → Mailpit (`localhost:1025`) |
+| Email (prod) | Set `EMAIL_URL` env var |
+| Health checks | `/healthz` (liveness), `/readyz` (readiness) |
+| Linter | Ruff |
 
 ## Setup
 
 ```sh
 cp .env.example .env
-# edit DJANGO_SECRET_KEY if needed
+# edit .env — set a real DJANGO_SECRET_KEY
 uv run manage.py migrate
 uv run manage.py createsuperuser
 uv run manage.py runserver
 ```
 
-## Mailpit
+## Mailpit (local email inspection)
 
-Start the Mailpit container before running the server if you want emails captured in the UI:
+Captures all outgoing SMTP. Open <http://localhost:8025> to view mail.
 
 ```sh
 docker compose up -d mailpit
+# EMAIL_URL=smtp://localhost:1025 must be set in .env (already the default)
 ```
 
-Open <http://localhost:8025> to inspect captured emails.
-The `.env` default points Django's SMTP at `localhost:1025` (Mailpit).
-Without Mailpit running, set `EMAIL_URL=consolemail://` in `.env` to fall back to console output.
+## Orbit (observability dashboard)
 
-## Orbit MCP
+`http://localhost:8000/orbit/` — requests, SQL, logs, exceptions, cache, ORM events, emails.
 
-To connect Claude Desktop to the live telemetry stream, add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+**MCP integration** (AI assistants query live telemetry):
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
@@ -84,16 +90,24 @@ To connect Claude Desktop to the live telemetry stream, add this to `~/Library/A
 }
 ```
 
-## Commands
+## Health checks
 
-| Command | What it does |
-|---|---|
-| `uv run manage.py migrate` | Apply migrations |
-| `uv run manage.py runserver` | Start dev server |
-| `uv run manage.py test` | Run tests |
-| `uv run ruff check .` | Lint |
-| `uv run ruff format .` | Format |
-| `docker compose up -d mailpit` | Start Mailpit |
-| `docker compose down -v` | Stop and clean up |
+```sh
+curl http://localhost:8000/healthz   # → ok
+curl http://localhost:8000/readyz    # → ready
+```
+
+## Lint
+
+```sh
+uv run ruff check .
+uv run ruff format --check .
+```
+
+## Test
+
+```sh
+uv run manage.py test
+```
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

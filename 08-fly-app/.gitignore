@@ -7,13 +7,7 @@ media/
 .pytest_cache/
 .mypy_cache/
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
 htmlcov/
 .coverage
 celerybeat-schedule*
-node_modules/
-.django_tailwind_cli/
-dist/
-build/
-*.egg-info/

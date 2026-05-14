@@ -1,15 +1,16 @@
 {% load tailwind_cli %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <title>Server error</title>
     {% tailwind_css %}
 </head>
-<body class="bg-gray-50 text-gray-900">
+<body class="bg-base-100 text-base-content">
     <div class="container mx-auto px-4 py-24 text-center">
         <h1 class="text-6xl font-bold text-gray-700">500</h1>
-        <p class="mt-4 text-lg">Something went wrong on our end.</p>
+        <p class="mt-4 text-lg">Something went wrong on our end. Please try again later.</p>
+        <a href="/" class="btn btn-primary mt-6">Go home</a>
     </div>
 </body>
 </html>

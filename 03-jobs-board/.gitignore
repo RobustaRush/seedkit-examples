@@ -7,10 +7,9 @@ media/
 __pycache__/
 *.pyc
 *.pyo
-*.pyd
 .pytest_cache/
 .mypy_cache/
 dist/
 *.egg-info/
 celerybeat-schedule*
-locale/**/*.mo
+locale/*/LC_MESSAGES/*.mo

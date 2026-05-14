@@ -72,6 +72,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
+USE_I18N = False
 USE_TZ = True
 
 STATIC_URL = "/static/"
@@ -88,7 +89,7 @@ CACHES = {
     }
 }
 
-# Django Tasks (RQ backend)
+# Django Tasks — RQ backend
 TASKS = {
     "default": {
         "BACKEND": "django_tasks_rq.RQBackend",
@@ -102,7 +103,7 @@ RQ_QUEUES = {
 
 RQ = {"JOB_CLASS": "django_tasks_rq.Job"}
 
-# Analytics (Umami)
+# Analytics (Umami — self-hosted)
 ANALYTICS_ID = env("ANALYTICS_ID", default="")
 ANALYTICS_HOST = env("ANALYTICS_HOST", default="")
 
@@ -143,7 +144,6 @@ LOGGING = {
         "django.request": {"level": "WARNING"},
         "urllib3": {"level": "WARNING"},
         "botocore": {"level": "WARNING"},
-        "celery": {"level": "INFO"},
     },
 }
 

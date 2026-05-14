@@ -37,40 +37,35 @@ Run the foundation, the boot check (migrate + createsuperuser), and confirm /adm
 
 # 01-minimal-blog
 
-A tiny blog to verify the seedkit skill works end-to-end.
+A tiny blog — the bare minimum Django project to verify the seedkit skill works end-to-end.
 
 ## Stack
 
 | Layer | Choice |
-|---|---|
-| Python | >=3.12 |
+|-------|--------|
 | Framework | Django 6 |
-| Database | SQLite |
-| Settings | Single file (`config/settings.py`) via django-environ |
+| Settings | Single `config/settings.py` via `django-environ` |
+| Database | SQLite (`db.sqlite3`) |
+| Email | Console backend (stdout) |
 | Auth | Vanilla `django.contrib.auth` |
-| Email | Console backend (dev) |
+| Frontend | None |
 
-## Getting started
+## Setup
 
 ```sh
 cp .env.example .env
-# Edit .env — set a real DJANGO_SECRET_KEY for production
-
+# Edit .env — set DJANGO_SECRET_KEY to a real value for anything beyond local dev
 uv run manage.py migrate
 uv run manage.py createsuperuser
 uv run manage.py runserver
 ```
 
-Then open <http://127.0.0.1:8000/admin/> and sign in.
+Open <http://127.0.0.1:8000/admin/> and sign in.
 
-## Key commands
+## Tests
 
-| Command | Purpose |
-|---|---|
-| `uv run manage.py migrate` | Apply database migrations |
-| `uv run manage.py createsuperuser` | Create an admin user |
-| `uv run manage.py runserver` | Start the development server |
-| `uv run manage.py test` | Run the test suite |
-| `uv run manage.py collectstatic --noinput` | Collect static files |
+```sh
+uv run manage.py test
+```
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

@@ -16,7 +16,7 @@ dependencies = [
     "gunicorn>=26.0.0",
     "msgspec>=0.21.1",
     "psycopg[binary]>=3.3.4",
-    "sentry-sdk>=2.59.0",
+    "sentry-sdk>=2.60.0",
 ]
 
 [dependency-groups]
@@ -27,7 +27,7 @@ dev = [
     "pyright>=1.1.409",
     "pytest>=9.0.3",
     "pytest-django>=4.12.0",
-    "ruff>=0.15.12",
+    "ruff>=0.15.13",
 ]
 
 [tool.pytest.ini_options]
@@ -49,7 +49,7 @@ ignore = ["E501", "S101", "RUF012"]
 "**/settings/*.py" = ["F405", "F403", "S105", "S106"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["api", "config"]
+known-first-party = ["api"]
 
 [tool.ruff.format]
 quote-style = "double"

@@ -17,7 +17,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 RUN DJANGO_SETTINGS_MODULE=config.settings.production DJANGO_DEBUG=True \
     /opt/venv/bin/python manage.py tailwind build
-
 RUN DJANGO_SETTINGS_MODULE=config.settings.production DJANGO_DEBUG=True \
     /opt/venv/bin/python manage.py collectstatic --noinput
 

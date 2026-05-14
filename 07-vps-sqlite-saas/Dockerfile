@@ -15,15 +15,20 @@ COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
+# collectstatic runs in the builder so the prod image ships compressed assets.
+# DJANGO_DEBUG=True unlocks dev defaults (no real SECRET_KEY/DATABASE_URL needed).
 RUN DJANGO_SETTINGS_MODULE=config.settings.production DJANGO_DEBUG=True \
     /opt/venv/bin/python manage.py collectstatic --noinput
 
 
 FROM python:3.12-slim-bookworm AS prod
+
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install Litestream for SQLite replication — arch-aware so the image builds on M-series Macs too
-RUN apt-get update && apt-get install -y --no-install-recommends wget \
+# Install Litestream from the official .deb release.
+# dpkg --print-architecture resolves amd64/arm64 so the image builds on M-series Macs.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends wget \
  && ARCH=$(dpkg --print-architecture) \
  && wget -q "https://github.com/benbjohnson/litestream/releases/download/v0.3.13/litestream-v0.3.13-linux-${ARCH}.deb" \
  && dpkg -i "litestream-v0.3.13-linux-${ARCH}.deb" \
@@ -32,15 +37,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends wget \
 
 RUN groupadd --system django && useradd --system --gid django django
 
-# Pre-create data and media dirs before USER django so the volume mounts are writable
-RUN mkdir -p /data /app/media && chown django:django /data /app/media
+# Pre-create /data before `USER django` — named volume mounts as root:root,
+# so the django user can't create site.sqlite3 / WAL files otherwise.
+RUN mkdir -p /data && chown django:django /data
+
+# Pre-create /app/media for the same reason (media volume).
+RUN mkdir -p /app/media && chown django:django /app/media
 
 WORKDIR /app
 COPY --from=builder --chown=django:django /opt/venv /opt/venv
 COPY --from=builder --chown=django:django /app /app
 
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Bake Litestream config and entrypoint into the image at fixed paths.
+COPY litestream.yml /etc/litestream.yml
+COPY --chmod=755 entrypoint.sh /entrypoint.sh
 
 USER django
 

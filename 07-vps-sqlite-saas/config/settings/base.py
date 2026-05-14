@@ -19,22 +19,6 @@ DATABASES = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# SQLite cache — separate cache.sqlite3 file so vacuum/WAL on the main DB
-# doesn't block cache reads. CacheRouter routes the cache_table model there.
-DATABASES["cache"] = {
-    "ENGINE": "django.db.backends.sqlite3",
-    "NAME": env("CACHE_DB_PATH", default=str(BASE_DIR / "cache.sqlite3")),
-}
-
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
-        "LOCATION": "cache_table",
-    },
-}
-
-DATABASE_ROUTERS = ["config.routers.CacheRouter"]
-
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -43,7 +27,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
-    # third-party
+    "users",
     "allauth",
     "allauth.account",
     "allauth.mfa",
@@ -51,8 +35,6 @@ INSTALLED_APPS = [
     "django_structlog",
     "django_tasks",
     "django_tasks_db",
-    # project
-    "users",
     "jobs",
 ]
 
@@ -96,6 +78,23 @@ AUTHENTICATION_BACKENDS = [
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
+SITE_ID = 1
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/accounts/login/"
+
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_EMAIL_VERIFICATION = "optional"
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+
+MFA_SUPPORTED_TYPES = ["totp", "recovery_codes"]
+MFA_TOTP_ISSUER = env("DJANGO_SITE_DOMAIN", default="example.com")
+
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1
+AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
+AXES_RESET_ON_SUCCESS = True
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -109,52 +108,39 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# django-allauth
-SITE_ID = 1
-LOGIN_REDIRECT_URL = "/"
-LOGOUT_REDIRECT_URL = "/accounts/login/"
+# Cache — separate SQLite DB
+DATABASES["cache"] = {
+    "ENGINE": "django.db.backends.sqlite3",
+    "NAME": env("CACHE_DB_PATH", default=str(BASE_DIR / "cache.sqlite3")),
+}
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "cache_table",
+    }
+}
+DATABASE_ROUTERS = ["config.routers.CacheRouter"]
 
-ACCOUNT_LOGIN_METHODS = {"email"}
-ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
-ACCOUNT_EMAIL_VERIFICATION = "optional"
-ACCOUNT_USER_MODEL_USERNAME_FIELD = None
-
-# django-axes
-AXES_FAILURE_LIMIT = 5
-AXES_COOLOFF_TIME = 1
-AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
-AXES_RESET_ON_SUCCESS = True
-
-# allauth.mfa
-MFA_SUPPORTED_TYPES = ["totp", "recovery_codes"]
-
-# django-tasks
+# Django Tasks (DB backend)
 TASKS = {
     "default": {
         "BACKEND": "django_tasks_db.DatabaseBackend",
     }
 }
 
-# Email — consolemail in dev, real SMTP in prod (env.NOTSET forces the var in prod)
-globals().update(
-    env.email_url(
-        "EMAIL_URL",
-        default="consolemail://" if DEBUG else env.NOTSET,
-    )
-)
+# Email — gated defaults
+globals().update(env.email_url("EMAIL_URL", default="consolemail://" if DEBUG else env.NOTSET))
 DEFAULT_FROM_EMAIL = env(
-    "DEFAULT_FROM_EMAIL",
-    default="webmaster@localhost" if DEBUG else env.NOTSET,
+    "DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET
 )
 SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
-# structlog — JSON in prod, pretty in dev
+# Structured logging
 PRE_CHAIN = [
     structlog.contextvars.merge_contextvars,
     structlog.stdlib.add_log_level,

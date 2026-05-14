@@ -1,3 +1,7 @@
+"""
+Django settings for 05-orbit-demo.
+"""
+
 from pathlib import Path
 
 import environ
@@ -70,8 +74,13 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Email — consolemail:// in dev unless .env overrides to smtp://localhost:1025 (Mailpit).
-globals().update(env.email_url("EMAIL_URL", default="consolemail://" if DEBUG else env.NOTSET))
+# Email — console in dev (DEBUG=True), real SMTP in prod via EMAIL_URL
+globals().update(
+    env.email_url(
+        "EMAIL_URL",
+        default="consolemail://" if DEBUG else env.NOTSET,
+    )
+)
 DEFAULT_FROM_EMAIL = env(
     "DEFAULT_FROM_EMAIL", default="webmaster@localhost" if DEBUG else env.NOTSET
 )
@@ -79,7 +88,7 @@ SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
 MANAGERS = ADMINS
 
-# Logging baseline — orbit handler appended below when DEBUG.
+# Logging — baseline always active; orbit handler appended below when DEBUG
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -91,6 +100,7 @@ LOGGING = {
 
 if DEBUG:
     INSTALLED_APPS += ["orbit"]
+    # Insert AFTER SecurityMiddleware so SSL redirect / HSTS / host validation still run first
     MIDDLEWARE.insert(1, "orbit.middleware.OrbitMiddleware")
 
     ORBIT_CONFIG = {

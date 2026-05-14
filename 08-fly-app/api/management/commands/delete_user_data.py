@@ -4,7 +4,7 @@ from django.db import transaction
 
 
 class Command(BaseCommand):
-    help = "Delete all data for a user (GDPR Article 17)"
+    help = "Delete all data for a user (GDPR erasure request)"
 
     def add_arguments(self, parser):
         parser.add_argument("user_id", type=int)

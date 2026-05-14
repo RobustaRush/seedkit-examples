@@ -6,11 +6,10 @@ media/
 .ruff_cache/
 .pytest_cache/
 .mypy_cache/
+__pycache__/
+*.pyc
+*.pyo
 htmlcov/
 .coverage
-__pycache__/
-*.py[cod]
 *.egg-info/
 dist/
-build/
-.DS_Store

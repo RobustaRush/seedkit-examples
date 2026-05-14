@@ -48,6 +48,17 @@ services:
       timeout: 5s
       retries: 5
 
+  bugsink:
+    image: bugsink/bugsink:latest
+    restart: unless-stopped
+    environment:
+      SECRET_KEY: ${BUGSINK_SECRET_KEY}
+      CREATE_SUPERUSER: "admin:${BUGSINK_ADMIN_PASSWORD}"
+      BEHIND_HTTPS_PROXY: "true"
+      BASE_URL: https://bugsink.${DOMAIN}
+    volumes:
+      - bugsink_data:/data
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
@@ -63,5 +74,6 @@ services:
 
 volumes:
   pgdata:
+  bugsink_data:
   caddy_data:
   caddy_config:

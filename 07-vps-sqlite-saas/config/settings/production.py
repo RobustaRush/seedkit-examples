@@ -1,6 +1,10 @@
+import environ
+
 from .base import *
 
-# SQLite production tuning
+env = environ.Env()
+
+# SQLite WAL + tuning
 DATABASES["default"]["OPTIONS"] = {
     "transaction_mode": "IMMEDIATE",
     "timeout": 5,
@@ -27,7 +31,6 @@ CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
-
 SILENCED_SYSTEM_CHECKS = ["security.W005", "security.W021"]
 
 SECURE_REFERRER_POLICY = "same-origin"
@@ -35,11 +38,10 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
-# allauth — mandatory email verification in production
+# Allauth: mandatory email verification in prod
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 
-# allauth.mfa
-MFA_TOTP_ISSUER = env("DJANGO_SITE_DOMAIN", default="example.com")
+# 2FA: force reauthentication in prod
 ACCOUNT_REAUTHENTICATION_REQUIRED = True
 
 # WhiteNoise
