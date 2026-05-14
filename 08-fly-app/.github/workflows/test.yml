@@ -1,4 +1,4 @@
-name: Test
+name: test
 
 on:
   push:
@@ -13,13 +13,13 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: app
-          POSTGRES_PASSWORD: app
-          POSTGRES_DB: app
+          POSTGRES_DB: 08_fly_app
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -35,34 +35,27 @@ jobs:
           --health-retries 10
 
     env:
-      SECRET_KEY: ci-secret-key-not-for-prod
-      DEBUG: "True"
-      ALLOWED_HOSTS: localhost,127.0.0.1
-      DATABASE_URL: postgres://app:app@localhost:5432/app
-      REDIS_URL: redis://localhost:6379/0
-      AWS_ACCESS_KEY_ID: minioadmin
-      AWS_SECRET_ACCESS_KEY: minioadmin
-      AWS_STORAGE_BUCKET_NAME: app-media
-      AWS_S3_ENDPOINT_URL: http://localhost:9000
-      DEFAULT_FROM_EMAIL: noreply@example.com
-      SERVER_EMAIL: noreply@example.com
-      ANYMAIL_WEBHOOK_SECRET: ""
-      POSTMARK_SERVER_TOKEN: ""
-      GLITCHTIP_DSN: ""
-      GA4_MEASUREMENT_ID: ""
       DJANGO_SETTINGS_MODULE: config.settings.local
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/08_fly_app
+      REDIS_URL: redis://localhost:6379/0
+      DJANGO_SECRET_KEY: ci-only-not-secret
+      DJANGO_DEBUG: "True"
+      AWS_STORAGE_BUCKET_NAME: "test-bucket"
+      AWS_S3_REGION_NAME: "us-east-1"
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install uv
+      - name: Set up uv
         uses: astral-sh/setup-uv@v5
         with:
-          version: "latest"
           python-version: "3.12"
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --frozen
+
+      - name: Ruff lint
+        run: uv run ruff check .
 
       - name: Run migrations
         run: uv run manage.py migrate
@@ -70,8 +63,5 @@ jobs:
       - name: Run tests
         run: uv run pytest
 
-      - name: Lint (ruff)
-        run: uv run ruff check .
-
-      - name: Type check (pyright)
+      - name: Pyright
         run: uv run pyright

@@ -55,64 +55,79 @@ Production Django app deployed to a remote host over SSH from GitHub Actions, us
 
 | Layer | Choice |
 |---|---|
+| Language | Python 3.12 |
 | Framework | Django 6 |
-| Database | PostgreSQL 16 (Docker) |
+| Database | PostgreSQL 16 (Docker, host port 5433) |
 | Cache / Queue | Redis 7 (Docker) |
-| Background tasks | django-tasks-rq (RQ backend) |
-| Logging | structlog + django-structlog (JSON/prod, pretty/dev, request_id) |
-| Static files | WhiteNoise |
-| Error reporting | Bugsink via sentry-sdk |
-| CSP | django-csp 4.x |
+| Background tasks | django-tasks-rq + RQ |
+| Logging | structlog — pretty dev / JSON prod |
+| Error reporting | Bugsink / sentry-sdk |
+| CSP | django-csp 4.0 |
 | DB backups | django-dbbackup |
 | Analytics | Umami (self-hosted, env-driven) |
-| CI | GitHub Actions |
-| Deploy | GitHub Actions → SSH → rsync → `docker compose pull && up -d` |
+| WSGI server | Gunicorn |
+| Linting | Ruff |
+| Tests | pytest + pytest-django |
+| Task runner | mise |
+| CI | GitHub Actions (test.yml) |
+| Deploy | GitHub Actions → SSH → rsync + docker compose (deploy.yml) |
 
-## Local development
+## Local setup
 
 ```sh
-# 1. Copy env
-cp .env.example .env   # edit SECRET_KEY and DB/Redis creds if needed
+cp .env.example .env          # edit SECRET_KEY at minimum
+docker compose up -d --wait   # starts postgres:5433 + redis:6379
+uv run manage.py migrate
+uv run manage.py createsuperuser
+uv run manage.py runserver
+```
 
-# 2. Start DB + Redis
-docker compose up -d --wait
+Worker (separate terminal):
 
-# 3. Migrate and run
+```sh
+uv run manage.py rqworker default
+```
+
+## Key URLs
+
+| URL | Purpose |
+|---|---|
+| `/admin/` | Django admin |
+| `/healthz` | Liveness probe |
+| `/readyz` | Readiness probe (hits DB) |
+| `/django-rq/` | RQ dashboard (admin-protected) |
+
+## mise tasks
+
+```sh
+mise run server          # runserver
+mise run worker          # rqworker default
 mise run migrate
-mise run dev          # http://127.0.0.1:8000
-mise run worker       # RQ worker (separate terminal)
-
-# 4. Tests & lint
 mise run test
 mise run lint
+mise run dbbackup
 ```
 
-## Key commands
+## Deploy
+
+Requires three GitHub Actions secrets:
+
+- `SSH_HOST` — remote server IP / hostname
+- `SSH_USER` — SSH login user
+- `SSH_KEY` — private key with access to the host
+
+The deploy workflow:
+1. Syncs code via `rsync`
+2. Builds the image on the remote host (`docker build --target prod`)
+3. Runs `docker compose -f docker-compose.prod.yml up -d` + `migrate`
+
+Copy `.env.example` to `.env.prod` on the remote host and fill in real values before first deploy.
+
+## GDPR commands
 
 ```sh
-uv run manage.py createsuperuser
-uv run manage.py dbbackup
-uv run manage.py export_user_data <user_id>    # GDPR Art. 20
-uv run manage.py delete_user_data <user_id>    # GDPR Art. 17
+uv run manage.py gdpr_export <user_id>          # JSON export (Art. 20)
+uv run manage.py gdpr_delete <user_id> --confirm  # anonymise (Art. 17)
 ```
-
-## GDPR
-
-- Error reports to Bugsink have PII stripped via `before_send` (no cookies, no auth headers, user reduced to ID).
-- Session lifetime: 2 weeks (`SESSION_COOKIE_AGE`).
-- `export_user_data` / `delete_user_data` management commands handle Art. 20 / Art. 17 requests.
-
-## Deploy (GitHub Actions)
-
-1. Push to `main` triggers `test.yml` (lint + pytest against real Postgres/Redis).
-2. On success, `deploy.yml` builds the Docker image, pushes to GHCR, then SSH-deploys:
-   - `rsync` the compose file to the server.
-   - `docker compose -f docker-compose.prod.yml pull && up -d` on the remote host.
-
-Required GitHub secrets: `SSH_HOST`, `SSH_USER`, `SSH_KEY`.
-
-## Umami analytics
-
-Set `UMAMI_HOST` and `UMAMI_WEBSITE_ID` in the environment. The base template injects the script tag automatically when both values are present.
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

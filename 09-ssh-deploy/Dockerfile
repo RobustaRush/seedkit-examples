@@ -1,26 +1,40 @@
-# ── builder: install dependencies into a venv ─────────────────────────────────
+# syntax=docker/dockerfile:1
 FROM python:3.12-slim-bookworm AS builder
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+WORKDIR /build
 
-WORKDIR /app
+RUN pip install uv
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev
+RUN uv export --no-dev --no-hashes -o requirements.txt && \
+    pip install --no-cache-dir -r requirements.txt --target /deps
 
-# ── prod: lean runtime image ───────────────────────────────────────────────────
+# --- runtime ---
 FROM python:3.12-slim-bookworm AS prod
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/deps \
+    DJANGO_SETTINGS_MODULE=config.settings.production
+
+# Dummy key only used during collectstatic at build time — overridden at runtime
+ARG DJANGO_SECRET_KEY=build-time-dummy-not-used-in-prod
+
+RUN useradd --no-create-home --no-log-init --shell /bin/false app
 
 WORKDIR /app
 
-COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /deps /deps
+
 COPY . .
 
-ENV PATH="/app/.venv/bin:$PATH"
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV DJANGO_SETTINGS_MODULE=config.settings.production
+RUN DJANGO_SECRET_KEY="$DJANGO_SECRET_KEY" \
+    DATABASE_URL="sqlite:////tmp/build.sqlite3" \
+    python -m django collectstatic --noinput
+
+USER app
 
 EXPOSE 8000
 
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "60"]
+CMD ["python", "-m", "gunicorn", "config.wsgi:application", \
+     "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "60"]

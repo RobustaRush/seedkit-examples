@@ -2,46 +2,38 @@
 python = "3.12"
 node = "lts"
 
-[tasks.install]
-description = "Install Python + Node dependencies"
-run = ["uv sync", "npm install"]
+[tasks.server]
+run = "uv run manage.py runserver"
+description = "Start development server"
 
-[tasks.dev]
-description = "Start dev server"
-run = "uv run python manage.py runserver"
-
-[tasks.migrate]
-description = "Apply database migrations"
-run = "uv run python manage.py migrate"
-
-[tasks.makemigrations]
-description = "Create new migrations"
-run = "uv run python manage.py makemigrations"
-
-[tasks.tailwind-build]
+[tasks.tailwind]
+run = "uv run manage.py tailwind build"
 description = "Build Tailwind CSS"
-run = "uv run python manage.py tailwind build"
 
 [tasks.tailwind-watch]
+run = "uv run manage.py tailwind watch"
 description = "Watch and rebuild Tailwind CSS"
-run = "uv run python manage.py tailwind watch"
 
-[tasks.createsuperuser]
-description = "Create admin superuser"
-run = "uv run python manage.py createsuperuser"
+[tasks.migrate]
+run = "uv run manage.py migrate"
+description = "Run database migrations"
+
+[tasks.makemigrations]
+run = "uv run manage.py makemigrations"
+description = "Create migrations"
 
 [tasks.test]
-description = "Run tests"
 run = "uv run pytest"
+description = "Run tests"
 
 [tasks.lint]
-description = "Run Ruff linter"
 run = "uv run ruff check ."
+description = "Run ruff linter"
 
 [tasks.typecheck]
-description = "Run Pyright type checker"
 run = "uv run pyright"
+description = "Run type checker"
 
 [tasks.collectstatic]
+run = "uv run manage.py collectstatic --noinput"
 description = "Collect static files"
-run = "uv run python manage.py collectstatic --noinput"

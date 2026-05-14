@@ -2,15 +2,15 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: app
-      POSTGRES_PASSWORD: app
-      POSTGRES_DB: app
+      POSTGRES_DB: 08_fly_app
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
       - "127.0.0.1:5433:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d 08_fly_app"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -18,7 +18,9 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "127.0.0.1:6380:6379"
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -32,28 +34,17 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     ports:
-      - "127.0.0.1:9002:9000"
-      - "127.0.0.1:9003:9001"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     volumes:
       - minio_data:/data
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 10
 
-  minio-init:
-    image: minio/mc:latest
-    depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-        mc alias set local http://minio:9000 minioadmin minioadmin &&
-        mc mb --ignore-existing local/app-media &&
-        mc anonymous set public local/app-media
-      "
-
 volumes:
   db_data:
+  redis_data:
   minio_data:

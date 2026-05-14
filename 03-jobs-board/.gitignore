@@ -1,0 +1,15 @@
+.venv/
+.env
+*.sqlite3
+staticfiles/
+media/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+locale/*/LC_MESSAGES/*.mo
+node_modules/
+dist/
+.DS_Store

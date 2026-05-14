@@ -46,60 +46,57 @@ Media-heavy app where uploads land in S3, processing runs as Redis-queued backgr
 
 ## Stack
 
-| Layer | Tech |
-|-------|------|
-| Framework | Django 6 + ASGI + Channels |
-| DB | PostgreSQL 16 (Docker) |
-| Cache / MQ | Redis 7 (Docker) |
-| Object storage | MinIO (Docker, S3-compatible) |
+| Layer | Technology |
+|-------|-----------|
+| Framework | Django 5.x + Channels (ASGI) |
+| Database | PostgreSQL 16 |
+| Task queue | django-tasks-rq (RQ + Redis) |
 | WebSockets | channels-redis channel layer |
-| Background tasks | django-tasks-rq (RQ backend) |
-| REST API | django-modern-rest + msgspec |
+| Storage | django-storages (S3/MinIO) |
 | Logging | structlog (pretty dev / JSON prod) |
-| Lint | ruff |
-| Types | pyright + django-stubs |
+| API | django-modern-rest (msgspec) |
+| CORS | django-cors-headers |
+| Lint | Ruff |
+| Types | Pyright + django-stubs |
 
-## Quick start
+## Local services
 
-```bash
-# 1. Start infra
-docker compose up -d --wait
+```sh
+docker compose up -d   # db, redis, minio
+```
 
-# 2. Apply migrations
-uv run manage.py migrate
+## Run
 
-# 3. Create superuser
-uv run manage.py createsuperuser
-
-# 4. Start ASGI server (HTTP + WebSockets in one process)
+```sh
+# Terminal 1 — HTTP + WebSocket server
 uv run uvicorn config.asgi:application --reload --host 0.0.0.0
 
-# 5. In a separate terminal — start the RQ worker
+# Terminal 2 — task worker
 uv run manage.py rqworker default
 ```
 
-Admin: http://localhost:8000/admin/
+## First-time setup
+
+```sh
+uv run manage.py migrate
+uv run manage.py createsuperuser
+```
 
 ## Key endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/media/` | Create media upload record |
-| GET | `/healthz` | Liveness probe |
-| GET | `/readyz` | Readiness probe (checks DB) |
-| WS | `ws://…/ws/echo/` | Echo consumer for testing |
+| Path | Description |
+|------|-------------|
+| `/admin/` | Django admin |
+| `/api/media/` | POST — create media record |
+| `/ws/echo/` | WebSocket echo |
+| `/healthz` | Liveness probe |
+| `/readyz` | Readiness probe (checks DB) |
+| `/django-rq/` | RQ dashboard |
 
-## Development
+## MinIO console
 
-```bash
-# Lint
-uv run ruff check .
+`http://127.0.0.1:9001` — credentials `minioadmin / minioadmin`
 
-# Type check
-uv run pyright
-
-# Tests
-uv run manage.py test
-```
+Create the `media-vault` bucket before uploading files.
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

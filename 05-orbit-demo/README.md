@@ -3,50 +3,6 @@
 ```
 /seedkit-slim
 
-Project name: 06-silk-lab
-Purpose: profile a few request paths with django-silk and run a simple background email task on the DB backend.
-
-Settings layout: split.
-Database: PostgreSQL.
-Postgres location: on the host (use `createdb silk_db`).
-Lint with Ruff: yes.
-Test runner: pytest (required for django-test-migrations).
-Type check (pyright + django-stubs): no.
-Pre-commit hooks: no.
-Internationalisation (i18n): no.
-Custom user model: no.
-Auth add-on: none.
-Structured logging: no.
-Task runner: none.
-Add-ons:
-  - debug: django-silk (profiling + `@silk_profile`)
-  - tasks: Django Tasks with the Database backend (`django-tasks-db`). Also `uv run manage.py startapp jobs`, register `jobs` in `INSTALLED_APPS`, wire `jobs/apps.py` `ready()` to import `tasks`, and add a sample `@task` to `jobs/tasks.py`.
-  - analytics: GoatCounter (self-hosted snippet, env-driven site code)
-  - email: console backend in local (`EMAIL_URL=consolemail://`).
-  - CORS: no.
-  - REST API: none.
-  - Frontend: none.
-  - Devcontainer: no.
-  - Health check endpoints: yes.
-  - `robots.txt`: no.
-  - `django-extensions`: yes.
-  - Database safety tools: all three —
-      - django-zeal: yes
-      - django-migration-linter: yes
-      - django-test-migrations: yes
-
-Production setup: skip.
-
-Run the foundation, the boot check, start `manage.py db_worker` in a second terminal, enqueue one example task and confirm it runs. Hit a profiled view and confirm the request appears under `/silk/`. Run `uv run manage.py lintmigrations`. Run `uv run pytest` to confirm the test runner is wired (no project-specific tests required — `django-test-migrations` is installed for the user to write migration tests later).
-```
-
----
-
-## Prompt
-
-```
-/seedkit-slim
-
 Project name: 05-orbit-demo
 Purpose: scratch project to exercise django-orbit and verify outbound mail flows are captured.
 
@@ -79,46 +35,38 @@ Run the foundation + boot check. Spin up Mailpit via a one-service `docker-compo
 
 # 05-orbit-demo
 
-Scratch project to exercise **django-orbit** (observability dashboard + MCP) and verify outbound mail flows are captured by **Mailpit**.
+Scratch project to exercise django-orbit and verify outbound mail flows are captured.
 
 ## Stack
 
 | Layer | Choice |
 |---|---|
-| Framework | Django 5.2 |
+| Runtime | Python 3.14, Django 6.0, WSGI |
 | Database | SQLite |
-| Observability | django-orbit @ `/orbit/` |
-| Email (local) | SMTP → Mailpit on port 1025 |
-| Mailpit UI | http://localhost:8025 |
-| Health checks | `/healthz` → `ok`, `/readyz` → `ready` |
+| Debug dashboard | django-orbit 0.8.1 (+ MCP) |
+| Dev email | Mailpit (Docker) — SMTP :1025, UI :8025 |
 | Lint | Ruff |
+| Tests | `manage.py test` |
 
 ## Quick start
 
 ```sh
-# Start Mailpit
-docker compose up -d --wait
-
-# Install deps & migrate
-uv sync
+cp .env.example .env          # edit DJANGO_SECRET_KEY if desired
+docker compose up -d --wait   # start Mailpit
 uv run manage.py migrate
-
-# Create a superuser (optional, needed for /admin/)
 uv run manage.py createsuperuser
-
-# Run dev server
 uv run manage.py runserver
 ```
 
-## Key URLs
+| URL | What |
+|---|---|
+| http://127.0.0.1:8000/admin/ | Django admin |
+| http://127.0.0.1:8000/orbit/ | Orbit dashboard (DEBUG only) |
+| http://127.0.0.1:8000/healthz | Liveness probe → `ok` |
+| http://127.0.0.1:8000/readyz | Readiness probe → `ready` |
+| http://127.0.0.1:8025/ | Mailpit UI |
 
-- Admin: http://localhost:8000/admin/
-- Orbit dashboard: http://localhost:8000/orbit/
-- Mailpit UI: http://localhost:8025/
-- Health: http://localhost:8000/healthz
-- Ready: http://localhost:8000/readyz
-
-## Send a test mail
+## Send a test email
 
 ```sh
 uv run manage.py shell -c "
@@ -127,6 +75,12 @@ send_mail('hello', 'body', 'from@example.com', ['to@example.com'])
 "
 ```
 
-Then open http://localhost:8025 to inspect it.
+Then open http://127.0.0.1:8025/ — the message appears under **Messages**.
+
+## Lint
+
+```sh
+uv run ruff check .
+```
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

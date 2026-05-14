@@ -44,51 +44,46 @@ Job board with background email notifications and a daily digest.
 
 ## Stack
 
-| Component | Choice |
-|-----------|--------|
-| Framework | Django 5.x |
-| Database | PostgreSQL 17 (Docker) |
-| Task queue | Celery + Redis |
-| Periodic tasks | Celery Beat (DB scheduler) |
+| Layer | Choice |
+|---|---|
+| Framework | Django 6 |
+| Database | PostgreSQL 16 (Docker) |
 | Auth | django-mail-auth (passwordless magic-link) |
-| Email (local) | Console backend |
-| i18n | Django gettext + LocaleMiddleware |
+| Background tasks | Celery + Celery Beat |
+| Message broker | Redis 7 (Docker) |
+| Email (dev) | Console backend |
+| i18n | Django gettext |
 | Task runner | just |
 
 ## Quick start
 
-```bash
-# Start services
-just up
+```sh
+# 1. Start services
+docker compose up -d --wait
 
-# Apply migrations
+# 2. Apply migrations
 just migrate
 
-# Create admin user
-just createsuperuser
+# 3. Create admin user
+just superuser
 
-# Run dev server
-just run
+# 4. Run server
+just serve
 
-# Run Celery worker (separate terminal)
+# 5. (optional) Run Celery worker + beat in separate terminals
 just worker
-
-# Run Celery Beat (separate terminal)
 just beat
 ```
 
 ## Key URLs
 
-- Admin: http://127.0.0.1:8000/admin/
-- Login: http://127.0.0.1:8000/accounts/login/
-- Health: http://127.0.0.1:8000/healthz
-- Ready: http://127.0.0.1:8000/readyz
+- `/admin/` — Django admin
+- `/accounts/login/` — magic-link login
+- `/healthz` — liveness probe
+- `/readyz` — readiness probe (hits DB)
 
-## Celery tasks
+## Environment variables
 
-| Task | Schedule | Purpose |
-|------|----------|---------|
-| `jobs.tasks.send_daily_digest` | Daily 08:00 UTC | Digest of active job posts |
-| `jobs.tasks.notify_new_job` | On demand | Notify subscribers of new post |
+Copy `.env.example` to `.env` and adjust as needed.
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

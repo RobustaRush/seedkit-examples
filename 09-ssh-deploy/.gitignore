@@ -1,26 +1,14 @@
-# Python-generated files
+.venv/
+.env
+*.pyc
 __pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
-
-# Virtual environments
-.venv
-
-# Django
+*.sqlite3
 staticfiles/
 media/
-*.sqlite3
-
-# Secrets
-.env
-.env.prod
-
-# Backups
 backups/
-
-# Test & lint caches
-.pytest_cache/
 .ruff_cache/
+.pytest_cache/
+dist/
+*.egg-info/
+.DS_Store
+node_modules/

@@ -1,26 +1,21 @@
 #!/bin/sh
 set -e
 
-# Pass-through for smoke tests / one-off commands
-if [ "$#" -gt 0 ]; then
-    exec "$@"
-fi
+DB_PATH="${DATABASE_URL#sqlite:////}"
+DB_PATH="/${DB_PATH}"  # restore leading slash stripped by parameter expansion
 
-DB_PATH="${DB_PATH:-/data/db.sqlite3}"
-
-# Restore database from S3 if it doesn't already exist
+# Restore from Litestream replica if DB doesn't exist yet
 if [ ! -f "$DB_PATH" ]; then
-    echo "Restoring database from Litestream..."
-    litestream restore -if-replica-exists -o "$DB_PATH" \
-        "s3://${LITESTREAM_S3_BUCKET}/db.sqlite3" || true
+    echo "Restoring database from replica..."
+    litestream restore -if-replica-exists -o "$DB_PATH" "s3://${LITESTREAM_BUCKET}/db"
 fi
 
-# Run migrations
+echo "Running migrations..."
 python manage.py migrate --noinput
 
-# Collect static files
+echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
-# Start Litestream replication and gunicorn
-exec litestream replicate -exec \
-    "gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 60"
+exec litestream replicate \
+    -config /app/litestream.yml \
+    -exec "gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 60"

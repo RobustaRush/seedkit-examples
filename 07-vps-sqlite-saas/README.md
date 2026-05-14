@@ -48,29 +48,26 @@ Run the foundation + boot check locally. Generate `Dockerfile`, `docker-compose.
 
 # 07-vps-sqlite-saas
 
-Production-ready SaaS skeleton deployed to a single VPS via docker-compose + Caddy, using the SQLite mini-prod stack (no separate DB / cache / queue server).
+Production-ready SaaS skeleton on a single VPS with SQLite, Litestream, Caddy, and Docker Compose. No external DB / cache / queue server required.
 
 ## Stack
 
 | Layer | Choice |
 |---|---|
-| Framework | Django 6 |
-| Database | SQLite (default) + SQLite cache DB |
-| Auth | django-allauth (email + mandatory verification) + 2FA (TOTP) |
-| Auth hardening | django-axes (lockout after 5 failures) |
-| Background tasks | django-tasks-db (DatabaseBackend) |
-| Static files | WhiteNoise |
-| Logging | structlog (pretty dev / JSON prod, `request_id` per request) |
-| Security | django-csp, HSTS, secure cookies, X-Frame DENY |
-| Error reporting | Sentry |
-| Replication | Litestream → S3-compatible |
-| Runtime | Gunicorn (WSGI) |
-| Reverse proxy | Caddy (TLS auto) |
-| CI | GitHub Actions |
+| Runtime | Python 3.12, Django 5 |
+| Database | SQLite (`db.sqlite3`) + Litestream → S3 |
+| Cache | SQLite (`cache.sqlite3`) via `DatabaseCache` |
+| Tasks | django-tasks-db (DB backend) |
+| Auth | django-allauth (email-only + MFA) + django-axes |
+| Static | WhiteNoise |
+| Logging | structlog (JSON in prod, pretty in dev) |
+| Deploy | Docker + Caddy on single VPS |
+| Settings | Split: `base` / `local` / `production` / `test` |
 
-## Local development
+## Quick start
 
 ```sh
+cp .env.example .env          # edit DJANGO_SECRET_KEY at minimum
 uv sync
 uv run manage.py migrate
 uv run manage.py createcachetable --database cache
@@ -78,43 +75,54 @@ uv run manage.py createsuperuser
 uv run manage.py runserver
 ```
 
-Or with mise:
+Visit http://127.0.0.1:8000/admin/
+
+## Mise tasks
 
 ```sh
+mise run server          # dev server
+mise run worker          # background task worker
 mise run migrate
-mise run dev
+mise run test
+mise run lint
+mise run typecheck
+mise run collectstatic
 ```
 
-## Environment
+## Production deploy
 
-Copy `.env.production.example` to `.env.production` and fill in the values before deploying.
+1. Build and push image:
+   ```sh
+   docker build --target prod -t ghcr.io/your-org/07-vps-sqlite-saas:latest .
+   docker push ghcr.io/your-org/07-vps-sqlite-saas:latest
+   ```
 
-Key variables:
-- `SECRET_KEY` — long random string
-- `ALLOWED_HOSTS` — comma-separated hostnames
-- `EMAIL_URL` — SMTP URL (Postmark format included as placeholder)
-- `SENTRY_DSN` — Sentry project DSN
-- `LITESTREAM_*` — S3-compatible credentials and bucket
+2. On the VPS, create `.env.prod` with all required vars (see `.env.example`), then:
+   ```sh
+   docker compose -f docker-compose.prod.yml pull
+   docker compose -f docker-compose.prod.yml up -d --wait
+   ```
 
-## Deploy (VPS)
+3. Edit `Caddyfile` to replace `yourdomain.com` with your actual domain.
 
-```sh
-# Build and push image
-docker build --target prod -t your-registry/07-vps-sqlite-saas:latest .
-docker push your-registry/07-vps-sqlite-saas:latest
+## Key environment variables
 
-# On the VPS
-docker compose -f docker-compose.prod.yml up -d --wait
-```
+| Variable | Required | Description |
+|---|---|---|
+| `DJANGO_SECRET_KEY` | yes | 50-char random string |
+| `DJANGO_ALLOWED_HOSTS` | prod | comma-separated hostnames |
+| `DATABASE_URL` | prod | `sqlite:////data/db.sqlite3` |
+| `EMAIL_URL` | prod | `smtp+tls://token:token@smtp.postmarkapp.com:587` |
+| `DEFAULT_FROM_EMAIL` | prod | sender address |
+| `SENTRY_DSN` | optional | Sentry error tracking |
+| `LITESTREAM_BUCKET` | prod | S3 bucket name |
+| `LITESTREAM_ACCESS_KEY_ID` | prod | S3 key |
+| `LITESTREAM_SECRET_ACCESS_KEY` | prod | S3 secret |
+| `LITESTREAM_ENDPOINT` | optional | For R2/MinIO/etc |
 
-Update `Caddyfile` with your real domain before deploying.
+## Health endpoints
 
-## Tests
-
-```sh
-uv run pytest
-uv run ruff check .
-uv run pyright
-```
+- `GET /healthz` → `ok` (liveness)
+- `GET /readyz` → `ready` (DB connectivity check)
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

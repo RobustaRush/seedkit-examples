@@ -1,42 +1,49 @@
 [project]
 name = "04-media-vault"
 version = "0.1.0"
-description = "Add your description here"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
-    "boto3>=1.43.6",
+    "boto3>=1.43.7",
     "channels>=4.3.2",
     "channels-redis>=4.3.0",
-    "dj-email-url>=1.0.6",
-    "django>=6.0.5",
+    "django>=5.0,<6.0",
     "django-cors-headers>=4.9.0",
+    "django-environ>=0.13.0",
     "django-modern-rest[msgspec,openapi]>=0.9.0",
-    "django-storages[s3]>=1.14.6",
+    "django-rq>=4.1.0",
+    "django-storages>=1.14.6",
+    "django-stubs-ext>=6.0.4",
+    "django-tasks>=0.12.0",
     "django-tasks-rq>=0.12.0",
     "psycopg[binary]>=3.3.4",
     "pyjwt>=2.12.1",
     "structlog>=25.5.0",
-    "uvicorn[standard]>=0.46.0",
+    "uvicorn>=0.46.0",
 ]
+
+[tool.uv]
+package = false
 
 [dependency-groups]
 dev = [
     "django-stubs>=6.0.4",
+    "django-stubs-ext>=6.0.4",
     "pyright>=1.1.409",
     "ruff>=0.15.12",
+    "websockets>=16.0",
 ]
 
 [tool.ruff]
 line-length = 100
-target-version = "py313"
+target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B"]
+select = ["E", "F", "I", "UP", "B", "SIM"]
 ignore = ["E501"]
 
 [tool.pyright]
-pythonVersion = "3.13"
-typeCheckingMode = "basic"
+include = ["."]
+exclude = [".venv", "**/migrations"]
 venvPath = "."
 venv = ".venv"
 

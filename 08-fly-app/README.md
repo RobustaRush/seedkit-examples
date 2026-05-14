@@ -49,86 +49,86 @@ Run the foundation + boot check locally. Generate `Dockerfile`, `fly.toml`, `.gi
 
 # 08-fly-app
 
-Production Django app deployed to Fly.io with a slim multi-stage Docker image and S3-compatible object storage.
+Production Django app deployed to Fly.io with a slim multi-stage runtime image and S3-compatible object storage.
 
 ## Stack
 
 | Layer | Choice |
 |---|---|
 | Framework | Django 6.0 |
-| Database | PostgreSQL (psycopg3) |
-| Cache / Broker | Redis (django-redis, Celery) |
-| Storage | S3 / MinIO (django-storages) |
-| Auth | django-mail-auth (magic link) + django-axes |
+| Database | PostgreSQL 16 |
+| Cache / broker | Redis 7 |
+| Task queue | Celery |
+| Object storage | S3 (MinIO locally) |
+| Auth | django-mail-auth (passwordless magic-link) |
+| Brute-force protection | django-axes |
 | Email | django-anymail (Postmark in prod, console in dev) |
-| API | django-bolt (fast-path ASGI) |
-| CSP | django-csp 4.0 |
+| API (fast-path) | django-bolt |
+| Analytics | Google Analytics 4 |
+| CSP | django-csp |
 | Error reporting | sentry-sdk → GlitchTip |
-| Deploy | Fly.io (web + worker + bolt processes) |
 | Lint | Ruff |
-| Types | pyright + django-stubs |
+| Types | Pyright + django-stubs |
 | Tests | pytest + pytest-django |
 | Tasks | mise |
+| Deploy | Fly.io (multi-process) |
 
-## Local development
+## Setup
 
-```bash
-# Start services
+```sh
+cp .env.example .env   # fill in DJANGO_SECRET_KEY
 docker compose up -d --wait
+uv run manage.py migrate
+uv run manage.py createsuperuser
+```
 
-# Run migrations
+## Key commands
+
+```sh
+mise run dev           # Django runserver (port 8000)
+mise run worker        # Celery worker
+mise run bolt          # Bolt API server (port 8001, fast-path settings)
 mise run migrate
-
-# Start web server
-mise run dev
-
-# Start Celery worker
-mise run worker
-
-# Start Bolt API
-mise run bolt
-
-# Run tests
 mise run test
-
-# Type check
+mise run lint
 mise run typecheck
 ```
 
-## Key URLs
+## Settings layout
 
-| URL | Description |
+| File | Purpose |
 |---|---|
-| `/admin/` | Django admin |
-| `/accounts/login/` | Magic-link login |
-| `/accounts/logout/` | Logout |
-| `/healthz` | Liveness probe (returns `ok`) |
-| `/readyz` | Readiness probe (returns `ready`) |
-| `http://localhost:8001/users/{id}` | Bolt API — get user |
-| `http://localhost:8001/docs` | Bolt OpenAPI docs |
+| `config/settings/base.py` | All shared settings |
+| `config/settings/local.py` | Dev overrides (console email, DB from env) |
+| `config/settings/production.py` | Prod hardening (Postmark, Sentry, HSTS) |
+| `config/settings/bolt.py` | Fast-path: strips session/admin/static apps |
 
-## Environment
+## Bolt API
 
-Copy `.env` and fill in production values. Required in production:
-- `SECRET_KEY` — long random string
-- `DATABASE_URL` — postgres URL
-- `REDIS_URL` — redis URL
-- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_STORAGE_BUCKET_NAME`
-- `POSTMARK_SERVER_TOKEN`
-- `ANYMAIL_WEBHOOK_SECRET`
-- `GLITCHTIP_DSN` — GlitchTip project DSN
+Runs against `config.settings.bolt` which strips session middleware, admin, messages, staticfiles, and CSR token middleware. The Celery worker and `runserver` always use `local` or `production`.
 
-## Deploy (Fly.io)
+```sh
+# Dev
+DJANGO_SETTINGS_MODULE=config.settings.bolt uv run manage.py runbolt --dev --port 8001
+# OpenAPI docs: http://127.0.0.1:8001/docs
+```
 
-```bash
-fly launch --no-deploy
-fly secrets set SECRET_KEY=... DATABASE_URL=... REDIS_URL=... ...
+## Deploy to Fly.io
+
+```sh
+fly launch --copy-config --no-deploy
+fly secrets set DJANGO_SECRET_KEY=... DATABASE_URL=... REDIS_URL=... \
+    POSTMARK_SERVER_TOKEN=... GLITCHTIP_DSN=... \
+    AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_STORAGE_BUCKET_NAME=... \
+    ANYMAIL_WEBHOOK_SECRET=...
 fly deploy
 ```
 
-Processes configured in `fly.toml`:
-- `web` — gunicorn (Django WSGI)
-- `worker` — Celery worker
-- `bolt` — django-bolt API (`DJANGO_SETTINGS_MODULE=config.settings.bolt`)
+The `fly.toml` runs three process groups: `web` (gunicorn), `worker` (celery), `bolt` (runbolt on port 8001).
+
+## GDPR
+
+- `GET /gdpr/export/` — download your data as JSON (login required)
+- `POST /gdpr/delete/` — delete your account (login required)
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

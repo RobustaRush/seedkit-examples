@@ -1,10 +1,22 @@
 from pathlib import Path
 
-import structlog
+import django_stubs_ext
+import environ
+
+django_stubs_ext.monkeypatch()
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-DJANGO_APPS = [
+env = environ.Env()
+_env_file = BASE_DIR / ".env"
+if _env_file.exists():
+    environ.Env.read_env(_env_file)
+
+DEBUG = env.bool("DJANGO_DEBUG", default=False)
+SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)  # type: ignore[call-arg]
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"] if DEBUG else env.NOTSET)  # type: ignore[call-arg]
+
+INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -12,9 +24,7 @@ DJANGO_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
-]
-
-THIRD_PARTY_APPS = [
+    # third-party
     "allauth",
     "allauth.account",
     "allauth.mfa",
@@ -22,15 +32,10 @@ THIRD_PARTY_APPS = [
     "csp",
     "django_tasks",
     "django_tasks_db",
-    "whitenoise.runserver_nostatic",
-]
-
-LOCAL_APPS = [
+    # local
     "users",
     "jobs",
 ]
-
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -42,9 +47,8 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "axes.middleware.AxesMiddleware",
     "csp.middleware.CSPMiddleware",
-    "config.middleware.RequestIdMiddleware",
+    "axes.middleware.AxesMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -56,7 +60,6 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
-                "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -68,27 +71,14 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-        "OPTIONS": {"timeout": 20},
-    },
+    "default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET),  # type: ignore[call-arg]
     "cache": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "cache.sqlite3",
-        "OPTIONS": {"timeout": 20},
     },
 }
 
 DATABASE_ROUTERS = ["config.routers.CacheRouter"]
-
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
-        "LOCATION": "app_cache",
-        "OPTIONS": {"DATABASE": "cache"},
-    }
-}
 
 AUTH_USER_MODEL = "users.User"
 
@@ -100,73 +90,113 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTHENTICATION_BACKENDS = [
-    "axes.backends.AxesStandaloneBackend",
+    "axes.backends.AxesBackend",
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
+
+SITE_ID = 1
+
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1
+AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
+AXES_RESET_ON_SUCCESS = True
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "django_cache",
+        "OPTIONS": {"MAX_ENTRIES": 1000},
+    }
+}
+
+TASKS = {
+    "default": {
+        "BACKEND": "django_tasks_db.DatabaseBackend",
+        "QUEUES": ["default"],
+    },
+}
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = False
 USE_TZ = True
 
-SITE_ID = 1
-
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT: str = env("MEDIA_ROOT", default=str(BASE_DIR / "media"))  # type: ignore[assignment]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# django-allauth
-ACCOUNT_LOGIN_METHODS = {"email"}
-ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
-ACCOUNT_LOGIN_BY_CODE_ENABLED = False
-LOGIN_REDIRECT_URL = "/"
-ACCOUNT_LOGOUT_REDIRECT_URL = "/accounts/login/"
+_admins_raw: str = env("DJANGO_ADMINS", default="")  # type: ignore[assignment]
+ADMINS = [
+    (name.strip(), addr.strip())
+    for entry in _admins_raw.split(",")
+    if ":" in entry
+    for name, addr in [entry.split(":", 1)]
+] if _admins_raw else []
 
-# django-axes
-AXES_FAILURE_LIMIT = 5
-AXES_COOLOFF_TIME = 1  # hours
-AXES_LOCKOUT_CALLABLE = "axes.helpers.get_lockout_response"
+DEFAULT_FROM_EMAIL: str = env("DEFAULT_FROM_EMAIL", default="noreply@example.com")  # type: ignore[assignment]
+SERVER_EMAIL: str = env("SERVER_EMAIL", default="server@example.com")  # type: ignore[assignment]
 
-# django-tasks
-DJANGO_TASKS = {
-    "default": {
-        "BACKEND": "django_tasks_db.DatabaseBackend",
-    }
-}
-
-# CSP defaults (overridden in production)
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
-        "default-src": ["'self'"],
-        "script-src": ["'self'"],
-        "style-src": ["'self'", "'unsafe-inline'"],
-        "img-src": ["'self'", "data:"],
-        "font-src": ["'self'"],
-        "connect-src": ["'self'"],
-        "frame-ancestors": ["'none'"],
-    }
+        "default-src": ("'self'",),
+        "script-src": ("'self'",),
+        "style-src": ("'self'", "'unsafe-inline'"),
+        "img-src": ("'self'", "data:"),
+        "connect-src": ("'self'",),
+        "frame-ancestors": ("'none'",),
+    },
 }
 
-# structlog configured in local/production
+import structlog  # noqa: E402
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.processors.JSONRenderer(),
+        },
+        "console": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.dev.ConsoleRenderer(),
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "console",
+        },
+    },
+    "root": {"handlers": ["console"], "level": "INFO"},
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
+}
+
 structlog.configure(
     processors=[
         structlog.contextvars.merge_contextvars,
+        structlog.stdlib.filter_by_level,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
+        structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
     ],
-    wrapper_class=structlog.stdlib.BoundLogger,
-    context_class=dict,
     logger_factory=structlog.stdlib.LoggerFactory(),
+    wrapper_class=structlog.stdlib.BoundLogger,
     cache_logger_on_first_use=True,
 )

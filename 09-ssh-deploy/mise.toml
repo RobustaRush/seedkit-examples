@@ -1,38 +1,42 @@
 [tools]
 python = "3.12"
 
-[tasks.dev]
+[tasks.server]
+description = "Run development server"
 run = "uv run manage.py runserver"
-description = "Start development server"
 
 [tasks.worker]
+description = "Run RQ worker"
 run = "uv run manage.py rqworker default"
-description = "Start RQ worker"
-
-[tasks.test]
-run = "uv run pytest"
-description = "Run test suite"
-
-[tasks.lint]
-run = "uv run ruff check ."
-description = "Lint with ruff"
-
-[tasks.fmt]
-run = "uv run ruff format ."
-description = "Format with ruff"
 
 [tasks.migrate]
+description = "Run migrations"
 run = "uv run manage.py migrate"
-description = "Run database migrations"
+
+[tasks.makemigrations]
+description = "Make migrations"
+run = "uv run manage.py makemigrations"
+
+[tasks.test]
+description = "Run tests"
+run = "uv run pytest"
+
+[tasks.lint]
+description = "Lint with ruff"
+run = "uv run ruff check ."
+
+[tasks.fmt]
+description = "Format with ruff"
+run = "uv run ruff format ."
 
 [tasks.shell]
+description = "Django shell"
 run = "uv run manage.py shell"
-description = "Django interactive shell"
 
-[tasks.backup]
+[tasks.dbbackup]
+description = "Backup database"
 run = "uv run manage.py dbbackup"
-description = "Backup the database"
 
-[tasks.collectstatic]
-run = "uv run manage.py collectstatic --noinput"
-description = "Collect static files"
+[tasks.dbrestore]
+description = "Restore database"
+run = "uv run manage.py dbrestore"

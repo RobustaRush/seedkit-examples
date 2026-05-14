@@ -1,0 +1,15 @@
+.venv/
+.git/
+.env
+*.sqlite3
+staticfiles/
+media/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.pyright/
+__pycache__/
+*.py[cod]
+.pre-commit-config.yaml
+.github/
+logs/

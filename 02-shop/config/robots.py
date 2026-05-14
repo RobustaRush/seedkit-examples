@@ -1,10 +1,6 @@
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpResponse
 
 
-def robots_txt(request: HttpRequest) -> HttpResponse:
-    lines = [
-        "User-agent: *",
-        "Disallow: /admin/",
-        "Disallow: /accounts/",
-    ]
-    return HttpResponse("\n".join(lines), content_type="text/plain")
+def robots_txt(_request: object) -> HttpResponse:
+    content = "User-agent: *\nDisallow: /admin/\n"
+    return HttpResponse(content, content_type="text/plain")

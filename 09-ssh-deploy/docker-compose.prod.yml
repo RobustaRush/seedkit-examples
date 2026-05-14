@@ -1,18 +1,41 @@
 services:
-  app:
-    image: ghcr.io/${GITHUB_REPOSITORY:-09-ssh-deploy}:latest
+  db:
+    image: postgres:16-alpine
     restart: unless-stopped
+    env_file: .env.prod
     environment:
-      DJANGO_SETTINGS_MODULE: config.settings.production
-    env_file:
-      - .env.prod
-    ports:
-      - "127.0.0.1:8000:8000"
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    image: ${IMAGE_NAME:-09-ssh-deploy}:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: .env.prod
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2
+    ports:
+      - "127.0.0.1:8000:8000"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8000/healthz || exit 1"]
       interval: 30s
@@ -20,45 +43,15 @@ services:
       retries: 3
 
   worker:
-    image: ghcr.io/${GITHUB_REPOSITORY:-09-ssh-deploy}:latest
+    image: ${IMAGE_NAME:-09-ssh-deploy}:${IMAGE_TAG:-latest}
     restart: unless-stopped
-    command: python manage.py rqworker default
-    environment:
-      DJANGO_SETTINGS_MODULE: config.settings.production
-    env_file:
-      - .env.prod
+    env_file: .env.prod
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
-
-  db:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-app}
-      POSTGRES_USER: ${POSTGRES_USER:-app}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    command: python manage.py rqworker default
 
 volumes:
   postgres_data:
-  redis_data:

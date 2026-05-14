@@ -1,53 +1,27 @@
 import subprocess
 from pathlib import Path
 
-from django.core.management.base import BaseCommand, CommandError
+from django.conf import settings
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
-    help = "Tailwind CSS operations (build / watch / install)"
+    help = "Build Tailwind CSS"
 
-    def add_arguments(self, parser):
-        parser.add_argument("subcommand", choices=["build", "watch", "install"])
+    def add_arguments(self, parser):  # type: ignore[override]
+        parser.add_argument("action", choices=["build", "watch"], default="build", nargs="?")
 
-    def handle(self, *args, **options):
-        subcommand = options["subcommand"]
-        base = Path(__file__).resolve().parents[3]  # project root
+    def handle(self, *args, **options):  # type: ignore[override]
+        base_dir: Path = settings.BASE_DIR  # type: ignore[assignment]
+        input_css = base_dir / "frontend" / "input.css"
+        output_css = base_dir / "static" / "css" / "tailwind.css"
+        output_css.parent.mkdir(parents=True, exist_ok=True)
 
-        if subcommand == "install":
-            result = subprocess.run(["npm", "install"], cwd=base)
-        elif subcommand == "build":
-            result = subprocess.run(
-                [
-                    "npx",
-                    "--yes",
-                    "@tailwindcss/cli",
-                    "-i",
-                    "frontend/input.css",
-                    "-o",
-                    "static/css/tailwind.css",
-                    "--minify",
-                ],
-                cwd=base,
-            )
-        elif subcommand == "watch":
-            result = subprocess.run(
-                [
-                    "npx",
-                    "--yes",
-                    "@tailwindcss/cli",
-                    "-i",
-                    "frontend/input.css",
-                    "-o",
-                    "static/css/tailwind.css",
-                    "--watch",
-                ],
-                cwd=base,
-            )
+        cmd = ["tailwindcss", "-i", str(input_css), "-o", str(output_css)]
+        if options["action"] == "build":
+            cmd.append("--minify")
         else:
-            raise CommandError(f"Unknown subcommand: {subcommand}")
+            cmd.append("--watch")
 
-        if result.returncode != 0:
-            raise CommandError(f"tailwind {subcommand} failed (exit {result.returncode})")
-
-        self.stdout.write(self.style.SUCCESS(f"tailwind {subcommand} done"))
+        self.stdout.write(self.style.SUCCESS(f"Running: {' '.join(cmd)}"))
+        subprocess.run(cmd, check=True)

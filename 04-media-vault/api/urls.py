@@ -1,14 +1,15 @@
-from django.urls import path
+from django.urls import include, path
 from dmr.routing import Router
 
 from api.controllers import MediaController
 
 router = Router(
-    "api/",
+    "media/",
     [
-        path("media/", MediaController.as_view(), name="media-upload"),
+        path("", MediaController.as_view(), name="media-list"),
     ],
 )
 
-app_name = "api"
-urlpatterns = router.urls
+urlpatterns = [
+    path(router.prefix, include((router.urls, "api"))),
+]

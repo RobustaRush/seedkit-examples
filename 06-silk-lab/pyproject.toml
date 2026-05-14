@@ -1,37 +1,37 @@
 [project]
-name = "silk-lab"
+name = "06-silk-lab"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
-    "django>=5.1",
-    "psycopg[binary]>=3.2",
-    "django-silk>=5.3",
-    "django-tasks>=0.8",
-    "django-tasks-db>=0.2",
-    "django-extensions>=3.2",
-    "django-zeal>=0.4",
-    "django-migration-linter>=5.2",
+    "django>=6.0,<7.0",
+    "django-environ>=0.13.0",
+    "django-extensions>=4.1",
+    "django-silk>=5.5.0",
+    "django-tasks>=0.12.0",
+    "django-tasks-db>=0.12.0",
+    "psycopg2-binary>=2.9.12",
 ]
 
-[dependency-groups]
-dev = [
-    "ruff>=0.8",
-    "pytest>=8.3",
-    "pytest-django>=4.9",
-    "django-test-migrations>=1.4",
-]
-
-[tool.ruff]
-line-length = 119
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "W"]
-
-[tool.ruff.lint.per-file-ignores]
-"config/settings/*.py" = ["F401", "F403", "F405"]
+[tool.uv]
+package = false
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.local"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
 
-[tool.django-migration-linter]
-database = "default"
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["F403", "F401"]
+
+[dependency-groups]
+dev = [
+    "django-migration-linter>=6.0.0",
+    "django-test-migrations>=1.5.0",
+    "django-zeal>=2.1.0",
+    "pytest>=9.0.3",
+    "pytest-django>=4.12.0",
+    "ruff>=0.15.12",
+]

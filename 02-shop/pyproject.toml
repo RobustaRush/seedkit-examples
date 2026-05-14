@@ -1,52 +1,48 @@
 [project]
-name = "shop"
+name = "02-shop"
 version = "0.1.0"
-description = "Small e-commerce site with admin and SMTP transactional email"
-readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "django>=5.1,<6",
-    "psycopg[binary]>=3.2",
-    "dj-database-url>=2.3",
-    "django-environ>=0.11",
-    "whitenoise[brotli]>=6.8",
-    "django-allauth>=65.3",
-    "django-axes>=7.0",
-    "stripe>=11.0",
-    "gunicorn>=23.0",
-]
-
-[dependency-groups]
-dev = [
-    "pytest>=8.3",
-    "pytest-django>=4.9",
-    "pytest-cov>=6.0",
-    "pyright>=1.1",
-    "django-stubs[compatible-mypy]>=5.1",
-    "ruff>=0.9",
+    "django>=5.0,<6.0",
+    "django-allauth>=65.16.1",
+    "django-axes>=8.3.1",
+    "django-environ>=0.13.0",
+    "gunicorn>=26.0.0",
+    "psycopg[binary]>=3.3.4",
+    "stripe>=15.1.0",
+    "whitenoise>=6.12.0",
 ]
 
 [tool.uv]
 package = false
 
+[dependency-groups]
+dev = [
+    "django-stubs>=6.0.4",
+    "django-stubs-ext>=6.0.4",
+    "pyright>=1.1.409",
+    "pytest>=9.0.3",
+    "pytest-django>=4.12.0",
+    "ruff>=0.15.12",
+]
+
 [tool.ruff]
-target-version = "py312"
 line-length = 119
+target-version = "py312"
+exclude = ["**/migrations/*.py"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "DJ"]
-ignore = ["E501"]
-
-[tool.ruff.lint.per-file-ignores]
-"*/migrations/*.py" = ["E501", "F401"]
+select = ["E", "F", "I", "UP"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.local"
-python_files = ["test_*.py", "*_test.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = "--tb=short -q"
+python_files = ["tests.py", "test_*.py"]
 
 [tool.pyright]
-pythonVersion = "3.12"
-typeCheckingMode = "basic"
+include = ["."]
+exclude = [".venv", "**/migrations"]
+venvPath = "."
+venv = ".venv"
+
+[tool.django-stubs]
+django_settings_module = "config.settings.local"

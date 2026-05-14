@@ -5,5 +5,5 @@ class JobsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "jobs"
 
-    def ready(self):
+    def ready(self) -> None:
         import jobs.tasks  # noqa: F401

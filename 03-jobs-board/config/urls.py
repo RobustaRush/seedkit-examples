@@ -1,24 +1,13 @@
 from django.contrib import admin
-from django.http import HttpResponse
-from django.db import connection
 from django.urls import include, path
+from django.views.generic import RedirectView
 
-
-def healthz(request):
-    return HttpResponse("ok")
-
-
-def readyz(request):
-    try:
-        connection.ensure_connection()
-    except Exception:
-        return HttpResponse("not ready", status=503)
-    return HttpResponse("ready")
-
+from config.views import liveness, readiness
 
 urlpatterns = [
+    path("", RedirectView.as_view(url="/admin/", permanent=False)),
     path("admin/", admin.site.urls),
-    path("accounts/", include("mailauth.urls")),
-    path("healthz", healthz),
-    path("readyz", readyz),
+    path("accounts/", include("mailauth.urls", namespace="mailauth")),
+    path("healthz", liveness, name="healthz"),
+    path("readyz", readiness, name="readyz"),
 ]

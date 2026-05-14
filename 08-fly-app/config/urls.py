@@ -1,24 +1,16 @@
 from django.contrib import admin
-from django.http import HttpResponse
 from django.urls import include, path
+from django.views.generic import RedirectView
 
-from accounts.views import gdpr_delete_view, gdpr_export_view
-
-
-def health_view(request):
-    return HttpResponse("ok")
-
-
-def readyz_view(request):
-    return HttpResponse("ready")
-
+from config.views import gdpr_delete, gdpr_export, liveness, readiness
 
 urlpatterns = [
+    path("", RedirectView.as_view(url="/admin/", permanent=False)),
     path("admin/", admin.site.urls),
-    path("accounts/", include("mailauth.urls")),
+    path("accounts/", include("mailauth.urls", namespace="mailauth")),
     path("anymail/", include("anymail.urls")),
-    path("accounts/export/", gdpr_export_view, name="gdpr-export"),
-    path("accounts/delete/", gdpr_delete_view, name="gdpr-delete"),
-    path("healthz", health_view),
-    path("readyz", readyz_view),
+    path("healthz", liveness, name="healthz"),
+    path("readyz", readiness, name="readyz"),
+    path("gdpr/export/", gdpr_export, name="gdpr-export"),
+    path("gdpr/delete/", gdpr_delete, name="gdpr-delete"),
 ]

@@ -1,48 +1,53 @@
 [project]
 name = "07-vps-sqlite-saas"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "django>=6.0.5",
+    "dj-email-url>=1.0.6",
+    "django>=5.0,<6.0",
     "django-allauth[mfa]>=65.16.1",
     "django-axes>=8.3.1",
     "django-csp>=4.0",
+    "django-environ>=0.13.0",
     "django-tasks>=0.12.0",
     "django-tasks-db>=0.12.0",
-    "environs>=15.0.1",
     "gunicorn>=26.0.0",
-    "sentry-sdk>=2.59.0",
+    "sentry-sdk[django]>=2.60.0",
     "structlog>=25.5.0",
     "whitenoise>=6.12.0",
 ]
 
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+
+[tool.pyright]
+include = ["."]
+exclude = [".venv", "**/migrations"]
+venvPath = "."
+venv = ".venv"
+
+[tool.django-stubs]
+django_settings_module = "config.settings.local"
+
 [dependency-groups]
 dev = [
     "django-stubs>=6.0.4",
+    "django-stubs-ext>=6.0.4",
     "pre-commit>=4.6.0",
     "pyright>=1.1.409",
     "pytest>=9.0.3",
     "pytest-django>=4.12.0",
     "ruff>=0.15.12",
 ]
-
-[tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings.local"
-python_files = ["tests.py", "test_*.py", "*_tests.py"]
-
-[tool.ruff]
-line-length = 100
-target-version = "py312"
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "C4"]
-ignore = ["E501"]
-
-[tool.pyright]
-pythonVersion = "3.12"
-typeCheckingMode = "basic"
-
-[tool.django-stubs]
-django_settings_module = "config.settings.local"

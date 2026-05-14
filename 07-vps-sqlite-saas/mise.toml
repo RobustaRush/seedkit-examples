@@ -1,0 +1,50 @@
+[env]
+DJANGO_SETTINGS_MODULE = "config.settings.local"
+
+[tasks.server]
+description = "Run dev server"
+run = "uv run manage.py runserver"
+
+[tasks.migrate]
+description = "Run migrations"
+run = "uv run manage.py migrate"
+
+[tasks.makemigrations]
+description = "Make migrations"
+run = "uv run manage.py makemigrations"
+
+[tasks.createsuperuser]
+description = "Create superuser"
+run = "uv run manage.py createsuperuser"
+
+[tasks.worker]
+description = "Run DB task worker"
+run = "uv run manage.py db_worker"
+
+[tasks.shell]
+description = "Django shell"
+run = "uv run manage.py shell"
+
+[tasks.test]
+description = "Run pytest"
+run = "uv run pytest"
+
+[tasks.lint]
+description = "Run ruff linter"
+run = "uv run ruff check . && uv run ruff format --check ."
+
+[tasks.fmt]
+description = "Format code"
+run = "uv run ruff format . && uv run ruff check --fix ."
+
+[tasks.typecheck]
+description = "Run pyright"
+run = "uv run pyright"
+
+[tasks.collectstatic]
+description = "Collect static files"
+run = "uv run manage.py collectstatic --noinput"
+
+[tasks.cachetable]
+description = "Create cache table"
+run = "uv run manage.py createcachetable --database cache"

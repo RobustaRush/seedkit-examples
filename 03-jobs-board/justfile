@@ -1,40 +1,41 @@
-set dotenv-load := true
+set dotenv-load
 
-default:
-    @just --list
+# Start development server
+serve:
+    uv run manage.py runserver
 
-install:
-    uv sync
-
-up:
-    docker compose up -d --wait
-
-down:
-    docker compose down -v --rmi local
-
+# Run Django migrations
 migrate:
     uv run manage.py migrate
 
-createsuperuser:
+# Create a superuser
+superuser:
     uv run manage.py createsuperuser
 
-run:
-    uv run manage.py runserver
-
-shell:
-    uv run manage.py shell
-
+# Start Celery worker
 worker:
     uv run celery -A config worker -l info
 
+# Start Celery Beat scheduler
 beat:
     uv run celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
 
+# Compile translation messages
+messages:
+    uv run manage.py compilemessages
+
+# Make translation messages
 makemessages:
     uv run manage.py makemessages -l en
 
-compilemessages:
-    uv run manage.py compilemessages
+# Start Docker services
+up:
+    docker compose up -d --wait
 
+# Stop Docker services
+down:
+    docker compose down
+
+# Run tests
 test:
     uv run manage.py test

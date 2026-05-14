@@ -1,11 +1,13 @@
 from django.contrib import admin
 from django.urls import include, path
+from django.views.generic import RedirectView
 
-from config.views import healthz, readyz
+from config.views import liveness, readiness
 
 urlpatterns = [
+    path("", RedirectView.as_view(url="/admin/", permanent=False)),
     path("admin/", admin.site.urls),
     path("silk/", include("silk.urls", namespace="silk")),
-    path("healthz", healthz),
-    path("readyz", readyz),
+    path("healthz", liveness, name="healthz"),
+    path("readyz", readiness, name="readyz"),
 ]

@@ -10,8 +10,8 @@ Each subdirectory is a fresh project generated end-to-end by `claude -p` running
 - [`02-shop/`](02-shop/) — small e-commerce site with admin and SMTP transactional email.
 - [`03-jobs-board/`](03-jobs-board/) — job board with background email notifications and a daily digest.
 - [`04-media-vault/`](04-media-vault/) — media-heavy app where uploads land in S3, processing runs as Redis-queued background tasks, and clients subscribe over WebSockets for status updates.
-- [`05-orbit-demo/`](05-orbit-demo/) — profile a few request paths with django-silk and run a simple background email task on the DB backend.
-- [`06-silk-lab/`](06-silk-lab/)
+- [`05-orbit-demo/`](05-orbit-demo/) — scratch project to exercise django-orbit and verify outbound mail flows are captured.
+- [`06-silk-lab/`](06-silk-lab/) — profile a few request paths with django-silk and run a simple background email task on the DB backend.
 - [`07-vps-sqlite-saas/`](07-vps-sqlite-saas/) — production-ready SaaS skeleton deployed to a single VPS via docker-compose + Caddy, using the SQLite mini-prod stack (no separate DB / cache / queue server).
 - [`08-fly-app/`](08-fly-app/) — production app deployed to Fly.io with a slim multi-stage runtime image and S3-compatible object storage.
 - [`09-ssh-deploy/`](09-ssh-deploy/) — production app deployed to a remote host over SSH from GitHub Actions, using self-hosted services.

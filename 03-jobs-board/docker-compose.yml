@@ -1,18 +1,19 @@
 services:
   db:
-    image: postgres:17-alpine
+    image: postgres:16-alpine
     environment:
-      POSTGRES_DB: jobs_board
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: jobsboard
+      POSTGRES_USER: jobsboard
+      POSTGRES_PASSWORD: jobsboard
     ports:
       - "127.0.0.1:5433:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d jobs_board"]
+      test: ["CMD-SHELL", "pg_isready -U jobsboard"]
       interval: 5s
       timeout: 5s
-      retries: 12
-      start_period: 5s
+      retries: 10
 
   redis:
     image: redis:7-alpine
@@ -22,5 +23,7 @@ services:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
-      retries: 12
-      start_period: 5s
+      retries: 10
+
+volumes:
+  db_data:

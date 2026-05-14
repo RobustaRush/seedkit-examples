@@ -5,7 +5,7 @@ logger = structlog.get_logger(__name__)
 
 
 @task()
-def sample_task(message: str) -> str:
-    """A sample background task — enqueue with sample_task.enqueue(message='hello')."""
-    logger.info("sample_task.run", message=message)
-    return f"processed: {message}"
+def send_welcome_email(user_id: int) -> None:
+    logger.info("send_welcome_email.start", user_id=user_id)
+    # TODO: replace with real email logic
+    logger.info("send_welcome_email.done", user_id=user_id)

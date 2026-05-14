@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Silk Lab{% endblock %}</title>
+  <title>{% block title %}06-silk-lab{% endblock %}</title>
+  {% block extra_head %}{% endblock %}
 </head>
 <body>
   {% block content %}{% endblock %}
-
-  {% if GOATCOUNTER_URL %}
-  <script data-goatcounter="{{ GOATCOUNTER_URL }}"
-          async src="{{ GOATCOUNTER_URL|slice:":-6" }}count.js"></script>
+  {% if GOATCOUNTER_SITE_CODE %}
+  <script data-goatcounter="https://{{ GOATCOUNTER_SITE_CODE }}.goatcounter.com/count"
+          async src="//gc.zgo.at/count.js"></script>
   {% endif %}
 </body>
 </html>

@@ -1,22 +1,18 @@
 services:
-  web:
-    image: 07-vps-sqlite-saas:latest
+  django:
+    image: ghcr.io/your-org/07-vps-sqlite-saas:latest
     restart: unless-stopped
-    env_file: .env.production
+    env_file: .env.prod
     volumes:
-      - sqlite_data:/data
-      - media_data:/app/media
-    expose:
-      - "8000"
+      - data:/data
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
-      start_period: 20s
-    depends_on:
-      caddy:
-        condition: service_healthy
+      start_period: 10s
+    expose:
+      - "8000"
 
   caddy:
     image: caddy:2-alpine
@@ -24,18 +20,16 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "443:443/udp"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
-    healthcheck:
-      test: ["CMD", "caddy", "version"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    depends_on:
+      django:
+        condition: service_healthy
 
 volumes:
-  sqlite_data:
-  media_data:
+  data:
   caddy_data:
   caddy_config:

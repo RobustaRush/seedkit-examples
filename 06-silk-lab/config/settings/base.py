@@ -1,13 +1,19 @@
-import os
 from pathlib import Path
+
+import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "insecure-dev-key-change-in-production")
+env = environ.Env()
+_env_file = BASE_DIR / ".env"
+if _env_file.exists():
+    environ.Env.read_env(_env_file)
 
-DEBUG = False
-
-ALLOWED_HOSTS: list[str] = []
+DEBUG = env.bool("DJANGO_DEBUG", default=False)
+SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
+_db_default = f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET
+DATABASES = {"default": env.db("DATABASE_URL", default=_db_default)}
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -16,14 +22,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # Third-party
     "silk",
     "django_tasks",
     "django_tasks_db",
     "django_extensions",
-    "django_migration_linter",
-    "zeal",
-    # Local
     "jobs",
 ]
 
@@ -33,9 +35,9 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "silk.middleware.SilkyMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "silk.middleware.SilkyMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -47,7 +49,6 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
-                "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -58,23 +59,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DB_NAME", "silk_db"),
-        "USER": os.environ.get("DB_USER", ""),
-        "PASSWORD": os.environ.get("DB_PASSWORD", ""),
-        "HOST": os.environ.get("DB_HOST", ""),
-        "PORT": os.environ.get("DB_PORT", ""),
-    }
-}
-
-TASKS = {
-    "default": {
-        "BACKEND": "django_tasks_db.backend.DatabaseBackend",
-    }
-}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -89,14 +73,17 @@ USE_I18N = False
 USE_TZ = True
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# GoatCounter: set GOATCOUNTER_URL to the full counter endpoint, e.g.
-# https://stats.example.com/count
-GOATCOUNTER_URL = os.environ.get("GOATCOUNTER_URL", "")
+EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 
-# Lint only project migrations — third-party app histories are not our concern
-MIGRATION_LINTER_OPTIONS = {
-    "exclude_apps": ["silk", "django_tasks_database"],
+GOATCOUNTER_SITE_CODE = env("GOATCOUNTER_SITE_CODE", default="")
+
+TASKS = {
+    "default": {
+        "BACKEND": "django_tasks_db.DatabaseBackend",
+        "QUEUES": ["default"],
+    },
 }

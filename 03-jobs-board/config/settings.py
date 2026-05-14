@@ -1,20 +1,19 @@
 from pathlib import Path
-
 import environ
-from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env()
 _env_file = BASE_DIR / ".env"
 if _env_file.exists():
-    environ.Env.read_env(_env_file, overwrite=False)
+    environ.Env.read_env(_env_file)
 
-SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
+SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"] if DEBUG else env.NOTSET)
+DATABASES = {"default": env.db("DATABASE_URL", default=env.NOTSET)}
 
-DJANGO_APPS = [
+INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -22,20 +21,11 @@ DJANGO_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
-]
-
-THIRD_PARTY_APPS = [
-    "django_celery_beat",
     "mailauth",
-]
-
-LOCAL_APPS = [
+    "mailauth.contrib.admin",
+    "django_celery_beat",
     "jobs",
 ]
-
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
-
-SITE_ID = 1
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -57,7 +47,6 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
-                "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -68,21 +57,22 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASES = {
-    "default": env.db("DATABASE_URL"),
-}
-DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)
-
-AUTHENTICATION_BACKENDS = [
-    "mailauth.backends.MailAuthBackend",
-]
-
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
+
+SITE_ID = 1
+
+AUTHENTICATION_BACKENDS = [
+    "mailauth.backends.MailAuthBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+LOGIN_URL = "mailauth:login"
+LOGIN_REDIRECT_URL = "/"
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
@@ -92,25 +82,21 @@ USE_TZ = True
 LOCALE_PATHS = [BASE_DIR / "locale"]
 
 STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Email
-EMAIL_CONFIG = env.email_url("EMAIL_URL", default="consolemail://")
+EMAIL_CONFIG = env.email("EMAIL_URL", default="consolemail://")
 vars().update(EMAIL_CONFIG)
 
-# Celery
-CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0")
-CELERY_RESULT_BACKEND = CELERY_BROKER_URL
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"
-CELERY_RESULT_SERIALIZER = "json"
-CELERY_TIMEZONE = TIME_ZONE
+REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
+
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
 CELERY_BEAT_SCHEDULE = {
-    "send-daily-digest": {
+    "daily-digest": {
         "task": "jobs.tasks.send_daily_digest",
-        "schedule": crontab(hour=8, minute=0),
+        "schedule": 60.0,  # every 60 s in dev; swap for crontab("0","8","*","*","*") in prod
     },
 }

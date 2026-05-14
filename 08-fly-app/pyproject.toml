@@ -1,56 +1,57 @@
 [project]
 name = "08-fly-app"
 version = "0.1.0"
-description = "Add your description here"
 requires-python = ">=3.12"
 dependencies = [
-    "boto3>=1.43.6",
-    "celery[redis]>=5.6.3",
-    "django>=6.0.5",
+    "celery>=5.6.3",
+    "django>=6.0,<7.0",
     "django-anymail[postmark]>=15.0",
     "django-axes>=8.3.1",
     "django-bolt>=0.8.0",
     "django-csp>=4.0",
     "django-environ>=0.13.0",
-    "django-health-check>=4.4.0",
     "django-mail-auth>=3.5.5",
     "django-redis>=6.0.0",
     "django-storages[s3]>=1.14.6",
+    "django-stubs-ext>=6.0.4",
     "gunicorn>=26.0.0",
     "msgspec>=0.21.1",
-    "psycopg[binary]>=3.3.4",
-    "sentry-sdk[django]>=2.59.0",
+    "psycopg2-binary>=2.9.12",
+    "redis>=7.4.0",
+    "sentry-sdk>=2.60.0",
     "whitenoise>=6.12.0",
 ]
+
+[tool.uv]
+package = false
 
 [dependency-groups]
 dev = [
     "django-stubs>=6.0.4",
+    "django-stubs-ext>=6.0.4",
     "pyright>=1.1.409",
     "pytest>=9.0.3",
     "pytest-django>=4.12.0",
     "ruff>=0.15.12",
 ]
 
-[tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings.local"
-python_files = ["tests.py", "test_*.py", "*_tests.py"]
-
 [tool.ruff]
-line-length = 100
+line-length = 110
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B"]
+select = ["E", "F", "I", "UP"]
 ignore = ["E501"]
 
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.local"
+python_files = ["tests.py", "test_*.py"]
+
 [tool.pyright]
-pythonVersion = "3.12"
+include = ["."]
+exclude = [".venv", "**/migrations", "config/settings"]
 venvPath = "."
 venv = ".venv"
-djangoVersion = "6.0"
-typeCheckingMode = "basic"
-exclude = ["config/settings/**", "**/__pycache__", ".venv/**"]
 
 [tool.django-stubs]
 django_settings_module = "config.settings.local"

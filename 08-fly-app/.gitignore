@@ -1,10 +1,15 @@
-# Python-generated files
+.venv/
+.env
+*.sqlite3
+staticfiles/
+media/
 __pycache__/
-*.py[oc]
-build/
+*.pyc
+*.pyo
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
 dist/
-wheels/
-*.egg-info
-
-# Virtual environments
-.venv
+*.egg-info/
+.DS_Store
+node_modules/

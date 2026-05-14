@@ -1,53 +1,78 @@
+import structlog
+
 import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.rq import RqIntegration
 
 from .base import *  # noqa: F401, F403
-from .base import UMAMI_HOST, env
+from .base import UMAMI_URL, env
 
-# ── Security ──────────────────────────────────────────────────────────────────
-SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+# Security
 SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_HSTS_SECONDS = 63072000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
 SESSION_COOKIE_SECURE = True
-SESSION_COOKIE_AGE = 1209600  # 2 weeks — GDPR retention default
 CSRF_COOKIE_SECURE = True
-X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_BROWSER_XSS_FILTER = True
+X_FRAME_OPTIONS = "DENY"
+SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
 
-# ── CSP — tightened for production (django-csp 4.x format) ───────────────────
-_umami_origin = (UMAMI_HOST,) if UMAMI_HOST else ()
-CONTENT_SECURITY_POLICY = {
-    "DIRECTIVES": {
-        "default-src": ("'self'",),
-        "script-src": ("'self'",) + _umami_origin,
-        "style-src": ("'self'", "'unsafe-inline'"),
-        "img-src": ("'self'", "data:"),
-        "font-src": ("'self'",),
-        "connect-src": ("'self'",) + _umami_origin,
-    }
+# JSON structlog for production
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "structlog_json": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.processors.JSONRenderer(),
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "structlog_json",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "django.request": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+    },
 }
 
-# ── Error reporting — Bugsink (sentry-sdk DSN) ───────────────────────────────
-def _strip_pii(event, hint):
-    """Remove PII from error reports before sending to Bugsink."""
+
+def _scrub_pii(event, hint):
+    for scope in ("request", "user"):
+        if scope in event:
+            event[scope].pop("email", None)
+            event[scope].pop("username", None)
+            event[scope].pop("ip_address", None)
     if "request" in event:
         event["request"].pop("cookies", None)
-        hdrs = event["request"].get("headers", {})
-        for key in ("Authorization", "Cookie", "X-Csrftoken"):
-            hdrs.pop(key, None)
-    if "user" in event:
-        event["user"] = {"id": event["user"].get("id")}
+        headers = event["request"].get("headers", {})
+        headers.pop("Authorization", None)
+        headers.pop("Cookie", None)
     return event
 
 
-sentry_sdk.init(
-    dsn=env("SENTRY_DSN", default=""),
-    send_default_pii=False,
-    before_send=_strip_pii,
-    traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.0),
-    environment=env("SENTRY_ENVIRONMENT", default="production"),
-)
+# Bugsink / Sentry error reporting
+_sentry_dsn = env("SENTRY_DSN", default="")
+if _sentry_dsn:
+    sentry_sdk.init(
+        dsn=_sentry_dsn,
+        integrations=[DjangoIntegration(), RqIntegration()],
+        traces_sample_rate=0.1,
+        send_default_pii=False,
+        before_send=_scrub_pii,
+    )
 
-# ── GDPR data retention ───────────────────────────────────────────────────────
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # keep sessions within SESSION_COOKIE_AGE
+# Loosen CSP for self-hosted Umami
+if UMAMI_URL:
+    CONTENT_SECURITY_POLICY["DIRECTIVES"]["script-src"] = ("'self'", UMAMI_URL)  # type: ignore[index]
+    CONTENT_SECURITY_POLICY["DIRECTIVES"]["connect-src"] = ("'self'", UMAMI_URL)  # type: ignore[index]

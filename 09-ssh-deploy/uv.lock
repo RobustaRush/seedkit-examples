@@ -11,15 +11,14 @@ dependencies = [
     { name = "django-csp" },
     { name = "django-dbbackup" },
     { name = "django-environ" },
-    { name = "django-redis" },
-    { name = "django-structlog" },
+    { name = "django-rq" },
     { name = "django-tasks" },
     { name = "django-tasks-rq" },
     { name = "gunicorn" },
     { name = "psycopg", extra = ["binary"] },
-    { name = "sentry-sdk", extra = ["django"] },
+    { name = "redis" },
+    { name = "sentry-sdk" },
     { name = "structlog" },
-    { name = "whitenoise" },
 ]
 
 [package.dev-dependencies]
@@ -31,26 +30,25 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "django", specifier = ">=5.1" },
-    { name = "django-csp", specifier = ">=3.8" },
-    { name = "django-dbbackup", specifier = ">=4.1" },
-    { name = "django-environ", specifier = ">=0.11" },
-    { name = "django-redis", specifier = ">=5.4" },
-    { name = "django-structlog", specifier = ">=8.0" },
-    { name = "django-tasks", specifier = ">=0.4" },
+    { name = "django", specifier = ">=5.2,<7.0" },
+    { name = "django-csp", specifier = ">=4.0" },
+    { name = "django-dbbackup", specifier = ">=5.3.0" },
+    { name = "django-environ", specifier = ">=0.13.0" },
+    { name = "django-rq", specifier = ">=4.1.0" },
+    { name = "django-tasks", specifier = ">=0.12.0" },
     { name = "django-tasks-rq", specifier = ">=0.12.0" },
-    { name = "gunicorn", specifier = ">=22.0" },
-    { name = "psycopg", extras = ["binary"], specifier = ">=3.1" },
-    { name = "sentry-sdk", extras = ["django"], specifier = ">=2.0" },
-    { name = "structlog", specifier = ">=24.4" },
-    { name = "whitenoise", specifier = ">=6.7" },
+    { name = "gunicorn", specifier = ">=26.0.0" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.3.4" },
+    { name = "redis", specifier = ">=7.4.0" },
+    { name = "sentry-sdk", specifier = ">=2.60.0" },
+    { name = "structlog", specifier = ">=25.5.0" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "pytest", specifier = ">=8.2" },
-    { name = "pytest-django", specifier = ">=4.8" },
-    { name = "ruff", specifier = ">=0.9" },
+    { name = "pytest", specifier = ">=9.0.3" },
+    { name = "pytest-django", specifier = ">=4.12.0" },
+    { name = "ruff", specifier = ">=0.15.12" },
 ]
 
 [[package]]
@@ -159,31 +157,6 @@ wheels = [
 ]
 
 [[package]]
-name = "django-ipware"
-version = "7.0.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "python-ipware" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/23/64/c7e4791edf01ba483cce444770b3e6a930ba12195ba1eeb37b5bf6dce8a8/django-ipware-7.0.1.tar.gz", hash = "sha256:d9ec43d2bf7cdf216fed8d494a084deb5761a54860a53b2e74346a4f384cff47", size = 6827, upload-time = "2024-04-19T20:02:49.257Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/11/33/bf539925b102d68200da5b1d3eacb8aa5d5d9a065972e8b8724d0d53bb0d/django_ipware-7.0.1-py2.py3-none-any.whl", hash = "sha256:db16bbee920f661ae7f678e4270460c85850f03c6761a4eaeb489bdc91f64709", size = 6425, upload-time = "2024-04-19T20:02:47.469Z" },
-]
-
-[[package]]
-name = "django-redis"
-version = "6.0.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "django" },
-    { name = "redis" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/08/53/dbcfa1e528e0d6c39947092625b2c89274b5d88f14d357cee53c4d6dbbd4/django_redis-6.0.0.tar.gz", hash = "sha256:2d9cb12a20424a4c4dde082c6122f486628bae2d9c2bee4c0126a4de7fda00dd", size = 56904, upload-time = "2025-06-17T18:15:46.376Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/7e/79/055dfcc508cfe9f439d9f453741188d633efa9eab90fc78a67b0ab50b137/django_redis-6.0.0-py3-none-any.whl", hash = "sha256:20bf0063a8abee567eb5f77f375143c32810c8700c0674ced34737f8de4e36c0", size = 33687, upload-time = "2025-06-17T18:15:34.165Z" },
-]
-
-[[package]]
 name = "django-rq"
 version = "4.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -195,21 +168,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/42/41/11a347cacdd4df2849ff12f4d6d988e01cca869e41db90c9dd6d27f13f53/django_rq-4.1.0.tar.gz", hash = "sha256:d08eabd70f3a17f289cd9fc68b15efe8e1f45b0fe64c5504161277e8cd9eeb8e", size = 43660, upload-time = "2026-04-05T10:32:47.81Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/4a/93/4f4d8db1d8ad6adbbdae46dc1d1453729af4dff8b722b8ced5f44447be82/django_rq-4.1.0-py3-none-any.whl", hash = "sha256:ba6e30cfbaefc3b96d9d9c9bd752ad5a9aa8b886e5d9483500b307c1733d2d39", size = 67426, upload-time = "2026-04-05T10:32:46.105Z" },
-]
-
-[[package]]
-name = "django-structlog"
-version = "10.0.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "asgiref" },
-    { name = "django" },
-    { name = "django-ipware" },
-    { name = "structlog" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/72/a9/102f316fb60dbec46642168979c4f57c9d8140fe43624ddca1ca6106274a/django_structlog-10.0.0.tar.gz", hash = "sha256:4e3fa4a930697fb9b649470e389419bb73b916a1ecf4f4bf2f8727f5cbfdb002", size = 23054, upload-time = "2025-10-22T21:20:21.14Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/6c/83/d7245a2a2bb46ae65ecff00686181d632553b131ea0c5cbfcbdb8f89c190/django_structlog-10.0.0-py3-none-any.whl", hash = "sha256:4f9db3cb7b308df6aa4afe1353d9c19d5bac757022ddbbb5c24f3d0d6a91a240", size = 18159, upload-time = "2025-10-22T21:20:19.804Z" },
 ]
 
 [[package]]
@@ -416,15 +374,6 @@ wheels = [
 ]
 
 [[package]]
-name = "python-ipware"
-version = "3.0.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/9e/60/da4426c3e9aee56f08b24091a9e85a0414260f928f97afd0013dfbd0332f/python_ipware-3.0.0.tar.gz", hash = "sha256:9117b1c4dddcb5d5ca49e6a9617de2fc66aec2ef35394563ac4eecabdf58c062", size = 16609, upload-time = "2024-04-19T20:00:58.938Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/08/bd/ccd7416fdb30f104ddf6cfd8ee9f699441c7d9880a26f9b3089438adee05/python_ipware-3.0.0-py3-none-any.whl", hash = "sha256:fc936e6e7ec9fcc107f9315df40658f468ac72f739482a707181742882e36b60", size = 10761, upload-time = "2024-04-19T20:00:57.171Z" },
-]
-
-[[package]]
 name = "redis"
 version = "7.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -489,20 +438,15 @@ wheels = [
 
 [[package]]
 name = "sentry-sdk"
-version = "2.59.0"
+version = "2.60.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/65/e0/9bf5e5fc7442b10880f3ec0eff0ef4208b84a099606f343ec4f5445227fb/sentry_sdk-2.59.0.tar.gz", hash = "sha256:cd265808ef8bf3f3edf69b527c0a0b2b6b1322762679e55b8987db2e9584aec1", size = 447331, upload-time = "2026-05-04T12:19:06.538Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/54/a2/2e6c090db384cc515069f4f85542bd5baf6786852073020ea73d4a76d3ea/sentry_sdk-2.60.0.tar.gz", hash = "sha256:0bd25e54e78ca02d0be512529fa644bbbf9e8470d7b26371294012d4ca93c978", size = 452946, upload-time = "2026-05-13T13:34:52.516Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bf/00/b8cc413748fb6383d1582e7cda51314f99743351c462a92dc690d5b5853b/sentry_sdk-2.59.0-py2.py3-none-any.whl", hash = "sha256:abcf65ee9a9d9cdebf9ad369782408ecca9c1c792686ef06ba34f5ab233527fe", size = 468432, upload-time = "2026-05-04T12:19:04.741Z" },
-]
-
-[package.optional-dependencies]
-django = [
-    { name = "django" },
+    { url = "https://files.pythonhosted.org/packages/29/41/f2b800b7f12a05dd48c2a6280d4dd812d1425fc66ed3fe3fd99420c41d1a/sentry_sdk-2.60.0-py3-none-any.whl", hash = "sha256:28a536c03291c8bcb363cf35c611b32738ec118ff64d8d6383b096448ac4c803", size = 475616, upload-time = "2026-05-13T13:34:50.259Z" },
 ]
 
 [[package]]
@@ -557,13 +501,4 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/53/0c/06f8b233b8fd13b9e5ee11424ef85419ba0d8ba0b3138bf360be2ff56953/urllib3-2.7.0.tar.gz", hash = "sha256:231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c", size = 433602, upload-time = "2026-05-07T16:13:18.596Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7f/3e/5db95bcf282c52709639744ca2a8b149baccf648e39c8cc87553df9eae0c/urllib3-2.7.0-py3-none-any.whl", hash = "sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897", size = 131087, upload-time = "2026-05-07T16:13:17.151Z" },
-]
-
-[[package]]
-name = "whitenoise"
-version = "6.12.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/cb/2a/55b3f3a4ec326cd077c1c3defeee656b9298372a69229134d930151acd01/whitenoise-6.12.0.tar.gz", hash = "sha256:f723ebb76a112e98816ff80fcea0a6c9b8ecde835f8ddda25df7a30a3c2db6ad", size = 26841, upload-time = "2026-02-27T00:05:42.028Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/db/eb/d5583a11486211f3ebd4b385545ae787f32363d453c19fffd81106c9c138/whitenoise-6.12.0-py3-none-any.whl", hash = "sha256:fc5e8c572e33ebf24795b47b6a7da8da3c00cff2349f5b04c02f28d0cc5a3cc2", size = 20302, upload-time = "2026-02-27T00:05:40.086Z" },
 ]

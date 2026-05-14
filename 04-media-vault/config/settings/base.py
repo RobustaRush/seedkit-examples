@@ -1,37 +1,40 @@
 from pathlib import Path
 
-import dj_email_url
+import django_stubs_ext
+import environ
+
+django_stubs_ext.monkeypatch()
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-SECRET_KEY = "django-insecure-change-me-in-production"
+env = environ.Env()
+_env_file = BASE_DIR / ".env"
+if _env_file.exists():
+    environ.Env.read_env(_env_file)
 
-DEBUG = False
+DEBUG = env.bool("DJANGO_DEBUG", default=False)
+SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)  # type: ignore[arg-type]
+ALLOWED_HOSTS: list[str] = env.list("DJANGO_ALLOWED_HOSTS", default=[])  # type: ignore[arg-type]
+DATABASES = {"default": env.db("DATABASE_URL", default=env.NOTSET)}
 
-ALLOWED_HOSTS: list[str] = []
-
-DJANGO_APPS = [
+INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-]
-
-THIRD_PARTY_APPS = [
-    "channels",
+    # third-party
     "corsheaders",
-    "django_tasks",
     "django_rq",
-]
-
-LOCAL_APPS = [
+    "django_tasks",
+    "django_tasks_rq",
+    "channels",
+    "storages",
+    # local
     "jobs",
     "api",
 ]
-
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -42,7 +45,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "config.middleware.RequestIdMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -64,17 +66,6 @@ TEMPLATES = [
 
 ASGI_APPLICATION = "config.asgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "HOST": "127.0.0.1",
-        "PORT": "5432",
-        "NAME": "media_vault",
-        "USER": "media_vault",
-        "PASSWORD": "media_vault",
-    }
-}
-
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -92,49 +83,46 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# S3 / MinIO storage
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-STORAGES = {
-    "default": {"BACKEND": "storages.backends.s3boto3.S3Boto3Storage"},
-    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
-}
+# Redis
+REDIS_URL: str = env("REDIS_URL", default="redis://127.0.0.1:6379/0")  # type: ignore[arg-type]
 
-AWS_STORAGE_BUCKET_NAME = "media-vault"
-AWS_S3_REGION_NAME = "us-east-1"
-AWS_DEFAULT_ACL = None
-AWS_S3_FILE_OVERWRITE = False
-
-# Redis / Channels
+# Channel layer
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [("127.0.0.1", 6379)]},
+        "CONFIG": {"hosts": [REDIS_URL]},
     }
 }
 
-# Background tasks (django-tasks-rq)
+# django-tasks-rq
 TASKS = {
     "default": {
         "BACKEND": "django_tasks_rq.backend.RQBackend",
         "QUEUES": ["default"],
-    }
+    },
 }
+RQ_QUEUES = {"default": {"URL": REDIS_URL}}
+RQ = {"JOB_CLASS": "django_tasks_rq.Job"}
 
-RQ_QUEUES = {
+# S3 / MinIO storage
+STORAGES = {
     "default": {
-        "HOST": "127.0.0.1",
-        "PORT": 6379,
-        "DB": 0,
-    }
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "OPTIONS": {
+            "access_key": env("AWS_ACCESS_KEY_ID", default="minioadmin"),  # type: ignore[arg-type]
+            "secret_key": env("AWS_SECRET_ACCESS_KEY", default="minioadmin"),  # type: ignore[arg-type]
+            "bucket_name": env("AWS_STORAGE_BUCKET_NAME", default="media-vault"),  # type: ignore[arg-type]
+            "endpoint_url": env("AWS_S3_ENDPOINT_URL", default="http://127.0.0.1:9000"),  # type: ignore[arg-type]
+            "region_name": env("AWS_S3_REGION_NAME", default="us-east-1"),  # type: ignore[arg-type]
+            "file_overwrite": False,
+            "default_acl": None,
+        },
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
 }
-
-# Email
-_email_config = dj_email_url.config(default="consolemail://")
-vars().update(_email_config)
 
 # CORS
-CORS_ALLOWED_ORIGINS: list[str] = []
-CORS_ALLOW_ALL_ORIGINS = False
-
-# structlog — configured per-environment in local.py / production.py
-LOGGING: dict = {}
+CORS_ALLOWED_ORIGINS: list[str] = env.list("CORS_ALLOWED_ORIGINS", default=[])  # type: ignore[arg-type]
+CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=False)

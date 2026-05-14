@@ -37,23 +37,25 @@ Run the foundation, the boot check (migrate + createsuperuser), and confirm /adm
 
 # 01-minimal-blog
 
-A tiny blog to verify the seedkit-slim skill works end-to-end.
+A tiny Django blog — minimal scaffold to verify seedkit-slim works end-to-end.
 
 ## Stack
 
 | Layer | Choice |
 |---|---|
-| Framework | Django 5.x (WSGI) |
+| Python | 3.12 |
+| Django | 6.0 |
 | Database | SQLite |
-| Settings | `config/settings.py` (single file) |
-| Auth | `django.contrib.auth` (vanilla) |
-| Email | Console backend (`EMAIL_URL=consolemail://`) |
-| Tests | `manage.py test` |
+| Request handling | WSGI |
+| Settings | Single file (`config/settings.py`) |
+| Auth | Vanilla `django.contrib.auth` |
+| Email | Console backend |
+| Task runner | None |
 
 ## Key commands
 
 ```sh
-# Install deps
+# Install dependencies
 uv sync
 
 # Apply migrations
@@ -69,19 +71,9 @@ uv run manage.py runserver
 uv run manage.py test
 ```
 
-## Environment
+## Access
 
-Copy `.env` and adjust as needed. Required variables:
-
-| Variable | Default | Notes |
-|---|---|---|
-| `SECRET_KEY` | insecure dev key | Must be changed in production |
-| `DEBUG` | `True` | Set `False` in production |
-| `ALLOWED_HOSTS` | `*` | Restrict in production |
-| `EMAIL_URL` | `consolemail://` | Prints email to console |
-
-## Admin
-
-Visit `/admin/` after `migrate` + `createsuperuser`.
+- Admin: http://127.0.0.1:8000/admin/
+- Root `/` redirects to `/admin/`
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

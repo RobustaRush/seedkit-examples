@@ -1,17 +1,12 @@
 from .base import *  # noqa: F401, F403
 
 DEBUG = True
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]  # noqa: S104
+INSTALLED_APPS += ["zeal", "django_migration_linter"]  # noqa: F405
+MIDDLEWARE += ["zeal.middleware.zeal_middleware"]  # noqa: F405
+ZEAL_RAISE_ON_VIOLATION = True
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-
-# Silk: enable Python profiler in addition to SQL profiling
-SILKY_PYTHON_PROFILER = True
-SILKY_AUTHENTICATION = False
-SILKY_AUTHORISATION = False
-
-# django-zeal: detect N+1 queries in development only
-MIDDLEWARE = MIDDLEWARE + [  # noqa: F405
-    "zeal.middleware.zeal_middleware",
-]
+MIGRATION_LINTER_OPTIONS = {
+    "exclude_apps": ["silk", "django_tasks_database"],
+}
