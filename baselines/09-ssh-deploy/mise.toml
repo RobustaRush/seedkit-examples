@@ -1,0 +1,46 @@
+[tools]
+python = "3.12"
+
+[tasks.dev]
+run = "uv run manage.py runserver"
+description = "Start the development server"
+
+[tasks.test]
+run = "uv run pytest"
+description = "Run the test suite"
+
+[tasks.lint]
+run = "uv run ruff check . && uv run ruff format --check ."
+description = "Lint and format check"
+
+[tasks.fmt]
+run = "uv run ruff check --fix . && uv run ruff format ."
+description = "Fix lint issues and reformat"
+
+[tasks.migrate]
+run = "uv run manage.py migrate"
+description = "Apply database migrations"
+
+[tasks.makemigrations]
+run = "uv run manage.py makemigrations"
+description = "Create new migrations"
+
+[tasks.worker]
+run = "uv run manage.py rqworker default"
+description = "Start the RQ background worker"
+
+[tasks.shell]
+run = "uv run manage.py shell"
+description = "Open the Django shell"
+
+[tasks.collectstatic]
+run = "uv run manage.py collectstatic --noinput"
+description = "Collect static files"
+
+[tasks.backup]
+run = "uv run manage.py dbbackup"
+description = "Backup the database"
+
+[tasks.install]
+run = "uv sync"
+description = "Install all dependencies"

@@ -1,0 +1,58 @@
+[tools]
+python = "3.12"
+
+[env]
+DJANGO_SETTINGS_MODULE = "config.settings.local"
+_.file = [".env.local"]
+
+[tasks.install]
+description = "Install all dependencies"
+run = "uv pip install -e '.[dev]'"
+
+[tasks.dev]
+description = "Run development server"
+run = "python manage.py runserver"
+
+[tasks.migrate]
+description = "Apply database migrations"
+run = "python manage.py migrate && python manage.py migrate --database=cache || python manage.py createcachetable --database=cache"
+
+[tasks.makemigrations]
+description = "Create new migrations"
+run = "python manage.py makemigrations"
+
+[tasks.test]
+description = "Run test suite"
+run = "pytest"
+
+[tasks.lint]
+description = "Run ruff linter"
+run = "ruff check . && ruff format --check ."
+
+[tasks.fmt]
+description = "Auto-format code"
+run = "ruff format . && ruff check --fix ."
+
+[tasks.typecheck]
+description = "Run pyright type checker"
+run = "pyright"
+
+[tasks.createsuperuser]
+description = "Create a superuser"
+run = "python manage.py createsuperuser"
+
+[tasks.shell]
+description = "Open Django shell"
+run = "python manage.py shell"
+
+[tasks.collectstatic]
+description = "Collect static files"
+run = "python manage.py collectstatic --noinput"
+
+[tasks.bootstrap]
+description = "Full local setup from scratch"
+run = """
+uv pip install -e '.[dev]'
+python manage.py migrate
+python manage.py migrate --database=cache || python manage.py createcachetable --database=cache
+"""

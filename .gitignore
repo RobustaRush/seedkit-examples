@@ -8,7 +8,7 @@ logs/
 # Python / Django runtime artefacts. Each project under here is a fresh
 # scaffold; the .venv, DBs, caches, and collected statics are noise that
 # would dwarf the source.
-**/.venv/
+**/.venv*/
 **/__pycache__/
 **/*.pyc
 **/*.pyo

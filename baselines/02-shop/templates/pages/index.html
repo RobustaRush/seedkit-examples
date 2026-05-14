@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome — Shop{% endblock %}
+
+{% block content %}
+<main class="min-h-screen flex flex-col items-center justify-center bg-base-200">
+  <div class="text-center">
+    <h1 class="text-4xl font-bold text-blue-600 mb-6">Welcome to the Shop</h1>
+    <p class="mb-8 text-lg">Your one-stop destination for great products.</p>
+    <a href="/accounts/login/" class="btn btn-primary">Get Started</a>
+    <button class="btn btn-primary ml-2">Shop Now</button>
+  </div>
+</main>
+{% endblock %}

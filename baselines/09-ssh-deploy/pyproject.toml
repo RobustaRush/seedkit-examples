@@ -1,0 +1,45 @@
+[project]
+name = "09-ssh-deploy"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.1",
+    "psycopg[binary]>=3.2",
+    "redis>=5.0",
+    "hiredis>=3.0",
+    "environs[django]>=11.0",
+    "structlog>=24.0",
+    "django-structlog>=9.0",
+    "django-tasks>=0.6",
+    "django-tasks-rq>=0.2",
+    "django-health-check>=3.18",
+    "django-csp>=3.8",
+    "sentry-sdk[django]>=2.0",
+    "django-dbbackup>=4.1",
+    "gunicorn>=22.0",
+    "whitenoise>=6.7",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0",
+    "pytest-django>=4.8",
+    "ruff>=0.6",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.local"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 119
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "PTH"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["config", "jobs"]

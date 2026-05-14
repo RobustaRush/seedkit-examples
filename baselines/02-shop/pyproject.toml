@@ -1,0 +1,47 @@
+[project]
+name = "02-shop"
+version = "0.1.0"
+description = "Small e-commerce site with admin and SMTP transactional email"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=6.0.5",
+    "django-allauth>=65.16.1",
+    "django-axes>=8.3.1",
+    "django-health-check>=4.4.0",
+    "psycopg2-binary>=2.9.12",
+    "stripe>=15.1.0",
+    "whitenoise>=6.12.0",
+]
+
+[dependency-groups]
+dev = [
+    "django-stubs>=6.0.4",
+    "pyright>=1.1.409",
+    "pytest>=9.0.3",
+    "pytest-django>=4.12.0",
+    "ruff>=0.15.13",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.local"
+python_files = ["tests.py", "test_*.py", "*_test.py"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "S", "B", "C4", "PTH"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"config/settings/*.py" = ["F401", "F403", "S105"]
+"*/migrations/*.py" = ["E501"]
+
+[tool.pyright]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+djangoVersion = "6.0"
+venvPath = "."
+venv = ".venv"

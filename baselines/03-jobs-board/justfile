@@ -1,0 +1,34 @@
+set dotenv-load
+
+default:
+    @just --list
+
+up:
+    docker compose up -d
+
+down:
+    docker compose down
+
+migrate:
+    uv run manage.py migrate
+
+makemigrations *args:
+    uv run manage.py makemigrations {{ args }}
+
+createsuperuser:
+    uv run manage.py createsuperuser
+
+shell:
+    uv run manage.py shell
+
+run:
+    uv run manage.py runserver
+
+worker:
+    uv run celery -A config worker -l info
+
+beat:
+    uv run celery -A config beat -l info
+
+test *args:
+    uv run manage.py test {{ args }}

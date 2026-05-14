@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}App{% endblock %}</title>
+  {% block extra_css %}{% endblock %}
+  {% if UMAMI_WEBSITE_ID and UMAMI_HOST %}
+  <script async defer
+    data-website-id="{{ UMAMI_WEBSITE_ID }}"
+    src="{{ UMAMI_HOST }}/script.js">
+  </script>
+  {% endif %}
+</head>
+<body>
+  {% block content %}{% endblock %}
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

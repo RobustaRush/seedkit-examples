@@ -1,0 +1,17 @@
+.venv/
+.env
+*.sqlite3
+staticfiles/
+media/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+__pycache__/
+*.pyc
+*.pyo
+htmlcov/
+.coverage
+celerybeat-schedule*
+node_modules/
+dist/
+build/

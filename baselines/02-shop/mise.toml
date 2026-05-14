@@ -1,0 +1,45 @@
+[tools]
+python = "3.12"
+
+[env]
+DJANGO_SETTINGS_MODULE = "config.settings.local"
+
+[tasks.server]
+description = "Run development server"
+run = "uv run python manage.py runserver"
+
+[tasks.migrate]
+description = "Run database migrations"
+run = "uv run python manage.py migrate"
+
+[tasks.makemigrations]
+description = "Create new migrations"
+run = "uv run python manage.py makemigrations"
+
+[tasks.tailwind-build]
+description = "Build Tailwind CSS"
+run = "uv run python manage.py tailwind build"
+
+[tasks.tailwind-watch]
+description = "Watch Tailwind CSS"
+run = "uv run python manage.py tailwind watch"
+
+[tasks.test]
+description = "Run tests"
+run = "uv run pytest"
+
+[tasks.lint]
+description = "Run ruff linter"
+run = "uv run ruff check ."
+
+[tasks.typecheck]
+description = "Run pyright type checker"
+run = "uv run pyright"
+
+[tasks.collectstatic]
+description = "Collect static files"
+run = "uv run python manage.py collectstatic --noinput"
+
+[tasks.createsuperuser]
+description = "Create a superuser"
+run = "uv run python manage.py createsuperuser"
