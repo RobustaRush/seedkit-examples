@@ -1,0 +1,71 @@
+{
+  "case": "01-minimal-blog",
+  "branch": "main",
+  "skill_version": "26.20.3",
+  "generated_at": "2026-05-14T12:27:27Z",
+  "file_count": 12,
+  "total_bytes": 11770,
+  "skipped_large": [],
+  "files": [
+    {
+      "path": ".env",
+      "size": 293,
+      "sha256": "d38eb5f5fd940531780bdb9e9a04bb865d07b332e411c86d0d80474811fe21a1"
+    },
+    {
+      "path": ".env.example",
+      "size": 236,
+      "sha256": "b87fae9d33d919207a157deb5499b2b98aaff7fdf14d520ded199af3bb967082"
+    },
+    {
+      "path": ".gitignore",
+      "size": 258,
+      "sha256": "7fe6a1ee8e944c156845562bc14806da58e4e6965a226e16a1e4ace4bce6ef30"
+    },
+    {
+      "path": "README.md",
+      "size": 1903,
+      "sha256": "8ae610892cd59d4ee7167a084c7a69e716b3f37ebc48f3407a400415f19c5d1a"
+    },
+    {
+      "path": "config/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "config/asgi.py",
+      "size": 389,
+      "sha256": "85085ec70cba269660557023375b388cdaf64f3942482ee5509a0e4eeb86ee38"
+    },
+    {
+      "path": "config/settings.py",
+      "size": 3274,
+      "sha256": "8d5271ba96ce6c4d0d0bf9a6685f5ca6af6a80b84882b4e6cfbb49f0bdaf61f9"
+    },
+    {
+      "path": "config/urls.py",
+      "size": 232,
+      "sha256": "6b22ea6ae3bb74eb5b284729f3f1e43b4d117c68a7c320baebc7dd675bd8e256"
+    },
+    {
+      "path": "config/wsgi.py",
+      "size": 389,
+      "sha256": "943abf856f108fbfcc32982b6ceb2599369d742620c2fbf4d946956c81c4c3f8"
+    },
+    {
+      "path": "manage.py",
+      "size": 662,
+      "sha256": "9e055a3ca49f173675232d3f61d1feb89f1350708fb25a002f6d3edefeec6db4"
+    },
+    {
+      "path": "pyproject.toml",
+      "size": 153,
+      "sha256": "68a24e27ed5970b3d7450b1ac3e84856002929cfb77004414d8840d609d761db"
+    },
+    {
+      "path": "uv.lock",
+      "size": 3981,
+      "sha256": "8447a9512f90e519d89fbaeb614ddd4c20e6cda1561c7b9f61668d83b13c48b5"
+    }
+  ]
+}

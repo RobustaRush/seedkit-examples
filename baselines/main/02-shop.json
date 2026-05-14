@@ -1,0 +1,276 @@
+{
+  "case": "02-shop",
+  "branch": "main",
+  "skill_version": "26.20.3",
+  "generated_at": "2026-05-14T12:27:27Z",
+  "file_count": 53,
+  "total_bytes": 455704,
+  "skipped_large": [],
+  "files": [
+    {
+      "path": ".dockerignore",
+      "size": 137,
+      "sha256": "970ed1e643142ea87dc02c7f4750b45dec593fad5856d16d6b7b3fd674c72c78"
+    },
+    {
+      "path": ".env",
+      "size": 395,
+      "sha256": "b12f8bbb0d264cff0f9f07686abfa811c2f254a9bbca3f7caa22e4afcb66744c"
+    },
+    {
+      "path": ".env.example",
+      "size": 566,
+      "sha256": "bee853b4bc09311769c18b94f8bd3d5dd15dfdac4332a4901cb95d0a52b2b0f2"
+    },
+    {
+      "path": ".gitignore",
+      "size": 167,
+      "sha256": "edcd8a3a6f06a0c8f610c774964bee1cbbbcc6a2df5df826892167efcf3c0095"
+    },
+    {
+      "path": "Dockerfile",
+      "size": 1200,
+      "sha256": "fa272a154f46fcaabd01764d2c281acfb96ab0b0f8720259e094ddbf56cd5de2"
+    },
+    {
+      "path": "README.md",
+      "size": 3945,
+      "sha256": "4d6b2a245644fa283c7b746e35e8c7e4e0b5101b01069ccea1839480116dd6c7"
+    },
+    {
+      "path": "assets/css/tailwind.css",
+      "size": 23173,
+      "sha256": "c9a17f02d360eb8f84a1fc16c8d10609415e2f88ea086abb69d92021019989c3"
+    },
+    {
+      "path": "billing/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "billing/admin.py",
+      "size": 29,
+      "sha256": "226414ed0d1224d4e2823833d68ea68b32701447a96657b925208125785e2ccc"
+    },
+    {
+      "path": "billing/apps.py",
+      "size": 89,
+      "sha256": "90a04167f91c1023a1e319db081da4df073472dd2a825381b0607fd7820177be"
+    },
+    {
+      "path": "billing/migrations/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "billing/models.py",
+      "size": 27,
+      "sha256": "a3d38b4aa0a3c65f9fe7cc75360869b4b679e239c97a506a25488e550066c2e4"
+    },
+    {
+      "path": "billing/tests.py",
+      "size": 26,
+      "sha256": "a960ef03d661542435acf6e4a0589fcbba3f7c38ab5cc51d60cc45d76ab75883"
+    },
+    {
+      "path": "billing/views.py",
+      "size": 2654,
+      "sha256": "443d438fd77bd97da31b27509ad0b3a650686bbc24ee803685ae4a56e0ec4a66"
+    },
+    {
+      "path": "config/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "config/asgi.py",
+      "size": 400,
+      "sha256": "e2af5d2949e9990c4cdb64e6666bcc10122d33c4e07256d9b893856a9e450277"
+    },
+    {
+      "path": "config/settings/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "config/settings/base.py",
+      "size": 4163,
+      "sha256": "0eaab78d87a46c0d5e7048c2729bcbbb6cf56f1399a94115991c1282b120761a"
+    },
+    {
+      "path": "config/settings/local.py",
+      "size": 20,
+      "sha256": "1119a63b1cfff6652422e71c35bcd46b963a8152cb543772738702c5b08251b6"
+    },
+    {
+      "path": "config/settings/production.py",
+      "size": 1012,
+      "sha256": "df246fb8ce3631d31cc091f742086640240ad6693ccbc480022c46dabc7bb915"
+    },
+    {
+      "path": "config/settings/test.py",
+      "size": 428,
+      "sha256": "a9bf33bac91df79f93a6d427b2d2ecb436f22ac613fd4293260d8e0ba3fd510d"
+    },
+    {
+      "path": "config/urls.py",
+      "size": 941,
+      "sha256": "d310d2bc5694ae6d7fcc6914d5c075551343111b695471ca521e2cabcb7a9553"
+    },
+    {
+      "path": "config/views.py",
+      "size": 1103,
+      "sha256": "fb40a78255b6767e910abde21d5e4f007e1771435d97edb68763dfa6dc9d66e3"
+    },
+    {
+      "path": "config/wsgi.py",
+      "size": 400,
+      "sha256": "6990c995dc9bddb3fc5f955ed42088331ca36f58e94a1722988e336b7d81e6df"
+    },
+    {
+      "path": "deploy/Caddyfile",
+      "size": 133,
+      "sha256": "f8eeb2a881f4889311066668283a945a2dee0c767a3afb67a880aa91b7f227da"
+    },
+    {
+      "path": "deploy/docker-compose.prod.yml",
+      "size": 1031,
+      "sha256": "dbc93bc26024abd94cd45a7bca7e64c44bf4d0c599916cc827515f4120d6fe76"
+    },
+    {
+      "path": "manage.py",
+      "size": 669,
+      "sha256": "5cb8d93fa3599353d47c4a8d738617924b26f42736c45fe362ac26a76a70c4f5"
+    },
+    {
+      "path": "mise.toml",
+      "size": 857,
+      "sha256": "a78559bae236e0c45d0642004312342c91254005a1843a7e362869b3a6f85043"
+    },
+    {
+      "path": "pages/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pages/admin.py",
+      "size": 29,
+      "sha256": "226414ed0d1224d4e2823833d68ea68b32701447a96657b925208125785e2ccc"
+    },
+    {
+      "path": "pages/apps.py",
+      "size": 85,
+      "sha256": "9c6dbcc2516f6b765d389f501216b5b3f5c09f20fd21059110aee434bfd7d39c"
+    },
+    {
+      "path": "pages/migrations/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "pages/models.py",
+      "size": 27,
+      "sha256": "a3d38b4aa0a3c65f9fe7cc75360869b4b679e239c97a506a25488e550066c2e4"
+    },
+    {
+      "path": "pages/tests.py",
+      "size": 26,
+      "sha256": "a960ef03d661542435acf6e4a0589fcbba3f7c38ab5cc51d60cc45d76ab75883"
+    },
+    {
+      "path": "pages/views.py",
+      "size": 112,
+      "sha256": "51338252bcac7bca1fe68f26893db0dba1113e1ff87cb479a1545a7a7984aac6"
+    },
+    {
+      "path": "pyproject.toml",
+      "size": 1765,
+      "sha256": "ac91040d76906040ce87ec410721eb47c918a6d2f3a4197d9faedd0f8b5a1c55"
+    },
+    {
+      "path": "tailwind-src/css/daisyui-theme.mjs",
+      "size": 45793,
+      "sha256": "b4071bef2e59bd83509659c1e726cc19704a1fd14ff2e56d479bc16a6a53f26d"
+    },
+    {
+      "path": "tailwind-src/css/daisyui.mjs",
+      "size": 287051,
+      "sha256": "5fe43ff5e83c5cf519ccc32d76aa1a82ed6bfc50ee3e6f5dc6007eea6239af1f"
+    },
+    {
+      "path": "tailwind-src/css/source.css",
+      "size": 112,
+      "sha256": "e747259d7e829a1649e18e75b174c374a732a2fc571a27c0a718410048c8d5c8"
+    },
+    {
+      "path": "templates/403.html",
+      "size": 483,
+      "sha256": "5cf074a0f01df089a91667ec81bb1f9a85a8d04b261dcd71efe30651430be7e7"
+    },
+    {
+      "path": "templates/404.html",
+      "size": 461,
+      "sha256": "613e783539e8f5821662569b3c9ab69d2dfcd35d9670b72ff6b0628694e42b4f"
+    },
+    {
+      "path": "templates/500.html",
+      "size": 411,
+      "sha256": "ff2597a628db920472dbb5a5097fd0d545ec16e48b0237a0e6daef8039a096eb"
+    },
+    {
+      "path": "templates/base.html",
+      "size": 426,
+      "sha256": "8be76a54c9e91628861b97747f12c9ddfc84b816f311789cca3e67d3e8e61714"
+    },
+    {
+      "path": "templates/index.html",
+      "size": 344,
+      "sha256": "24d4e1cab330ee04c9872452b68a0cdf7dbe6f020251154366cf765a253c7bcb"
+    },
+    {
+      "path": "users/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "users/admin.py",
+      "size": 1485,
+      "sha256": "9acede538e8c84522d502c98aca5fda7a68fdb53303ecef772de2371f2b87b6f"
+    },
+    {
+      "path": "users/apps.py",
+      "size": 85,
+      "sha256": "ffb6d3b3c1ca9ed661d0ae1e142ed03adca63de58e3d511328df1c786fba3969"
+    },
+    {
+      "path": "users/migrations/0001_initial.py",
+      "size": 2617,
+      "sha256": "9232d4944e944f42cb0fd92c7183159659c5b4dc2e7b5509cc4fb6d033421ffe"
+    },
+    {
+      "path": "users/migrations/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "users/models.py",
+      "size": 1751,
+      "sha256": "541f9939c2507c77fcf014e153e80f22a5103fdb66f86b9e26f532aa689c8d8e"
+    },
+    {
+      "path": "users/tests.py",
+      "size": 26,
+      "sha256": "a960ef03d661542435acf6e4a0589fcbba3f7c38ab5cc51d60cc45d76ab75883"
+    },
+    {
+      "path": "users/views.py",
+      "size": 26,
+      "sha256": "178d895e09ea16a2b47da8d77aeb72249c703accd1c682cc3642217dce19eca2"
+    },
+    {
+      "path": "uv.lock",
+      "size": 69024,
+      "sha256": "be15444363dfac412415dff8032bd790b976c2d5c2a2dd71eaa5563e7c89ceff"
+    }
+  ]
+}

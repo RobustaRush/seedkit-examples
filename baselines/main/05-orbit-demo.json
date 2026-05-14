@@ -1,0 +1,81 @@
+{
+  "case": "05-orbit-demo",
+  "branch": "main",
+  "skill_version": "26.20.3",
+  "generated_at": "2026-05-14T12:27:27Z",
+  "file_count": 14,
+  "total_bytes": 118791,
+  "skipped_large": [],
+  "files": [
+    {
+      "path": ".env",
+      "size": 216,
+      "sha256": "e85eb6b84e5775f747a2cd40b826858d9baf69c58ad6300c8641ed30bce1af3d"
+    },
+    {
+      "path": ".env.example",
+      "size": 254,
+      "sha256": "b818171c1840cae55798c8dbcd82c2bf4a5d1f9b094324c995b02240f33b76c3"
+    },
+    {
+      "path": ".gitignore",
+      "size": 106,
+      "sha256": "6744de1e07f436ce38e164ff85fc717ddf049a050c6294f00acfd6a36e98c35d"
+    },
+    {
+      "path": "README.md",
+      "size": 2744,
+      "sha256": "207c05d98d6e4c5d01db6729e0d5873e73ec04986989be107084e3e8e8821469"
+    },
+    {
+      "path": "config/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "config/asgi.py",
+      "size": 389,
+      "sha256": "f9e1f2b1a81eb5741002c69318db7a0959afe5188c16e0527e8a39f40bc84651"
+    },
+    {
+      "path": "config/settings.py",
+      "size": 3458,
+      "sha256": "1cf1d15aaba9280f1af395724b0bbe1eda565441b49de2c0f416564e2319bf56"
+    },
+    {
+      "path": "config/urls.py",
+      "size": 520,
+      "sha256": "2cf2ca8f0d13529014d9ad1f13b3d26eac8e54c867e91a61b251be95a8034df2"
+    },
+    {
+      "path": "config/views.py",
+      "size": 601,
+      "sha256": "322eb2b10ed1410a603f219c02b537f1177e9c61e79b397f9ec9b5c012c1c184"
+    },
+    {
+      "path": "config/wsgi.py",
+      "size": 389,
+      "sha256": "c49a42291c058c91586a07bbe713683b037545a95d3f56a5bfbde7d3cd7bd532"
+    },
+    {
+      "path": "docker-compose.yml",
+      "size": 379,
+      "sha256": "90b28a3814299c5fc17e222d156e5d61dde9bb0581b3f30e5bfe0197aca17d60"
+    },
+    {
+      "path": "manage.py",
+      "size": 663,
+      "sha256": "fa0f861548f00c74a184badbda99f5923c853d694afd384aabeb236ca9968b31"
+    },
+    {
+      "path": "pyproject.toml",
+      "size": 689,
+      "sha256": "0c80ee378a4055e3e8134a1a6c9816a3634c6c0c9714ceac2bc8b47d11e7b389"
+    },
+    {
+      "path": "uv.lock",
+      "size": 108383,
+      "sha256": "04718ef6aad861da748b3d9cce8563437d8949146634558f82f7131e4a8484a6"
+    }
+  ]
+}

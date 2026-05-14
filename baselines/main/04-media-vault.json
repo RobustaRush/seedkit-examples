@@ -1,0 +1,206 @@
+{
+  "case": "04-media-vault",
+  "branch": "main",
+  "skill_version": "26.20.3",
+  "generated_at": "2026-05-14T12:27:27Z",
+  "file_count": 39,
+  "total_bytes": 308042,
+  "skipped_large": [],
+  "files": [
+    {
+      "path": ".devcontainer/devcontainer.json",
+      "size": 688,
+      "sha256": "b0f5e77149ce67f4a917c8e8fc470c1851d83cbc94a0f4b3fc3a1b7255710302"
+    },
+    {
+      "path": ".env",
+      "size": 652,
+      "sha256": "04e872752d79d6216fc93cd104eb2e7d114f182410b99c4dc95600e6a84a6a41"
+    },
+    {
+      "path": ".env.example",
+      "size": 595,
+      "sha256": "ad2dbc4502139c5d5eb6f7a4de93cac3af1462d84c854dd33babaa7c1f6461ba"
+    },
+    {
+      "path": ".gitignore",
+      "size": 169,
+      "sha256": "22e08932d60f53db187bdd67dadd13d4f6afdc3a66c607a70a2c0baa02107a06"
+    },
+    {
+      "path": "README.md",
+      "size": 4544,
+      "sha256": "24008b5d0b7efb0b4483f72934b6143443e3330ce0613893939c5519a1f615c7"
+    },
+    {
+      "path": "api/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "api/admin.py",
+      "size": 30,
+      "sha256": "463622c28efe67688db3d25c421011820d5a83cdebe43b9a994675d65fdfe475"
+    },
+    {
+      "path": "api/apps.py",
+      "size": 138,
+      "sha256": "ca6c283d922c1bba17f7540e8c2e39d3e53e9c97602e5d0b6ef6fc8fba4a3784"
+    },
+    {
+      "path": "api/controllers.py",
+      "size": 354,
+      "sha256": "47b05254c37285787946e0d0ba2deaae5111999ebebf0f1650e25248f145ed13"
+    },
+    {
+      "path": "api/migrations/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "api/models.py",
+      "size": 28,
+      "sha256": "0578b324c0f9f4fd62295be033fa36c2307ee322288e7f48d690182d49f7625a"
+    },
+    {
+      "path": "api/schemas.py",
+      "size": 173,
+      "sha256": "e53429291853cbb4a29e46b1f2eaa258c102dfbf775be52a90a477e6c299e337"
+    },
+    {
+      "path": "api/tests.py",
+      "size": 27,
+      "sha256": "6f472df59d68aeb595d3ff89736fcca67e60ff021b5b834dec2bd8dfcd4d776f"
+    },
+    {
+      "path": "api/urls.py",
+      "size": 212,
+      "sha256": "b5a3f2aeaa8d3ca35c6a06c271aee474a4c77c970ec64e45b846b42e3305365f"
+    },
+    {
+      "path": "api/views.py",
+      "size": 27,
+      "sha256": "4cb8709d054c4eb74c9253f797c546e170a86a1c48c54607db402950afd12f25"
+    },
+    {
+      "path": "config/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "config/asgi.py",
+      "size": 691,
+      "sha256": "eaccb9fd0b0c3daf8e97967fee7694700cc9eafcae9214cd418963cc13096312"
+    },
+    {
+      "path": "config/consumers.py",
+      "size": 317,
+      "sha256": "8c46225b63e3431b3777fde235b89741436fcc2aa73bf58a26405966d3bf9b1f"
+    },
+    {
+      "path": "config/routing.py",
+      "size": 173,
+      "sha256": "f85c643c1c85e605fad856700a73ba53f3be11ec78b2946875ca8685994534b9"
+    },
+    {
+      "path": "config/settings/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "config/settings/base.py",
+      "size": 6627,
+      "sha256": "87e2f8cf81176fc74447361b317eb08dfb21b58bba6ccabdd90d7da9dca60f55"
+    },
+    {
+      "path": "config/settings/local.py",
+      "size": 20,
+      "sha256": "1119a63b1cfff6652422e71c35bcd46b963a8152cb543772738702c5b08251b6"
+    },
+    {
+      "path": "config/settings/production.py",
+      "size": 663,
+      "sha256": "0ca5f80f7277304ffbf32678435bd634cf95a5aafaeb52d14b6af13edb3aea69"
+    },
+    {
+      "path": "config/settings/test.py",
+      "size": 595,
+      "sha256": "c545d3ff9b5dd75976692acdaef93cb3e661518d63297c3a99efae8b303a507b"
+    },
+    {
+      "path": "config/urls.py",
+      "size": 532,
+      "sha256": "df8b3ef8948838a80e537122c5545f241316a829f5dc28190d3be93701a489e0"
+    },
+    {
+      "path": "config/views.py",
+      "size": 601,
+      "sha256": "322eb2b10ed1410a603f219c02b537f1177e9c61e79b397f9ec9b5c012c1c184"
+    },
+    {
+      "path": "config/wsgi.py",
+      "size": 389,
+      "sha256": "c49a42291c058c91586a07bbe713683b037545a95d3f56a5bfbde7d3cd7bd532"
+    },
+    {
+      "path": "docker-compose.yml",
+      "size": 995,
+      "sha256": "4e109ff93afd2e4898dacd7aa3f540eacce5c4624ddb406fb3608d502a94c18f"
+    },
+    {
+      "path": "jobs/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "jobs/admin.py",
+      "size": 30,
+      "sha256": "463622c28efe67688db3d25c421011820d5a83cdebe43b9a994675d65fdfe475"
+    },
+    {
+      "path": "jobs/apps.py",
+      "size": 212,
+      "sha256": "371d2459b7949f52cff9c7a57aa618f9f0381eacae026f8c2b926660dbf9347f"
+    },
+    {
+      "path": "jobs/migrations/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "jobs/models.py",
+      "size": 28,
+      "sha256": "0578b324c0f9f4fd62295be033fa36c2307ee322288e7f48d690182d49f7625a"
+    },
+    {
+      "path": "jobs/tasks.py",
+      "size": 186,
+      "sha256": "f1257e38610c6c3f2368042cd520c9c29d6c58ceb8246673f7ac6d3310c121d7"
+    },
+    {
+      "path": "jobs/tests.py",
+      "size": 27,
+      "sha256": "6f472df59d68aeb595d3ff89736fcca67e60ff021b5b834dec2bd8dfcd4d776f"
+    },
+    {
+      "path": "jobs/views.py",
+      "size": 27,
+      "sha256": "4cb8709d054c4eb74c9253f797c546e170a86a1c48c54607db402950afd12f25"
+    },
+    {
+      "path": "manage.py",
+      "size": 669,
+      "sha256": "5cb8d93fa3599353d47c4a8d738617924b26f42736c45fe362ac26a76a70c4f5"
+    },
+    {
+      "path": "pyproject.toml",
+      "size": 1617,
+      "sha256": "fb0dffc9b5830167ed1008332eb723e61ee38989d951e51d145120b2f962a480"
+    },
+    {
+      "path": "uv.lock",
+      "size": 286006,
+      "sha256": "518276767b072c78d4a9870170e307426dc132a019541944f52be2a6b156e64d"
+    }
+  ]
+}

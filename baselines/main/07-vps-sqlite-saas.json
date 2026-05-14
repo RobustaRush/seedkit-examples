@@ -1,0 +1,226 @@
+{
+  "case": "07-vps-sqlite-saas",
+  "branch": "main",
+  "skill_version": "26.20.3",
+  "generated_at": "2026-05-14T12:27:27Z",
+  "file_count": 43,
+  "total_bytes": 114831,
+  "skipped_large": [],
+  "files": [
+    {
+      "path": ".dockerignore",
+      "size": 122,
+      "sha256": "3e0d70500fda26e323b178d63cd0c8dddc8e7d1eb872d5f58ff028e0986af292"
+    },
+    {
+      "path": ".env",
+      "size": 662,
+      "sha256": "07a4daa7e0f76c730d006d60c7c9c760e343f20d6352eadfe4eaa7a6375428cb"
+    },
+    {
+      "path": ".env.example",
+      "size": 605,
+      "sha256": "ba11d8bb8c48a127d4c4531e01e9a199a7d5bfd8ff8cd13c4e9713dc26affbc8"
+    },
+    {
+      "path": ".github/workflows/test.yml",
+      "size": 851,
+      "sha256": "7f719fad61129b60fbd443a752cccd43fa50e495e2bc80b0ad0fd2537c109c23"
+    },
+    {
+      "path": ".gitignore",
+      "size": 160,
+      "sha256": "f60c8b923396815edeecd1e0819d74a528cc1c62661ddd104990404bef33b13f"
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "size": 522,
+      "sha256": "5ae11ccdefd7d92cab741cb8929a7a2f69efd11fbd8b1410694c71d9fd0f611b"
+    },
+    {
+      "path": "Dockerfile",
+      "size": 1556,
+      "sha256": "834929b57daf90a11ca7413d9990066b619a8c841dc9deb331313dec693ff01d"
+    },
+    {
+      "path": "README.md",
+      "size": 5461,
+      "sha256": "31162bc1d684ef2f4ed25aa3827ca8dc8376a1f460f1d60eef0d90fc23ac5690"
+    },
+    {
+      "path": "config/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "config/asgi.py",
+      "size": 400,
+      "sha256": "e2af5d2949e9990c4cdb64e6666bcc10122d33c4e07256d9b893856a9e450277"
+    },
+    {
+      "path": "config/routers.py",
+      "size": 506,
+      "sha256": "43e7b3b84356f5122af4b6ef98e3e1f971611f7a07b55cd74d19f358cfc79351"
+    },
+    {
+      "path": "config/settings/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "config/settings/base.py",
+      "size": 6003,
+      "sha256": "d7553427dd6c350c43c306dfdba612afc5f893a9119b69bbdda7f3805331990f"
+    },
+    {
+      "path": "config/settings/local.py",
+      "size": 20,
+      "sha256": "1119a63b1cfff6652422e71c35bcd46b963a8152cb543772738702c5b08251b6"
+    },
+    {
+      "path": "config/settings/production.py",
+      "size": 2386,
+      "sha256": "f6a44f1343aaf46151481059e94097357ce43a73d35c28f823b721de87a6d15e"
+    },
+    {
+      "path": "config/settings/test.py",
+      "size": 534,
+      "sha256": "0e1e97f740c4fb10f76d10bfabb4edc612fbf3ef7265ff3bcb5f43c87c62ba16"
+    },
+    {
+      "path": "config/urls.py",
+      "size": 605,
+      "sha256": "0b6442b69c53d156b44c6e8226c04223bc954bdd925ae24a6fb3c4c5bae392db"
+    },
+    {
+      "path": "config/views.py",
+      "size": 601,
+      "sha256": "322eb2b10ed1410a603f219c02b537f1177e9c61e79b397f9ec9b5c012c1c184"
+    },
+    {
+      "path": "config/wsgi.py",
+      "size": 400,
+      "sha256": "6990c995dc9bddb3fc5f955ed42088331ca36f58e94a1722988e336b7d81e6df"
+    },
+    {
+      "path": "deploy/Caddyfile",
+      "size": 239,
+      "sha256": "fa44ea993a8b12e5ded076752814ca1439bc97ee93fb5fc2f811fac5433fccc4"
+    },
+    {
+      "path": "deploy/docker-compose.prod.yml",
+      "size": 823,
+      "sha256": "d0a3c85c41c19b46e9a2fa8317b01e489dd113b3245bee990b851a3a549b58f5"
+    },
+    {
+      "path": "entrypoint.sh",
+      "size": 528,
+      "sha256": "79260de9752ec5a13aa8caf11e05aaec530ada8f61fec0ae0dd4f428587b653d"
+    },
+    {
+      "path": "jobs/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "jobs/admin.py",
+      "size": 30,
+      "sha256": "463622c28efe67688db3d25c421011820d5a83cdebe43b9a994675d65fdfe475"
+    },
+    {
+      "path": "jobs/apps.py",
+      "size": 241,
+      "sha256": "5bd5bb7ffdbb32fde33ba2314a1ab8fe33d5fdd4b4b19d60192239f972926b8a"
+    },
+    {
+      "path": "jobs/migrations/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "jobs/models.py",
+      "size": 28,
+      "sha256": "0578b324c0f9f4fd62295be033fa36c2307ee322288e7f48d690182d49f7625a"
+    },
+    {
+      "path": "jobs/tasks.py",
+      "size": 530,
+      "sha256": "ff6782e94c74889fa5d89fbdd0dcbac6c22679e2096c972e11ad259735582766"
+    },
+    {
+      "path": "jobs/tests.py",
+      "size": 27,
+      "sha256": "6f472df59d68aeb595d3ff89736fcca67e60ff021b5b834dec2bd8dfcd4d776f"
+    },
+    {
+      "path": "jobs/views.py",
+      "size": 27,
+      "sha256": "4cb8709d054c4eb74c9253f797c546e170a86a1c48c54607db402950afd12f25"
+    },
+    {
+      "path": "litestream.yml",
+      "size": 253,
+      "sha256": "4bea970c1bb3f283f989301f2981676a3eade49d58c8df1127dcede2116d4b93"
+    },
+    {
+      "path": "manage.py",
+      "size": 669,
+      "sha256": "5cb8d93fa3599353d47c4a8d738617924b26f42736c45fe362ac26a76a70c4f5"
+    },
+    {
+      "path": "mise.toml",
+      "size": 837,
+      "sha256": "d7d4a64105690e8daba14a1c7f4915acc7184e732fb584b267883a720844351c"
+    },
+    {
+      "path": "pyproject.toml",
+      "size": 1716,
+      "sha256": "04542c2a4316f0eecca92da81a76fe6feb7fd8ce11e8127e305820e18c68cb8c"
+    },
+    {
+      "path": "users/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "users/admin.py",
+      "size": 1485,
+      "sha256": "9acede538e8c84522d502c98aca5fda7a68fdb53303ecef772de2371f2b87b6f"
+    },
+    {
+      "path": "users/apps.py",
+      "size": 142,
+      "sha256": "f537cfdfc2fb38a56f9d4fc600f19c3d814dc395ba6067936aa84669ff45c94d"
+    },
+    {
+      "path": "users/migrations/0001_initial.py",
+      "size": 2448,
+      "sha256": "62b4972badfb93fbbf8dd50b4e8b12074f72ea532571a3c8ebe7fb1762f6e6e0"
+    },
+    {
+      "path": "users/migrations/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "users/models.py",
+      "size": 1614,
+      "sha256": "5ded010fd64c753b23a31327587c7492acc7809d3e56c20516dc9e57d8f9d3a4"
+    },
+    {
+      "path": "users/tests.py",
+      "size": 27,
+      "sha256": "6f472df59d68aeb595d3ff89736fcca67e60ff021b5b834dec2bd8dfcd4d776f"
+    },
+    {
+      "path": "users/views.py",
+      "size": 27,
+      "sha256": "4cb8709d054c4eb74c9253f797c546e170a86a1c48c54607db402950afd12f25"
+    },
+    {
+      "path": "uv.lock",
+      "size": 81746,
+      "sha256": "34325fab0f863b4097d86ee3f0b610a959a39d02ffa53c985775e391cc95ccbf"
+    }
+  ]
+}

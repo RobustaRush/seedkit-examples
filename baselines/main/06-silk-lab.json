@@ -1,0 +1,156 @@
+{
+  "case": "06-silk-lab",
+  "branch": "main",
+  "skill_version": "26.20.3",
+  "generated_at": "2026-05-14T12:27:27Z",
+  "file_count": 29,
+  "total_bytes": 52179,
+  "skipped_large": [],
+  "files": [
+    {
+      "path": ".env",
+      "size": 403,
+      "sha256": "3d329faab105c3e101faa140f5339932a2991a2cd6a51ed21ee099a6bb8fb922"
+    },
+    {
+      "path": ".env.example",
+      "size": 346,
+      "sha256": "a3f68ba9910817e288592952a1d0dc7cd7f7744cc7f352a1b39931a886d15a4d"
+    },
+    {
+      "path": ".gitignore",
+      "size": 120,
+      "sha256": "f0ed47cf4b540e875394be8c6cd011c837b18ae37c30eafd5c62565b1a1dff71"
+    },
+    {
+      "path": "README.md",
+      "size": 4156,
+      "sha256": "864e5aea7f43d4a4302a43bbdebbb39bc01f6bc44b8902826507718daeb3e5e6"
+    },
+    {
+      "path": "config/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "config/asgi.py",
+      "size": 389,
+      "sha256": "f9e1f2b1a81eb5741002c69318db7a0959afe5188c16e0527e8a39f40bc84651"
+    },
+    {
+      "path": "config/context_processors.py",
+      "size": 209,
+      "sha256": "13d0a4e29c11a591d36896c3cfffebdccee19167675675c0fb20a02b8de07cd0"
+    },
+    {
+      "path": "config/settings/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "config/settings/base.py",
+      "size": 3128,
+      "sha256": "2cb37f657026570a39052236f472a7ffa29e8fe7de242428a66819ca67e3c4da"
+    },
+    {
+      "path": "config/settings/local.py",
+      "size": 556,
+      "sha256": "dda73a09fd204ee385bf3693babab409041a7912236f448fba8b3c5abd228e44"
+    },
+    {
+      "path": "config/settings/production.py",
+      "size": 20,
+      "sha256": "1119a63b1cfff6652422e71c35bcd46b963a8152cb543772738702c5b08251b6"
+    },
+    {
+      "path": "config/settings/test.py",
+      "size": 513,
+      "sha256": "86986d643d477675bd144d6f87bce038b75444c15de4cf2371722925d356b2b2"
+    },
+    {
+      "path": "config/urls.py",
+      "size": 508,
+      "sha256": "5d6f9861490b09df0560cfe03e4ffaf9f2721633ecfd6aaed3bfc662c7be48c2"
+    },
+    {
+      "path": "config/views.py",
+      "size": 601,
+      "sha256": "322eb2b10ed1410a603f219c02b537f1177e9c61e79b397f9ec9b5c012c1c184"
+    },
+    {
+      "path": "config/wsgi.py",
+      "size": 400,
+      "sha256": "6990c995dc9bddb3fc5f955ed42088331ca36f58e94a1722988e336b7d81e6df"
+    },
+    {
+      "path": "jobs/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "jobs/admin.py",
+      "size": 30,
+      "sha256": "463622c28efe67688db3d25c421011820d5a83cdebe43b9a994675d65fdfe475"
+    },
+    {
+      "path": "jobs/apps.py",
+      "size": 241,
+      "sha256": "339d33c2ac77cddc5128e1a4a74a300d72ef27877c4bd044f67ed2713697e3ce"
+    },
+    {
+      "path": "jobs/migrations/__init__.py",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "jobs/models.py",
+      "size": 28,
+      "sha256": "0578b324c0f9f4fd62295be033fa36c2307ee322288e7f48d690182d49f7625a"
+    },
+    {
+      "path": "jobs/tasks.py",
+      "size": 837,
+      "sha256": "812ec7c2741c28c55fca98f306325e2b4a3d0ad234e4220030355916895fd6a8"
+    },
+    {
+      "path": "jobs/tests.py",
+      "size": 27,
+      "sha256": "6f472df59d68aeb595d3ff89736fcca67e60ff021b5b834dec2bd8dfcd4d776f"
+    },
+    {
+      "path": "jobs/views.py",
+      "size": 27,
+      "sha256": "4cb8709d054c4eb74c9253f797c546e170a86a1c48c54607db402950afd12f25"
+    },
+    {
+      "path": "manage.py",
+      "size": 669,
+      "sha256": "5cb8d93fa3599353d47c4a8d738617924b26f42736c45fe362ac26a76a70c4f5"
+    },
+    {
+      "path": "pyproject.toml",
+      "size": 1432,
+      "sha256": "d73d1edfe7aa1c55170d0785a6fc002cbd05fb70be14aa844cc5bda329d0e11d"
+    },
+    {
+      "path": "setup.cfg",
+      "size": 68,
+      "sha256": "24e23aea9c518c2f68dfd22df5e832badadea50743b3dc21e3812c629cdb9dd7"
+    },
+    {
+      "path": "templates/_analytics.html",
+      "size": 172,
+      "sha256": "bf83a9b15d97e785732a586d5201c43c0dfa7f99bfbc364822cbc80aa474fe71"
+    },
+    {
+      "path": "templates/base.html",
+      "size": 208,
+      "sha256": "178e3fabf5c79c81e8516de2a1fd76201f8d2e8593ee6df55cedb559d726d41c"
+    },
+    {
+      "path": "uv.lock",
+      "size": 37091,
+      "sha256": "a4084360ff2070685814c708f738ca46fa74e1f311c7c5791b3d11d020fc527b"
+    }
+  ]
+}
